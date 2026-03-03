@@ -4,7 +4,7 @@
 
 **Goal:** Address Wax's 7 verified weaknesses by adopting proven patterns from memvid's Rust codebase, adapted for Swift 6.2 and Apple platforms.
 
-**Architecture:** Each improvement is an independent module change, touching 1-2 Wax targets. The TOC already has reserved extension slots for `memory_binding` and `enrichment_queue` (WaxTOC.swift:124-126). We exploit these rather than bumping the format version. All changes maintain backward compatibility — v1 files remain readable.
+**Architecture:** Changes are grouped to minimize cross-target impact, but they are **not all independent**. Multiple tasks modify `MemoryOrchestrator.swift`, so sequencing matters. The TOC has reserved extension tags (`memory_binding`, `replay_manifest`, `enrichment_queue`), but current v1 decode rejects non-zero tags; adding data to those slots requires explicit decode/compatibility work in `WaxTOC`. Backward compatibility target is: **new code can read existing v1 stores**.
 
 **Tech Stack:** Swift 6.2, swift-testing, Foundation.Calendar, CryptoKit (SHA-256), Apple Data Protection
 
@@ -14,9 +14,11 @@
 
 ## Verified Weaknesses (from head-to-head analysis)
 
+> Note: numeric score deltas are external-analysis heuristics and are **Unverified** by this repository alone.
+
 | # | Gap | Wax Score | Memvid Score | Delta |
 |---|---|:---:|:---:|:---:|
-| 1 | No benchmark suite | 0 | 40 | -40 |
+| 1 | Benchmark coverage gaps (especially deterministic gating/baselines for new features) | 30 | 40 | -10 |
 | 2 | No frame content dedup in `remember()` | 62 | 82 | -20 |
 | 3 | No store-level embedding model binding | 75 | 85 | -10 |
 | 4 | Only Retracts, no Sets/Updates/Extends | 78 | 80 | -2 |
@@ -28,7 +30,7 @@
 
 ## Task 1: Benchmark Suite
 
-**Why:** Neither project benchmarks E2E `remember→recall`. Memvid has Criterion benchmarks for vector search scaling (10K/50K/100K) at `memvid-main/benches/vec_search_benchmark.rs`. Wax has zero benchmarks. Can't optimize what you don't measure.
+**Why:** Wax already has substantial benchmark coverage in `Tests/WaxIntegrationTests` (`RAGBenchmarks`, MiniLM, WAL compaction, vector/Metal benches). The gap is not "no benchmarks"; the gap is inconsistent deterministic baselines and missing benchmarks for the new behaviors in this plan.
 
 **Memvid reference:**
 ```rust
@@ -51,174 +53,37 @@ fn bench_search_10k(c: &mut Criterion) {
 ```
 
 **Files:**
-- Create: `Tests/WaxBenchmarks/RememberRecallBenchmark.swift`
-- Create: `Tests/WaxBenchmarks/VectorSearchBenchmark.swift`
-- Create: `Tests/WaxBenchmarks/HybridSearchBenchmark.swift`
-- Modify: `Package.swift` — add `WaxBenchmarks` test target
+- Modify: `Tests/WaxIntegrationTests/RAGBenchmarks.swift`
+- Modify: `Tests/WaxIntegrationTests/RAGBenchmarkSupport.swift` (only if new deterministic fixtures/helpers are needed)
+- Optional: Modify benchmark docs with baseline-capture instructions
 
-**Step 1: Add benchmark test target to Package.swift**
+**Step 1: Extend existing benchmark harness (do not add a new test target)**
 
-Add a new test target in `Package.swift` after the existing test targets:
+Add benchmark cases to `RAGPerformanceBenchmarks` so the new work is measured in the same runner/setup already used by CI and perf-lab jobs.
 
-```swift
-.testTarget(
-    name: "WaxBenchmarks",
-    dependencies: [
-        "Wax",
-        .product(name: "Testing", package: "swift-testing"),
-    ],
-    path: "Tests/WaxBenchmarks"
-),
-```
+**Step 2: Keep fixtures deterministic**
 
-**Step 2: Write the remember→recall benchmark**
+- Use deterministic text generation and deterministic embedders already present in benchmark support.
+- Do **not** use `Float.random` in benchmark inputs.
+- Warm up once, then measure repeated runs.
 
-```swift
-// Tests/WaxBenchmarks/RememberRecallBenchmark.swift
-import Foundation
-import Testing
-import Wax
+**Step 3: Gate on relative regressions, not absolute shared-runner latency**
 
-@Test("Benchmark: remember() 100 frames, text-only")
-func benchmarkRemember100Frames() async throws {
-    try await TempFiles.withTempFile { url in
-        var config = OrchestratorConfig.default
-        config.enableVectorSearch = false
+- Keep hard thresholds only behind explicit perf-lab env flags.
+- In CI, compare against checked-in/saved baselines and fail on meaningful deltas (for example, p95/p99 relative increase thresholds).
+- Record sample count and environment in benchmark output so regressions are attributable.
 
-        let orchestrator = try await MemoryOrchestrator(at: url, config: config)
-        let content = String(repeating: "The quick brown fox jumps over the lazy dog. ", count: 20)
-
-        let start = ContinuousClock.now
-        for i in 0..<100 {
-            try await orchestrator.remember("\(content) Frame \(i)")
-        }
-        try await orchestrator.flush()
-        let ingestElapsed = ContinuousClock.now - start
-
-        // recall benchmark
-        let recallStart = ContinuousClock.now
-        for _ in 0..<50 {
-            _ = try await orchestrator.recall(query: "quick brown fox")
-        }
-        let recallElapsed = ContinuousClock.now - recallStart
-
-        try await orchestrator.close()
-
-        let ingestMs = ingestElapsed.components.seconds * 1000 + ingestElapsed.components.attoseconds / 1_000_000_000_000_000
-        let recallMs = recallElapsed.components.seconds * 1000 + recallElapsed.components.attoseconds / 1_000_000_000_000_000
-
-        print("BENCHMARK remember(100 frames): \(ingestMs) ms")
-        print("BENCHMARK recall(50 queries):    \(recallMs) ms")
-
-        // Regression gate: remember 100 frames should complete < 5s on any Apple Silicon
-        #expect(ingestMs < 5000, "remember() regression: \(ingestMs) ms > 5000 ms budget")
-        // Recall 50 queries should complete < 2s
-        #expect(recallMs < 2000, "recall() regression: \(recallMs) ms > 2000 ms budget")
-    }
-}
-```
-
-**Step 3: Write the vector search scaling benchmark**
-
-```swift
-// Tests/WaxBenchmarks/VectorSearchBenchmark.swift
-import Foundation
-import Testing
-import Wax
-import WaxVectorSearch
-
-@Test("Benchmark: USearch HNSW search at 1K/10K vectors", arguments: [1_000, 10_000])
-func benchmarkVectorSearch(count: Int) async throws {
-    try await TempFiles.withTempFile { url in
-        let wax = try await Wax.create(at: url)
-        let session = try await WaxVectorSearchSession(
-            wax: wax, metric: .cosine, dimensions: 384
-        )
-
-        // Insert random vectors
-        for i in 0..<UInt64(count) {
-            var vec = [Float](repeating: 0, count: 384)
-            for j in 0..<384 { vec[j] = Float.random(in: -1...1) }
-            let norm = sqrt(vec.reduce(0) { $0 + $1 * $1 })
-            vec = vec.map { $0 / norm }
-            try await session.add(frameId: i, vector: vec)
-        }
-
-        // Query
-        var query = [Float](repeating: 0, count: 384)
-        for j in 0..<384 { query[j] = Float.random(in: -1...1) }
-        let qnorm = sqrt(query.reduce(0) { $0 + $1 * $1 })
-        query = query.map { $0 / qnorm }
-
-        let start = ContinuousClock.now
-        let iterations = 100
-        for _ in 0..<iterations {
-            _ = try await session.search(vector: query, topK: 10)
-        }
-        let elapsed = ContinuousClock.now - start
-        let perQueryUs = (elapsed / iterations).components.attoseconds / 1_000_000_000_000
-
-        print("BENCHMARK vector search \(count) vectors: \(perQueryUs) µs/query")
-        // At 10K vectors, HNSW top-10 should be < 5ms per query
-        #expect(perQueryUs < 5_000, "vector search regression at \(count): \(perQueryUs) µs > 5000 µs")
-
-        try await wax.close()
-    }
-}
-```
-
-**Step 4: Write hybrid search benchmark**
-
-```swift
-// Tests/WaxBenchmarks/HybridSearchBenchmark.swift
-import Foundation
-import Testing
-import Wax
-
-@Test("Benchmark: hybrid recall with RRF fusion, 500 frames")
-func benchmarkHybridRecall() async throws {
-    try await TempFiles.withTempFile { url in
-        var config = OrchestratorConfig.default
-        config.enableVectorSearch = true
-
-        let embedder = DeterministicTextEmbedder(
-            dimensions: 384, normalize: true,
-            identity: EmbeddingIdentity(provider: "test", model: "bench", dimensions: 384, normalized: true),
-            executionMode: .onDeviceOnly
-        )
-        let orchestrator = try await MemoryOrchestrator(at: url, config: config, embedder: embedder)
-
-        for i in 0..<500 {
-            try await orchestrator.remember("Document \(i) about Swift concurrency and actor isolation patterns")
-        }
-        try await orchestrator.flush()
-
-        let start = ContinuousClock.now
-        for _ in 0..<20 {
-            _ = try await orchestrator.recall(query: "actor isolation")
-        }
-        let elapsed = ContinuousClock.now - start
-        let perRecallMs = (elapsed / 20).components.seconds * 1000 + (elapsed / 20).components.attoseconds / 1_000_000_000_000_000
-
-        print("BENCHMARK hybrid recall (500 frames): \(perRecallMs) ms/query")
-        #expect(perRecallMs < 200, "hybrid recall regression: \(perRecallMs) ms > 200 ms budget")
-
-        try await orchestrator.close()
-    }
-}
-```
-
-**Step 5: Run benchmarks to verify they pass**
+**Step 4: Verify**
 
 ```bash
-swift test --filter WaxBenchmarks
+swift test --filter RAGPerformanceBenchmarks
 ```
 
-**Step 6: Commit**
+**Step 5: Commit**
 
 ```bash
-git add Tests/WaxBenchmarks/ Package.swift
-git commit -m "feat: add benchmark suite for remember/recall, vector search, and hybrid search"
+git add Tests/WaxIntegrationTests/RAGBenchmarks.swift Tests/WaxIntegrationTests/RAGBenchmarkSupport.swift
+git commit -m "test: extend existing benchmark harness with deterministic regression coverage"
 ```
 
 ---
@@ -244,8 +109,8 @@ if options.dedup {
 
 **Files:**
 - Create: `Sources/WaxCore/ContentHasher.swift`
-- Modify: `Sources/WaxCore/FileFormat/FrameMeta.swift` — add `contentHash` field
 - Modify: `Sources/Wax/Orchestrator/MemoryOrchestrator.swift` — dedup check in `remember()`
+- Modify: `Sources/Wax/WaxSession.swift` — add metadata lookup helper over existing frame metadata APIs
 - Create: `Tests/WaxCoreTests/ContentHasherTests.swift`
 - Create: `Tests/WaxIntegrationTests/DeduplicationTests.swift`
 
@@ -310,35 +175,41 @@ import Foundation
 import Testing
 import Wax
 
-@Test func rememberIdenticalContentTwiceCreatesOneFrame() async throws {
+@Test func rememberIdenticalContentTwiceIsIdempotent() async throws {
     try await TempFiles.withTempFile { url in
         var config = OrchestratorConfig.default
         config.enableVectorSearch = false
 
         let orchestrator = try await MemoryOrchestrator(at: url, config: config)
         try await orchestrator.remember("Duplicate content test")
-        try await orchestrator.remember("Duplicate content test") // same content
         try await orchestrator.flush()
 
-        let ctx = try await orchestrator.recall(query: "Duplicate content")
-        // Should have exactly 1 result, not 2
-        #expect(ctx.items.count == 1, "Expected 1 frame, got \(ctx.items.count) — dedup failed")
+        let afterFirst = await orchestrator.runtimeStats().frameCount
+        try await orchestrator.remember("Duplicate content test")
+        try await orchestrator.flush()
+        let afterSecond = await orchestrator.runtimeStats().frameCount
+
+        // Remembering identical content should not add new document/chunk frames.
+        #expect(afterSecond == afterFirst)
         try await orchestrator.close()
     }
 }
 
-@Test func rememberDifferentContentCreatesSeparateFrames() async throws {
+@Test func rememberDifferentContentIncreasesFrameCount() async throws {
     try await TempFiles.withTempFile { url in
         var config = OrchestratorConfig.default
         config.enableVectorSearch = false
 
         let orchestrator = try await MemoryOrchestrator(at: url, config: config)
         try await orchestrator.remember("First content")
+        try await orchestrator.flush()
+        let afterFirst = await orchestrator.runtimeStats().frameCount
+
         try await orchestrator.remember("Second content")
         try await orchestrator.flush()
+        let afterSecond = await orchestrator.runtimeStats().frameCount
 
-        let ctx = try await orchestrator.recall(query: "content")
-        #expect(ctx.items.count >= 2, "Expected 2+ frames for different content")
+        #expect(afterSecond > afterFirst)
         try await orchestrator.close()
     }
 }
@@ -349,11 +220,11 @@ import Wax
 ```bash
 swift test --filter DeduplicationTests
 ```
-Expected: `rememberIdenticalContentTwiceCreatesOneFrame` FAILS (2 frames created).
+Expected: `rememberIdenticalContentTwiceIsIdempotent` FAILS before implementation.
 
-**Step 7: Add `contentHash` to FrameMeta**
+**Step 7: Define metadata key (no binary schema change)**
 
-In `Sources/WaxCore/FileFormat/FrameMeta.swift`, add an optional `contentHash` field. This is stored in frame metadata entries, not as a new binary field, to maintain format compatibility:
+Do **not** add a binary field to `FrameMeta`. Keep format compatibility by storing the content hash inside existing metadata entries:
 
 ```swift
 // In FrameMeta or as a metadata key constant
@@ -375,7 +246,7 @@ public func remember(_ content: String, metadata: [String: String] = [:]) async 
     let contentHash = ContentHasher.hash(contentData)
     let hashHex = contentHash.map { String(format: "%02x", $0) }.joined()
 
-    if let existingFrameId = try await session.findFrameByMetadata(
+    if let existingFrameId = await session.findFrameByMetadata(
         key: WaxMetadataKeys.contentHash, value: hashHex
     ) {
         // Identical content already ingested — skip
@@ -391,13 +262,15 @@ public func remember(_ content: String, metadata: [String: String] = [:]) async 
 
 **Step 9: Implement `findFrameByMetadata` on WaxSession**
 
-Add a lookup method to `WaxSession` that scans the TOC's frame metadata for a matching key-value pair. This uses the in-memory frame list (already loaded on open):
+Add a lookup method to `WaxSession` that scans existing frame metadata via public Wax APIs:
 
 ```swift
-public func findFrameByMetadata(key: String, value: String) async throws -> UInt64? {
-    let toc = await wax.currentTOC()
-    for frame in toc.frames {
-        if let meta = frame.metadata, meta.entries[key] == value {
+public func findFrameByMetadata(key: String, value: String) async -> UInt64? {
+    let frames = await wax.frameMetas()
+    for frame in frames where frame.status == .active && frame.supersededBy == nil {
+        if let meta = frame.metadata,
+           meta.entries[key] == value,
+           frame.role == .document {
             return frame.id
         }
     }
@@ -415,7 +288,7 @@ Expected: both PASS.
 **Step 11: Commit**
 
 ```bash
-git add Sources/WaxCore/ContentHasher.swift Sources/WaxCore/FileFormat/FrameMeta.swift \
+git add Sources/WaxCore/ContentHasher.swift \
     Sources/Wax/Orchestrator/MemoryOrchestrator.swift Sources/Wax/WaxSession.swift \
     Tests/WaxCoreTests/ContentHasherTests.swift Tests/WaxIntegrationTests/DeduplicationTests.swift
 git commit -m "feat: add frame content dedup via SHA-256 hash in remember()"
@@ -425,7 +298,9 @@ git commit -m "feat: add frame content dedup via SHA-256 hash in remember()"
 
 ## Task 3: Store-Level Embedding Model Binding
 
-**Why:** A user could open a `.wax` file with MiniLM (384-dim), close it, then reopen with a 768-dim model. Wax validates dimensions per-operation but not per-store. Memvid prevents this at the file level.
+**Why:** A user can create a `.wax` store with one embedding model and reopen it with another. We need a store-level binding that is validated at open/ingest time.
+
+**False-positive cleanup:** keep package layering clean. `WaxCore` must not depend on `WaxVectorSearch` types.
 
 **Memvid reference:**
 ```rust
@@ -436,27 +311,18 @@ pub struct EmbeddingIdentity {
     pub dimension:  Option<u32>,
     pub normalized: Option<bool>,
 }
-
-// memvid-main/src/memvid/mutation.rs:3326-3382
-// Fail-fast if incoming embeddings have mismatched dimensions
-if incoming_dimension != existing_dimension {
-    return Err(MemvidError::VecDimensionMismatch {
-        expected: existing_dimension,
-        actual: incoming_dimension,
-    });
-}
 ```
 
-**Wax already has:** `EmbeddingIdentity` struct at `Sources/WaxVectorSearch/Embeddings/EmbeddingProvider.swift:27-44` and per-frame metadata storage at `Sources/Wax/VectorSearchSession.swift:99-108`. The TOC has a `memory_binding` placeholder slot at `Sources/WaxCore/FileFormat/WaxTOC.swift:124`.
-
 **Files:**
-- Create: `Sources/WaxCore/FileFormat/MemoryBinding.swift`
-- Modify: `Sources/WaxCore/FileFormat/WaxTOC.swift` — encode/decode `MemoryBinding`
-- Modify: `Sources/Wax/Orchestrator/MemoryOrchestrator.swift` — validate on open
+- Create: `Sources/WaxCore/FileFormat/MemoryBinding.swift` (pure data type only)
+- Modify: `Sources/WaxCore/FileFormat/WaxTOC.swift` (persist/restore binding in reserved slot)
+- Modify: `Sources/WaxCore/Wax.swift` (add binding read/write actor APIs)
+- Create: `Sources/Wax/Embeddings/MemoryBindingCompatibility.swift` (maps `EmbeddingIdentity` to `MemoryBinding` and checks compatibility)
+- Modify: `Sources/Wax/Orchestrator/MemoryOrchestrator.swift` (validate on init; set binding on first successful embedding ingest)
 - Create: `Tests/WaxCoreTests/MemoryBindingTests.swift`
 - Create: `Tests/WaxIntegrationTests/ModelBindingTests.swift`
 
-**Step 1: Write failing test for MemoryBinding codec**
+**Step 1: TDD — codec test for `MemoryBinding`**
 
 ```swift
 // Tests/WaxCoreTests/MemoryBindingTests.swift
@@ -477,322 +343,180 @@ import Testing
     var decoder = try BinaryDecoder(data: encoder.data)
     let decoded = try MemoryBinding.decode(from: &decoder)
 
-    #expect(decoded.embeddingProvider == "local")
-    #expect(decoded.embeddingModel == "all-MiniLM-L6-v2")
-    #expect(decoded.embeddingDimensions == 384)
-    #expect(decoded.embeddingNormalized == true)
-}
-
-@Test func memoryBindingNilFieldsRoundTrip() throws {
-    let binding = MemoryBinding(
-        embeddingProvider: nil,
-        embeddingModel: nil,
-        embeddingDimensions: nil,
-        embeddingNormalized: nil
-    )
-    var encoder = BinaryEncoder()
-    var mutable = binding
-    try mutable.encode(to: &encoder)
-
-    var decoder = try BinaryDecoder(data: encoder.data)
-    let decoded = try MemoryBinding.decode(from: &decoder)
-
-    #expect(decoded.embeddingProvider == nil)
-    #expect(decoded.embeddingDimensions == nil)
+    #expect(decoded == binding)
 }
 ```
 
-**Step 2: Run to verify failure**
-
-```bash
-swift test --filter MemoryBindingTests
-```
-
-**Step 3: Implement MemoryBinding**
+**Step 2: Implement `MemoryBinding` (no `EmbeddingIdentity` reference in WaxCore)**
 
 ```swift
 // Sources/WaxCore/FileFormat/MemoryBinding.swift
 import Foundation
 
-/// Persisted embedding model identity for a .wax store.
-/// Prevents mixing embeddings from different models.
-///
-/// Inspired by memvid's EmbeddingIdentity (memvid-main/src/types/embedding_identity.rs:17-23)
-/// and dimension validation (memvid-main/src/memvid/mutation.rs:3326-3382).
 public struct MemoryBinding: Equatable, Sendable {
     public var embeddingProvider: String?
     public var embeddingModel: String?
     public var embeddingDimensions: UInt32?
     public var embeddingNormalized: Bool?
-
-    public init(
-        embeddingProvider: String? = nil,
-        embeddingModel: String? = nil,
-        embeddingDimensions: UInt32? = nil,
-        embeddingNormalized: Bool? = nil
-    ) {
-        self.embeddingProvider = embeddingProvider
-        self.embeddingModel = embeddingModel
-        self.embeddingDimensions = embeddingDimensions
-        self.embeddingNormalized = embeddingNormalized
-    }
-
-    public func isCompatible(with identity: EmbeddingIdentity) -> Bool {
-        if let expected = embeddingDimensions, let actual = identity.dimensions.map(UInt32.init) {
-            if expected != actual { return false }
-        }
-        if let expected = embeddingModel, let actual = identity.model {
-            if expected != actual { return false }
-        }
-        return true
-    }
 }
 
 extension MemoryBinding: BinaryCodable {
     public mutating func encode(to encoder: inout BinaryEncoder) throws {
-        try encoder.encodeOptionalString(embeddingProvider)
-        try encoder.encodeOptionalString(embeddingModel)
-        try encoder.encodeOptionalUInt32(embeddingDimensions)
-        try encoder.encodeOptionalBool(embeddingNormalized)
+        try encoder.encode(embeddingProvider)
+        try encoder.encode(embeddingModel)
+        encoder.encode(embeddingDimensions)
+        let normalizedRaw: UInt8? = embeddingNormalized.map { $0 ? 1 : 0 }
+        encoder.encode(normalizedRaw)
     }
 
     public static func decode(from decoder: inout BinaryDecoder) throws -> MemoryBinding {
-        let provider = try decoder.decodeOptionalString()
-        let model = try decoder.decodeOptionalString()
-        let dimensions = try decoder.decodeOptionalUInt32()
-        let normalized = try decoder.decodeOptionalBool()
-        return MemoryBinding(
-            embeddingProvider: provider,
-            embeddingModel: model,
-            embeddingDimensions: dimensions,
-            embeddingNormalized: normalized
+        let normalizedRaw = try decoder.decodeOptional(UInt8.self)
+        MemoryBinding(
+            embeddingProvider: try decoder.decodeOptional(String.self),
+            embeddingModel: try decoder.decodeOptional(String.self),
+            embeddingDimensions: try decoder.decodeOptional(UInt32.self),
+            embeddingNormalized: normalizedRaw.map { $0 != 0 }
         )
     }
 }
 ```
 
-**Step 4: Run unit test**
+**Step 3: Wire binding into TOC + Wax actor APIs**
+
+- In `WaxTOC`, replace the `memory_binding` placeholder with `MemoryBinding?` encode/decode.
+- Update `WaxTOC.decode` to accept optional tag `0/1` for `memory_binding` (and keep strict behavior for unknown tags).
+- Add compatibility tests:
+  - New code reads old files where `memory_binding` tag is `0`.
+  - New code round-trips files where `memory_binding` tag is `1`.
+  - Explicitly document that older binaries (without this change) cannot read files written with non-empty binding.
+- In `Wax`, add explicit APIs:
+  - `public func memoryBinding() async -> MemoryBinding?`
+  - `public func setMemoryBindingIfMissing(_ binding: MemoryBinding) async throws`
+  - Optional test helper: `public func overwriteMemoryBindingForTesting(_ binding: MemoryBinding?) async throws`
+
+This removes prior false-positive calls to non-existent APIs (`currentTOC()`, `setMemoryBinding()`).
+
+**Step 4: Add compatibility logic in Wax layer**
+
+```swift
+// Sources/Wax/Embeddings/MemoryBindingCompatibility.swift
+import WaxCore
+import WaxVectorSearch
+
+enum MemoryBindingCompatibility {
+    static func binding(from identity: EmbeddingIdentity) -> MemoryBinding {
+        MemoryBinding(
+            embeddingProvider: identity.provider,
+            embeddingModel: identity.model,
+            embeddingDimensions: identity.dimensions.map(UInt32.init),
+            embeddingNormalized: identity.normalized
+        )
+    }
+
+    static func isCompatible(_ binding: MemoryBinding, with identity: EmbeddingIdentity) -> Bool {
+        if let expected = binding.embeddingDimensions, let actual = identity.dimensions.map(UInt32.init), expected != actual { return false }
+        if let expected = binding.embeddingModel, let actual = identity.model, expected != actual { return false }
+        if let expected = binding.embeddingProvider, let actual = identity.provider, expected != actual { return false }
+        if let expected = binding.embeddingNormalized, let actual = identity.normalized, expected != actual { return false }
+        return true
+    }
+}
+```
+
+**Step 5: Validate in `MemoryOrchestrator`**
+
+- On init/open: if store has binding and embedder has identity, fail-fast on incompatibility.
+- During ingest: after first successful embedding write, call `setMemoryBindingIfMissing(...)`.
+
+**Step 6: Integration tests**
+
+```swift
+@Test func reopeningWithDifferentEmbedderThrows() async throws {
+    struct MismatchedEmbedder: EmbeddingProvider {
+        let dimensions: Int = 4
+        let normalize: Bool = true
+        let identity: EmbeddingIdentity? = EmbeddingIdentity(
+            provider: "Other",
+            model: "Other",
+            dimensions: 4,
+            normalized: true
+        )
+        let executionMode: ProviderExecutionMode = .onDeviceOnly
+
+        func embed(_ text: String) async throws -> [Float] {
+            _ = text
+            return [1, 0, 0, 0]
+        }
+    }
+
+    try await TempFiles.withTempFile { url in
+        var config = OrchestratorConfig.default
+        config.enableVectorSearch = true
+
+        let first = try await MemoryOrchestrator(at: url, config: config, embedder: DeterministicTextEmbedder())
+        try await first.remember("seed")
+        try await first.close()
+
+        // Use a test embedder with a different identity (provider/model/dims)
+        let mismatched = MismatchedEmbedder()
+        await #expect(throws: WaxError.self) {
+            _ = try await MemoryOrchestrator(at: url, config: config, embedder: mismatched)
+        }
+    }
+}
+```
+
+**Step 7: Run tests + commit**
 
 ```bash
 swift test --filter MemoryBindingTests
-```
-
-**Step 5: Wire into WaxTOC**
-
-Modify `Sources/WaxCore/FileFormat/WaxTOC.swift`:
-
-Add `memoryBinding: MemoryBinding?` property to `WaxTOC` struct (after `ticketRef`).
-
-In encode (line 124), replace the `UInt8(0)` placeholder:
-```swift
-// Before: encoder.encode(UInt8(0)) // memory_binding absent in v1
-// After:
-try encoder.encode(memoryBinding) { encoder, value in
-    var mutable = value
-    try mutable.encode(to: &encoder)
-}
-```
-
-In decode (line 195), replace the guard:
-```swift
-// Before: let memoryBindingTag = try decoder.decode(UInt8.self)
-//         guard memoryBindingTag == 0 ...
-// After:
-let memoryBinding = try decodeOptional(MemoryBinding.self, from: &decoder)
-```
-
-**Step 6: Write integration test for model mismatch rejection**
-
-```swift
-// Tests/WaxIntegrationTests/ModelBindingTests.swift
-import Foundation
-import Testing
-import Wax
-
-@Test func reopeningWithDifferentEmbedderThrows() async throws {
-    try await TempFiles.withTempFile { url in
-        // Create store with 384-dim embedder
-        let embedder384 = DeterministicTextEmbedder(
-            dimensions: 384, normalize: true,
-            identity: EmbeddingIdentity(provider: "test", model: "model-A", dimensions: 384, normalized: true),
-            executionMode: .onDeviceOnly
-        )
-        var config = OrchestratorConfig.default
-        config.enableVectorSearch = true
-
-        let first = try await MemoryOrchestrator(at: url, config: config, embedder: embedder384)
-        try await first.remember("test content")
-        try await first.close()
-
-        // Reopen with 768-dim embedder — should throw
-        let embedder768 = DeterministicTextEmbedder(
-            dimensions: 768, normalize: true,
-            identity: EmbeddingIdentity(provider: "test", model: "model-B", dimensions: 768, normalized: true),
-            executionMode: .onDeviceOnly
-        )
-
-        await #expect(throws: WaxError.self) {
-            _ = try await MemoryOrchestrator(at: url, config: config, embedder: embedder768)
-        }
-    }
-}
-
-@Test func reopeningWithSameEmbedderSucceeds() async throws {
-    try await TempFiles.withTempFile { url in
-        let embedder = DeterministicTextEmbedder(
-            dimensions: 384, normalize: true,
-            identity: EmbeddingIdentity(provider: "test", model: "model-A", dimensions: 384, normalized: true),
-            executionMode: .onDeviceOnly
-        )
-        var config = OrchestratorConfig.default
-        config.enableVectorSearch = true
-
-        let first = try await MemoryOrchestrator(at: url, config: config, embedder: embedder)
-        try await first.remember("test content")
-        try await first.close()
-
-        // Reopen with same embedder — should succeed
-        let second = try await MemoryOrchestrator(at: url, config: config, embedder: embedder)
-        let ctx = try await second.recall(query: "test")
-        #expect(!ctx.items.isEmpty)
-        try await second.close()
-    }
-}
-```
-
-**Step 7: Implement validation in MemoryOrchestrator.init**
-
-In `Sources/Wax/Orchestrator/MemoryOrchestrator.swift`, in the `init` method, after opening the store:
-
-```swift
-// After: let wax = try await Wax.open(at: url) or Wax.create(at: url)
-// Add:
-if let embedder = embedder, let existingBinding = await wax.currentTOC().memoryBinding {
-    if let identity = embedder.identity {
-        guard existingBinding.isCompatible(with: identity) else {
-            throw WaxError.io(
-                "Embedding model mismatch: store bound to \(existingBinding.embeddingModel ?? "unknown") " +
-                "(\(existingBinding.embeddingDimensions.map(String.init) ?? "?")d), " +
-                "but embedder provides \(identity.model ?? "unknown") (\(identity.dimensions.map(String.init) ?? "?")d)"
-            )
-        }
-    }
-}
-
-// On first embed, write binding to TOC:
-// In remember(), after first successful embedding batch, if memoryBinding is nil:
-if await wax.currentTOC().memoryBinding == nil, let identity = embedder?.identity {
-    let binding = MemoryBinding(
-        embeddingProvider: identity.provider,
-        embeddingModel: identity.model,
-        embeddingDimensions: identity.dimensions.map(UInt32.init),
-        embeddingNormalized: identity.normalized
-    )
-    try await wax.setMemoryBinding(binding)
-}
-```
-
-**Step 8: Run integration tests**
-
-```bash
 swift test --filter ModelBindingTests
-```
-
-**Step 9: Commit**
-
-```bash
 git add Sources/WaxCore/FileFormat/MemoryBinding.swift Sources/WaxCore/FileFormat/WaxTOC.swift \
+    Sources/WaxCore/Wax.swift Sources/Wax/Embeddings/MemoryBindingCompatibility.swift \
     Sources/Wax/Orchestrator/MemoryOrchestrator.swift \
     Tests/WaxCoreTests/MemoryBindingTests.swift Tests/WaxIntegrationTests/ModelBindingTests.swift
-git commit -m "feat: store-level embedding model binding with mismatch prevention"
+git commit -m "feat: bind embedding model identity at store level with compatibility checks"
 ```
 
 ---
 
 ## Task 4: Version Relations (Sets/Updates/Extends)
 
-**Why:** Wax has fact retraction (`system_to_ms` soft-delete) but no way to express "this fact updates a previous value" or "this fact extends a list." Knowledge evolution requires version semantics.
+**Why:** Wax supports retract but not explicit semantic relations for evolving facts.
 
-**Memvid reference:**
-```rust
-// memvid-main/src/types/memory_card.rs:76-86
-pub enum VersionRelation {
-    Sets = 0,     // First time this slot is being set
-    Updates = 1,  // Replaces a previous value entirely
-    Extends = 2,  // Adds to existing value
-    Retracts = 3, // Negates/removes a previous value
-}
-
-// memvid-main/src/types/memory_card.rs:248-272
-pub fn supersedes(&self, other: &MemoryCard) -> bool {
-    match self.version_relation {
-        VersionRelation::Updates | VersionRelation::Retracts => {
-            let self_time = self.event_date.or(self.document_date).unwrap_or(0);
-            let other_time = other.event_date.or(other.document_date).unwrap_or(0);
-            self_time > other_time
-        }
-        VersionRelation::Sets | VersionRelation::Extends => false,
-    }
-}
-```
-
-**Wax already has:** `StructuredOp.retractFact` in `Sources/WaxTextSearch/FTS5SearchEngine.swift:527`, bi-temporal `sm_fact_span` table with `system_to_ms` soft-delete, and `StructuredMemoryHasher` for fact dedup.
+**False-positive cleanup:** integration tests must use public APIs only (no direct `session.textEngine` access).
 
 **Files:**
 - Create: `Sources/WaxCore/StructuredMemory/VersionRelation.swift`
-- Modify: `Sources/WaxTextSearch/StructuredMemorySchema.swift` — add column
-- Modify: `Sources/WaxTextSearch/FTS5SearchEngine.swift` — add `VersionRelation` to `assertFact`
-- Modify: `Sources/WaxCLI/FactsCommand.swift` — expose `--relation` flag
+- Modify: `Sources/WaxTextSearch/StructuredMemorySchema.swift` (`version_relation` column on `sm_fact`)
+- Modify: `Sources/WaxTextSearch/FTS5Schema.swift` (schema version bump + migration path)
+- Modify: `Sources/WaxTextSearch/FTS5SearchEngine.swift` (store relation and supersede on update/retract semantics)
+- Modify: `Sources/Wax/StructuredMemorySession.swift` (thread relation through)
+- Modify: `Sources/Wax/WaxSession.swift` (thread relation through)
+- Modify: `Sources/Wax/Orchestrator/MemoryOrchestrator.swift` (`assertFact(... relation: VersionRelation = .sets, ...)`)
+- Modify: `Sources/WaxCLI/FactsCommand.swift` (`--relation`)
 - Create: `Tests/WaxIntegrationTests/VersionRelationTests.swift`
 
-**Step 1: Write failing tests**
+**Step 1: TDD — unit enum tests**
 
 ```swift
-// Tests/WaxIntegrationTests/VersionRelationTests.swift
-import Testing
-@testable import WaxCore
-
 @Test func versionRelationRawValues() {
     #expect(VersionRelation.sets.rawValue == 0)
     #expect(VersionRelation.updates.rawValue == 1)
     #expect(VersionRelation.extends.rawValue == 2)
     #expect(VersionRelation.retracts.rawValue == 3)
 }
-
-@Test func updatesSupersedes() {
-    #expect(VersionRelation.updates.supersedes == true)
-    #expect(VersionRelation.retracts.supersedes == true)
-    #expect(VersionRelation.sets.supersedes == false)
-    #expect(VersionRelation.extends.supersedes == false)
-}
 ```
 
-**Step 2: Run to verify failure**
-
-```bash
-swift test --filter VersionRelationTests
-```
-
-**Step 3: Implement VersionRelation**
+**Step 2: Implement enum in WaxCore**
 
 ```swift
-// Sources/WaxCore/StructuredMemory/VersionRelation.swift
-import Foundation
-
-/// Semantic versioning for facts, inspired by memvid's MemoryCard version relations
-/// (memvid-main/src/types/memory_card.rs:76-86).
-///
-/// - `sets`: First assertion of this (subject, predicate) pair. Immutable baseline.
-/// - `updates`: Replaces the previous value entirely. Auto-retracts prior open spans.
-/// - `extends`: Additive — appends to the existing value set (e.g., list of hobbies).
-/// - `retracts`: Negates the previous value (existing behavior via `system_to_ms`).
 public enum VersionRelation: UInt8, Sendable, Equatable, CaseIterable {
     case sets = 0
     case updates = 1
     case extends = 2
     case retracts = 3
 
-    /// Whether this relation supersedes prior facts with the same (subject, predicate).
     public var supersedes: Bool {
         switch self {
         case .updates, .retracts: return true
@@ -802,120 +526,79 @@ public enum VersionRelation: UInt8, Sendable, Equatable, CaseIterable {
 }
 ```
 
-**Step 4: Run unit test**
+**Step 3: Plumb relation through public APIs**
 
-```bash
-swift test --filter VersionRelationTests
-```
+- Add `relation: VersionRelation = .sets` to:
+  - `FTS5SearchEngine.assertFact`
+  - `StructuredMemorySession.assertFact`
+  - `WaxSession.assertFact`
+  - `MemoryOrchestrator.assertFact`
 
-**Step 5: Add `version_relation` column to `sm_fact` schema**
+When `relation.supersedes == true`, close open spans for same `(subject, predicate)` before inserting new span.
 
-In `Sources/WaxTextSearch/StructuredMemorySchema.swift`, add to the CREATE TABLE for `sm_fact`:
+Add explicit migration:
+- bump SQLite `user_version`
+- `ALTER TABLE sm_fact ADD COLUMN version_relation INTEGER NOT NULL DEFAULT 0` for existing stores
+- add migration test fixture(s) from pre-migration schema to validate open/read/write upgrade path.
 
-```sql
-version_relation INTEGER NOT NULL DEFAULT 0
-```
-
-**Step 6: Update `assertFact` to accept VersionRelation**
-
-In `Sources/WaxTextSearch/FTS5SearchEngine.swift`, modify the `assertFact` signature:
-
-```swift
-public func assertFact(
-    subject: EntityKey,
-    predicate: PredicateKey,
-    object: FactValue,
-    valid: StructuredTimeRange,
-    system: StructuredTimeRange,
-    evidence: [StructuredEvidence],
-    relation: VersionRelation = .sets  // NEW parameter with backward-compatible default
-) async throws -> FactRowID {
-```
-
-When `relation == .updates`, before inserting the new fact span, auto-retract all open spans for the same (subject, predicate):
-
-```swift
-if relation.supersedes {
-    // Auto-retract open spans for same (subject, predicate)
-    try retractOpenSpansForSubjectPredicate(
-        subject: subject, predicate: predicate, atMs: system.fromMs
-    )
-}
-```
-
-**Step 7: Write integration test for updates superseding**
+**Step 4: Integration test via `MemoryOrchestrator` public API**
 
 ```swift
 @Test func updateFactRetractsPrior() async throws {
     try await TempFiles.withTempFile { url in
         var config = OrchestratorConfig.default
         config.enableVectorSearch = false
+        config.enableStructuredMemory = true
         let orchestrator = try await MemoryOrchestrator(at: url, config: config)
 
-        // Assert initial fact
-        try await orchestrator.session.textEngine.assertFact(
+        _ = try await orchestrator.assertFact(
             subject: EntityKey("user:chris"),
             predicate: PredicateKey("employer"),
             object: .string("Google"),
-            valid: StructuredTimeRange(fromMs: 0),
-            system: StructuredTimeRange(fromMs: 1000),
-            evidence: [],
             relation: .sets
         )
 
-        // Update fact
-        try await orchestrator.session.textEngine.assertFact(
+        _ = try await orchestrator.assertFact(
             subject: EntityKey("user:chris"),
             predicate: PredicateKey("employer"),
             object: .string("Anthropic"),
-            valid: StructuredTimeRange(fromMs: 0),
-            system: StructuredTimeRange(fromMs: 2000),
-            evidence: [],
             relation: .updates
         )
 
-        try await orchestrator.session.textEngine.flushPendingStructuredOps()
-
-        // Query current facts — should only see "Anthropic"
-        let facts = try await orchestrator.session.textEngine.queryFacts(
-            subject: EntityKey("user:chris"),
+        let result = try await orchestrator.facts(
+            about: EntityKey("user:chris"),
             predicate: PredicateKey("employer"),
-            asOf: .latest
+            asOfMs: Int64.max,
+            limit: 10
         )
-        #expect(facts.count == 1)
-        #expect(facts.first?.object == .string("Anthropic"))
-
+        #expect(result.hits.count == 1)
+        #expect(result.hits.first?.fact.object == .string("Anthropic"))
         try await orchestrator.close()
     }
 }
 ```
 
-**Step 8: Run all tests**
-
-```bash
-swift test --filter VersionRelation
-```
-
-**Step 9: Update CLI `fact-assert` command**
-
-In `Sources/WaxCLI/FactsCommand.swift`, add a `--relation` option:
+**Step 5: CLI support**
 
 ```swift
-@Option(name: .long, help: "Version relation: sets, updates, extends, retracts (default: sets)")
+@Option(name: .long, help: "Version relation: sets, updates, extends, retracts")
 var relation: String = "sets"
 ```
 
-Parse to `VersionRelation` and pass to `assertFact`.
+Parse into `VersionRelation` and pass to `memory.assertFact(...)`.
 
-**Step 10: Commit**
+**Step 6: Run tests + commit**
 
 ```bash
+swift test --filter VersionRelationTests
 git add Sources/WaxCore/StructuredMemory/VersionRelation.swift \
     Sources/WaxTextSearch/StructuredMemorySchema.swift \
+    Sources/WaxTextSearch/FTS5Schema.swift \
     Sources/WaxTextSearch/FTS5SearchEngine.swift \
-    Sources/WaxCLI/FactsCommand.swift \
+    Sources/Wax/StructuredMemorySession.swift Sources/Wax/WaxSession.swift \
+    Sources/Wax/Orchestrator/MemoryOrchestrator.swift Sources/WaxCLI/FactsCommand.swift \
     Tests/WaxIntegrationTests/VersionRelationTests.swift
-git commit -m "feat: add version relations (sets/updates/extends/retracts) to fact graph"
+git commit -m "feat: add fact version relations and public API support"
 ```
 
 ---
@@ -952,9 +635,10 @@ fn resolve_fixed(&self, phrase: &str) -> Option<TemporalResolution> {
 **Files:**
 - Create: `Sources/Wax/Temporal/TemporalNormalizer.swift`
 - Create: `Sources/Wax/Temporal/TemporalResolution.swift`
-- Modify: `Sources/Wax/UnifiedSearch/SearchRequest.swift` — add temporal phrase support
 - Modify: `Sources/Wax/Orchestrator/MemoryOrchestrator.swift` — integrate temporal in `recall()`
+- Modify: `Sources/Wax/RAG/FastRAGContextBuilder.swift` — plumb `timeRange` into `SearchRequest`
 - Create: `Tests/WaxTests/TemporalNormalizerTests.swift`
+- Create: `Tests/WaxIntegrationTests/TemporalRecallIntegrationTests.swift`
 
 **Step 1: Write comprehensive failing tests**
 
@@ -1057,7 +741,7 @@ public struct TemporalResolution: Sendable, Equatable {
     public var start: Date
     public var end: Date?
 
-    /// Convert to milliseconds-since-epoch range for SearchRequest.TimeRange
+    /// Convert to milliseconds-since-epoch range for `TimeRange`
     public var asTimeRange: (afterMs: Int64, beforeMs: Int64) {
         let startMs = Int64(start.timeIntervalSince1970 * 1000)
         let endMs: Int64
@@ -1291,35 +975,51 @@ swift test --filter TemporalNormalizerTests
 
 **Step 6: Integrate into recall()**
 
-In `Sources/Wax/Orchestrator/MemoryOrchestrator.swift`, modify `recall()` to detect temporal phrases in the query and add a `TimeRange` to the `SearchRequest`:
+In `Sources/Wax/Orchestrator/MemoryOrchestrator.swift`, parse temporal phrases in `recall()` and thread `timeRange` through the existing recall pipeline:
+`recall(...) -> buildRecallContext(...) -> FastRAGContextBuilder.build(...) -> SearchRequest(timeRange:)`.
 
 ```swift
 public func recall(query: String, ...) async throws -> RAGContext {
-    var request = SearchRequest(query: query, ...)
-
-    // Temporal phrase detection: if query starts with a temporal marker, extract range
+    let embedding = try await queryEmbedding(for: query, policy: .ifAvailable)
     let normalizer = TemporalNormalizer(anchor: Date())
-    if let temporalRange = extractTemporalRange(from: query, normalizer: normalizer) {
-        request.timeRange = SearchRequest.TimeRange(
-            after: temporalRange.afterMs,
-            before: temporalRange.beforeMs
-        )
-    }
-    // ... existing recall logic ...
+    let parsedRange = extractTemporalRange(from: query, normalizer: normalizer)
+    let timeRange = parsedRange.map { TimeRange(after: $0.afterMs, before: $0.beforeMs) }
+    return try await buildRecallContext(query: query, embedding: embedding, timeRange: timeRange)
+}
+
+private func buildRecallContext(
+    query: String,
+    embedding: [Float]?,
+    frameFilter: FrameFilter? = nil,
+    timeRange: TimeRange? = nil
+) async throws -> RAGContext {
+    return try await ragBuilder.build(
+        query: query,
+        embedding: embedding,
+        vectorEnginePreference: preference,
+        wax: wax,
+        session: session,
+        frameFilter: frameFilter,
+        timeRange: timeRange,
+        accessStatsManager: config.enableAccessStatsScoring ? accessStatsManager : nil,
+        config: ragConfigForRecall()
+    )
 }
 
 private func extractTemporalRange(
     from query: String,
     normalizer: TemporalNormalizer
 ) -> (afterMs: Int64, beforeMs: Int64)? {
-    let temporalPrefixes = [
-        "last week", "this week", "yesterday", "today", "last month",
-        "this month", "next week", "next month"
-    ]
-    let lower = query.lowercased()
-    for prefix in temporalPrefixes {
-        if lower.contains(prefix) {
-            if let resolution = try? normalizer.resolve(prefix) {
+    // Temporal phrase detection: parse a temporal subphrase from full query text.
+    // Sliding n-gram scan over the query (max phrase len 4 words).
+    // This supports phrases embedded in longer queries:
+    // "what did we discuss last week about vector search"
+    let words = query.lowercased().split(whereSeparator: \.isWhitespace).map(String.init)
+    guard !words.isEmpty else { return nil }
+    for window in stride(from: min(4, words.count), through: 1, by: -1) {
+        for i in 0...(words.count - window) {
+            let candidate = words[i..<(i + window)].joined(separator: " ")
+            if let resolution = try? normalizer.resolve(candidate) {
                 return resolution.asTimeRange
             }
         }
@@ -1328,11 +1028,19 @@ private func extractTemporalRange(
 }
 ```
 
-**Step 7: Commit**
+Also update `FastRAGContextBuilder.build` signature to accept `timeRange: TimeRange?` and pass it into the `SearchRequest` initializer.
+
+**Step 7: Add end-to-end integration tests**
+
+Add an integration test that ingests frames with controlled timestamps and asserts that a query containing a temporal phrase (for example, `"last week"`) changes the recalled set via `timeRange`.
+
+**Step 8: Commit**
 
 ```bash
 git add Sources/Wax/Temporal/ Tests/WaxTests/TemporalNormalizerTests.swift \
-    Sources/Wax/Orchestrator/MemoryOrchestrator.swift
+    Tests/WaxIntegrationTests/TemporalRecallIntegrationTests.swift \
+    Sources/Wax/Orchestrator/MemoryOrchestrator.swift \
+    Sources/Wax/RAG/FastRAGContextBuilder.swift
 git commit -m "feat: add temporal NLP parser for date-aware recall queries"
 ```
 
@@ -1455,10 +1163,7 @@ import Testing
 
 @Test func enrichmentPipelineProcessesEnqueuedTasks() async throws {
     let pipeline = EnrichmentPipeline()
-    var processedIds: [UInt64] = []
-
     await pipeline.start { task in
-        processedIds.append(task.frameId)
         return EnrichmentResult(
             frameId: task.frameId,
             keywords: KeywordExtractor.extract(from: task.text),
@@ -1466,15 +1171,14 @@ import Testing
         )
     }
 
-    await pipeline.enqueue(EnrichmentTask(frameId: 1, text: "Swift concurrency is great"))
-    await pipeline.enqueue(EnrichmentTask(frameId: 2, text: "Rust ownership model"))
+    try await pipeline.enqueue(EnrichmentTask(frameId: 1, text: "Swift concurrency is great"))
+    try await pipeline.enqueue(EnrichmentTask(frameId: 2, text: "Rust ownership model"))
 
-    // Wait for processing
-    try await Task.sleep(for: .milliseconds(500))
-    await pipeline.stop()
+    // Deterministic wait for drain
+    try await pipeline.waitUntilProcessed(atLeast: 2, timeout: .seconds(2))
+    try await pipeline.stop()
 
-    #expect(processedIds.contains(1))
-    #expect(processedIds.contains(2))
+    #expect(await pipeline.stats >= 2)
 }
 ```
 
@@ -1506,39 +1210,83 @@ import Foundation
 /// Inspired by memvid's enrichment worker
 /// (memvid-main/src/enrichment_worker.rs:359-438).
 public actor EnrichmentPipeline {
+    private enum State { case idle, running, stopping, stopped }
+
+    private var state: State = .idle
     private var stream: AsyncStream<EnrichmentTask>?
     private var continuation: AsyncStream<EnrichmentTask>.Continuation?
     private var processingTask: Task<Void, Never>?
     private var processedCount: UInt64 = 0
+    private var pendingCount: UInt64 = 0
 
     public init() {}
 
     public func start(
         handler: @escaping @Sendable (EnrichmentTask) async -> EnrichmentResult
     ) {
+        guard state == .idle || state == .stopped else { return }
         let (stream, continuation) = AsyncStream<EnrichmentTask>.makeStream()
         self.stream = stream
         self.continuation = continuation
+        state = .running
 
         processingTask = Task {
             for await task in stream {
                 let _ = await handler(task)
                 processedCount += 1
+                if pendingCount > 0 { pendingCount -= 1 }
             }
         }
     }
 
-    public func enqueue(_ task: EnrichmentTask) {
+    public func enqueue(_ task: EnrichmentTask) throws {
+        guard state == .running, continuation != nil else {
+            throw WaxError.io("enrichment pipeline not running")
+        }
+        pendingCount += 1
         continuation?.yield(task)
     }
 
-    public func stop() {
+    public func stop(timeout: Duration = .seconds(2)) async throws {
+        guard state == .running || state == .stopping else { return }
+        state = .stopping
         continuation?.finish()
-        processingTask?.cancel()
+        if let processingTask {
+            let completed = await withTaskGroup(of: Bool.self) { group in
+                group.addTask {
+                    _ = await processingTask.result
+                    return true
+                }
+                group.addTask {
+                    try? await Task.sleep(for: timeout)
+                    return false
+                }
+                let first = await group.next() ?? false
+                group.cancelAll()
+                return first
+            }
+            if !completed {
+                processingTask.cancel()
+            }
+        }
         processingTask = nil
+        state = .stopped
     }
 
     public var stats: UInt64 { processedCount }
+
+    public func waitUntilProcessed(atLeast target: UInt64, timeout: Duration) async throws {
+        let deadline = ContinuousClock.now + timeout
+        while processedCount < target {
+            if ContinuousClock.now >= deadline {
+                throw WaxError.io("enrichment timeout waiting for \(target) tasks")
+            }
+            if state == .stopped && pendingCount > 0 {
+                throw WaxError.io("enrichment stopped with pending tasks")
+            }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+    }
 }
 ```
 
@@ -1549,10 +1297,10 @@ In `Sources/Wax/Orchestrator/MemoryOrchestrator.swift`, add `enrichmentPipeline`
 ```swift
 // After frame persist + embedding:
 if let pipeline = enrichmentPipeline {
-    for chunk in batchChunks {
-        await pipeline.enqueue(EnrichmentTask(
-            frameId: chunkFrameId,
-            text: chunk.text
+    for (frameId, chunkText) in zip(frameIds, batchChunks) {
+        try await pipeline.enqueue(EnrichmentTask(
+            frameId: frameId,
+            text: chunkText
         ))
     }
 }
@@ -1562,7 +1310,7 @@ Add pipeline lifecycle to `close()`:
 
 ```swift
 public func close() async throws {
-    await enrichmentPipeline?.stop()
+    try await enrichmentPipeline?.stop(timeout: .seconds(2))
     // ... existing close logic ...
 }
 ```
@@ -1588,7 +1336,7 @@ git commit -m "feat: add async enrichment pipeline with keyword extraction"
 
 ## Task 7: iOS Data Protection
 
-**Why:** Wax scores 10/100 on security vs memvid's 78. The fix is trivial — 1 line of code — but currently Wax doesn't set `NSFileProtectionComplete` on `.wax` files, leaving them readable when the device is locked.
+**Why:** Wax currently does not set file protection attributes for `.wax` files on iOS-family platforms. This is a platform-specific hardening task and requires device-level validation for lock-state guarantees.
 
 **Files:**
 - Modify: `Sources/WaxCore/Wax.swift` — set file protection after create/open
@@ -1604,23 +1352,25 @@ import Testing
 
 #if os(iOS)
 @Test func waxFileSetsCompleteProtection() async throws {
-    try await TempFiles.withTempFile { url in
-        let wax = try await Wax.create(at: url)
-        try await wax.close()
+    let url = TempFiles.uniqueURL()
+    defer { try? FileManager.default.removeItem(at: url) }
 
-        let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
-        let protection = attributes[.protectionKey] as? FileProtectionType
-        #expect(protection == .complete)
-    }
+    let wax = try await Wax.create(at: url)
+    try await wax.close()
+
+    let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+    let protection = attributes[.protectionKey] as? FileProtectionType
+    #expect(protection == .complete)
 }
 #endif
 
 @Test func waxFileIsReadableAfterCreate() async throws {
-    try await TempFiles.withTempFile { url in
-        let wax = try await Wax.create(at: url)
-        try await wax.close()
-        #expect(FileManager.default.isReadableFile(atPath: url.path))
-    }
+    let url = TempFiles.uniqueURL()
+    defer { try? FileManager.default.removeItem(at: url) }
+
+    let wax = try await Wax.create(at: url)
+    try await wax.close()
+    #expect(FileManager.default.isReadableFile(atPath: url.path))
 }
 ```
 
@@ -1631,11 +1381,19 @@ In `Sources/WaxCore/Wax.swift`, after creating or opening the file, set the prot
 ```swift
 // After file creation:
 #if os(iOS) || os(watchOS) || os(tvOS) || os(visionOS)
-try? FileManager.default.setAttributes(
+try FileManager.default.setAttributes(
     [.protectionKey: FileProtectionType.complete],
     ofItemAtPath: url.path
 )
 #endif
+```
+
+Run this on iOS simulator/device (not macOS-only `swift test`) and treat simulator lock-state behavior as `Unverified` for confidentiality guarantees. Use a package/app test scheme that includes `WaxCoreTests`:
+
+```bash
+xcodebuild test \
+  -scheme <YourTestScheme> \
+  -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
 
 **Step 3: Run tests**
@@ -1643,6 +1401,8 @@ try? FileManager.default.setAttributes(
 ```bash
 swift test --filter DataProtection
 ```
+
+`swift test` validates compile/runtime basics only; it does not prove locked-device confidentiality. Add a manual/device validation checklist before closing this task.
 
 **Step 4: Commit**
 
@@ -1656,30 +1416,25 @@ git commit -m "feat: set NSFileProtectionComplete on .wax files for iOS data pro
 ## Execution Order & Dependencies
 
 ```
-Task 7 (Data Protection)  ──────────────────────── Independent, trivial
-Task 1 (Benchmarks)       ──────────────────────── Independent, establishes baselines
-Task 2 (Content Dedup)    ──────────────────────── Independent
-Task 3 (Model Binding)    ──────────────────────── Independent (uses TOC slot)
-Task 4 (Version Relations) ─────────────────────── Independent (schema change)
-Task 5 (Temporal NLP)     ──────────────────────── Independent
-Task 6 (Enrichment)       ── depends on Task 2 ── Uses dedup in pipeline
+Wave 1 (parallel): Task 1 (Benchmarks), Task 7 (Data Protection)
+Wave 2 (sequential): Task 2 (Content Dedup) -> Task 3 (Model Binding)
+Wave 3 (sequential): Task 4 (Version Relations) -> Task 5 (Temporal NLP)
+Wave 4 (sequential): Task 6 (Enrichment)
 ```
 
-**Recommended parallel grouping:**
-- **Wave 1** (parallel): Tasks 7, 1, 2 — trivial/foundational
-- **Wave 2** (parallel): Tasks 3, 4, 5 — independent module changes
-- **Wave 3** (sequential): Task 6 — builds on dedup from Task 2
+**Rationale:**
+- Tasks 2/3/4/5/6 all touch `MemoryOrchestrator.swift`, so they should not be developed in parallel.
+- Task 4 requires schema migration groundwork before downstream behavior validation.
+- Task 6 depends on stable ingest semantics from Task 2 and should run last.
 
 ---
 
-## Post-Implementation Scorecard (Expected)
+## Post-Implementation Validation Criteria
 
-| Dimension | Before | After | Delta |
-|---|:---:|:---:|:---:|
-| Ingestion Pipeline | 62 | 80 | +18 |
-| Temporal Intelligence | 40 | 75 | +35 |
-| Embedding System | 82 | 88 | +6 |
-| Structured Memory | 78 | 85 | +7 |
-| Encryption & Security | 10 | 70 | +60 |
-| Benchmark Coverage | 0 | 60 | +60 |
-| **Unweighted Average** | **72** | **83** | **+11** |
+> Numeric score improvements are `Unverified` until measured in this repository.
+
+- All new APIs compile against current target boundaries (`WaxCore` remains independent of `WaxVectorSearch`).
+- Migration tests pass for pre-change structured-memory DB files and pre-change TOC files.
+- Temporal phrase parsing affects recall candidate filtering via `timeRange` in integration tests.
+- Enrichment pipeline has deterministic drain/stop behavior with timeout + cancellation coverage.
+- Benchmark jobs produce deterministic fixture inputs and stable regression signals (relative deltas, not only absolute thresholds).
