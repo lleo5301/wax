@@ -303,7 +303,21 @@ Input validation is present and thorough:
 
 Temp files use `UUID().uuidString` in their names, making path prediction and symlink attacks infeasible.
 
-### 6.6 Crash Injection via Environment Variable [Minor]
+### 6.6 FTS5Serializer Uninitialized Memory on Nil baseAddress [Minor]
+
+**File:** `Sources/WaxTextSearch/FTS5Serializer.swift:37-41`
+
+```swift
+data.withUnsafeBytes { raw in
+    if let base = raw.baseAddress {
+        memcpy(buffer, base, size)
+    }
+}
+```
+
+If `baseAddress` is nil (theoretically impossible for non-empty Data, but the code uses `if let` instead of `guard let ... else { throw }`), the `sqlite3_deserialize` call on line 43 receives uninitialized `sqlite3_malloc64` memory. This should use `guard let` with a thrown error for defensive correctness.
+
+### 6.7 Crash Injection via Environment Variable [Minor]
 
 **File:** `Sources/WaxCore/Wax.swift:2267-2275`
 
@@ -472,8 +486,9 @@ Three unchecked multiplications on deserialized values can overflow on crafted i
 
 ### Minor (Improve for robustness)
 
-10. Decompose `Wax` actor into smaller components.
-11. Move fault injection infrastructure behind `#if DEBUG`.
-12. Add USearch ivar name verification test.
-13. Separate benchmarks from integration tests in CI.
-14. Use consistent error domain types.
+12. Decompose `Wax` actor into smaller components.
+13. Move fault injection infrastructure behind `#if DEBUG`.
+14. Add USearch ivar name verification test.
+15. Separate benchmarks from integration tests in CI.
+16. Use consistent error domain types.
+17. Fix FTS5Serializer `if let` to `guard let` for `baseAddress` nil safety.
