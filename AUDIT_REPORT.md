@@ -392,10 +392,18 @@ The test suite contains ~80 test files covering:
 | `USearchSendable` ivar name stability | No test verifies the `"nativeIndex"` ivar name exists on the current USearch version |
 | CLI `defer { Task { } }` close behavior | No test verifies data is flushed before process exit |
 | MCP server shutdown | No test for graceful shutdown completing pending operations |
+| Task cancellation | No tests verify correct behavior when `Task.cancel()` is called mid-operation (e.g., during embedding, search, or WAL write) |
+| Disk-full / ENOSPC handling | No tests simulate disk-full conditions; `FDFile.write` returns `ENOSPC` but no test verifies the error propagates correctly or that partial writes are handled |
+| Operations on closed orchestrator | No tests verify that calling methods after `close()` returns appropriate errors rather than crashing or corrupting state |
+| High-concurrency crash scenarios | Existing concurrency tests use modest parallelism; no test exercises 1000+ concurrent operations to surface rare race conditions |
+| Maintenance/compaction under load | WAL compaction and index maintenance are not tested while concurrent reads/writes are in flight |
 
 ### 7.3 Test Anti-patterns [Minor]
 
+- **Trivial "always pass" tests:** `DependencyTests.swift` contains tests that only verify a dependency can be imported — these always pass at compile time and provide zero runtime coverage. They should either test actual functionality or be removed.
+- **Weak search quality assertions:** Several FTS5 and vector search tests assert only that results are non-empty (`#expect(!results.isEmpty)`) without validating ranking order, score ranges, or result relevance. A broken ranking algorithm would pass these tests.
 - Several benchmark tests (`RAGBenchmarks.swift`, `BatchEmbeddingBenchmark.swift`) are in the integration test target and will run with regular `swift test`, potentially slowing CI.
+- **Force-unwrap in CoreML model init:** `all-MiniLM-L6-v2.swift` uses force-unwraps (`!`) on model output properties and resource URLs. Test coverage does not exercise the failure path because tests run on machines with the model available.
 - Mock providers in `Tests/WaxIntegrationTests/Mocks/` are comprehensive and realistic.
 - The use of Swift Testing framework (`@Test`, `#expect`) is modern and appropriate.
 
@@ -531,3 +539,7 @@ Three unchecked multiplications on deserialized values can overflow on crafted i
 15. Separate benchmarks from integration tests in CI.
 16. Use consistent error domain types.
 17. Fix FTS5Serializer `if let` to `guard let` for `baseAddress` nil safety.
+18. Remove or replace trivial "always pass" dependency tests with meaningful functionality tests.
+19. Strengthen search quality assertions to validate ranking correctness, not just non-empty results.
+20. Add task cancellation and disk-full error path tests.
+21. Add tests for operations on a closed orchestrator.
