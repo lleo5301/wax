@@ -317,7 +317,24 @@ data.withUnsafeBytes { raw in
 
 If `baseAddress` is nil (theoretically impossible for non-empty Data, but the code uses `if let` instead of `guard let ... else { throw }`), the `sqlite3_deserialize` call on line 43 receives uninitialized `sqlite3_malloc64` memory. This should use `guard let` with a thrown error for defensive correctness.
 
-### 6.7 Crash Injection via Environment Variable [Minor]
+### 6.7 CLI Credential Leakage via Process Arguments [Minor]
+
+**File:** `Sources/WaxCLI/WaxCLICommand.swift`
+
+The `install` command passes the license key as a Claude MCP environment argument:
+```swift
+addArguments.append(contentsOf: ["-e", "WAX_LICENSE_KEY=\(key)"])
+```
+
+This makes the license key visible in process listings (`ps aux`). Additionally, the `serve` command inherits the full parent environment (`ProcessInfo.processInfo.environment`), which may include AWS credentials, GitHub tokens, and other secrets. A scoped, minimal environment should be constructed instead.
+
+### 6.8 No Path Traversal Validation on Store Path [Minor]
+
+**File:** `Sources/WaxCLI/WaxCLICommand.swift`
+
+The `--store-path` CLI option is normalized via `standardizedFileURL` but has no validation against `..` traversal. A user-supplied path like `~/.wax/../../../etc/shadow` would be normalized and potentially accessed. The practical risk is low since the CLI runs as the current user, but a library consumer embedding Wax with user-supplied paths should validate.
+
+### 6.9 Crash Injection via Environment Variable [Minor]
 
 **File:** `Sources/WaxCore/Wax.swift:2267-2275`
 
