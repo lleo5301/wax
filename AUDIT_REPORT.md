@@ -96,6 +96,28 @@ preconditionFailure("Invalid cl100k_base regex: \(error)")
 
 If the regex compilation fails (e.g., on a platform where ICU support differs), this crashes the process rather than propagating an error. Since `TokenCounter` is used throughout RAG context building, this could crash an app on an unusual platform configuration.
 
+### 2.6 CoreML Generated Model Force Unwraps [Major]
+
+**File:** `Sources/WaxVectorSearchMiniLM/CoreML/all-MiniLM-L6-v2.swift:54, 96`
+
+```swift
+// Line 54 — output property
+public var var_554: MLMultiArray {
+    provider.featureValue(for: "var_554")!.multiArrayValue!
+}
+
+// Line 96 — model resource URL
+return bundle.url(forResource: "all-MiniLM-L6-v2", withExtension: "mlmodelc")!
+```
+
+Two force unwraps in the CoreML-generated model wrapper. The resource URL force unwrap on line 96 is particularly dangerous — if the `.mlmodelc` bundle is missing or corrupted, the entire app crashes during model initialization with no opportunity for error recovery. This is on a critical initialization path used by `MiniLMEmbeddings`.
+
+### 2.7 BertTokenizer Manual Lock/Unlock Pattern [Minor]
+
+**File:** `Sources/WaxVectorSearchMiniLM/CoreML/BertTokenizer.swift:384-413`
+
+The vocab cache loading uses manual `lock()`/`unlock()` calls with multiple exit points rather than the safer `withLock {}` pattern. If an exception occurs between lock acquisition and release, the lock leaks and subsequent callers deadlock. The `MiniLMEmbeddings.ModelCache` has a similar pattern (lines 213-237) but partially mitigates with `defer`.
+
 ---
 
 ## 3. Architecture & Design Gaps
