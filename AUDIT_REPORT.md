@@ -389,6 +389,51 @@ The init does parallel async work (tokenizer prewarm), config mutation, file ope
 
 ---
 
+## 9. Metal / GPU-Specific Issues
+
+### 9.1 MetalVectorEngine `stageForCommit()` Data Race [Major]
+
+**File:** `Sources/WaxVectorSearch/MetalVectorEngine.swift`
+
+The `dirty` flag is read without holding the write lock in `stageForCommit()`:
+```swift
+public func stageForCommit(into wax: Wax) async throws {
+    if !dirty { return }  // No lock — data race
+    ...
+}
+```
+Two concurrent `stageForCommit` calls can both see `dirty=true` and submit duplicate index blobs.
+
+### 9.2 SIMD Alignment Assumptions in Metal Shaders [Major]
+
+**File:** `Sources/WaxVectorSearch/Shaders/CosineDistance.metal`
+
+The SIMD4/SIMD8 cosine distance kernels cast raw `float*` pointers to `float4*`/`float8*` without verifying 16/32-byte alignment. If the underlying `MTLBuffer` is not properly aligned (e.g., odd-dimension vectors at non-aligned offsets), this causes GPU crashes or silent data corruption.
+
+### 9.3 NaN Handling in TopKReduction Shader [Minor]
+
+**File:** `Sources/WaxVectorSearch/Shaders/TopKReduction.metal`
+
+`INFINITY` sentinel comparisons don't handle NaN distances. If a zero-magnitude query vector produces NaN distances, corrupted results are returned because `NaN < INFINITY` evaluates to false.
+
+### 9.4 No Threadgroup Memory Size Validation [Minor]
+
+**File:** `Sources/WaxVectorSearch/MetalVectorEngine.swift`
+
+`setThreadgroupMemoryLength(dimensions * 4, ...)` has no check against the GPU's threadgroup memory limit (~48KB on Apple GPUs). Vectors with > 12,288 dimensions would cause a silent kernel launch failure.
+
+### 9.5 VectorSerializer Integer Overflow [Minor]
+
+**File:** `Sources/WaxVectorSearch/VectorSerializer.swift:117`
+
+```swift
+let expectedVectorBytes = Int(header.vectorCount) * Int(header.dimension) * MemoryLayout<Float>.stride
+```
+
+Three unchecked multiplications on deserialized values can overflow on crafted input, leading to incorrect buffer size validation.
+
+---
+
 ## Appendix: Dependency Risk Assessment
 
 | Dependency | Version | Risk | Notes |
@@ -422,6 +467,8 @@ The init does parallel async work (tokenizer prewarm), config mutation, file ope
 7. Implement actual license validation backend or remove the gate.
 8. Pin `SwiftTUI` dependency to a tagged release.
 9. Guard `NativeBpeTokenizer` regex failure with a throwing init instead of `preconditionFailure`.
+10. Fix `MetalVectorEngine.stageForCommit()` data race on `dirty` flag.
+11. Validate SIMD alignment assumptions in Metal shaders or add runtime dimension checks.
 
 ### Minor (Improve for robustness)
 
