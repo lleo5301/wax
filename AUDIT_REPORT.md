@@ -9,30 +9,33 @@
 
 ## 1. Executive Summary
 
-### Overall Production Readiness Score: **6.5 / 10**
+### Overall Production Readiness Score: **7.0 / 10**
 
-The Wax codebase demonstrates strong engineering discipline in several areas — the binary file format has crash-injection testing, SQL queries use parameterized arguments, the concurrency model leverages Swift actors appropriately, and the WAL implementation is carefully designed with fault injection support. However, several structural issues, unsafe patterns, and correctness risks must be addressed before this framework is production-grade for third-party consumers.
+The Wax codebase demonstrates strong engineering discipline in several areas — the binary file format has crash-injection testing, SQL queries use parameterized arguments, the concurrency model leverages Swift actors correctly (the `AsyncReadWriteLock` and `MetalVectorEngine` actor implementations were verified sound), and the WAL implementation is carefully designed with fault injection support. No correctness blockers were confirmed after verification. However, several structural issues — fragile `@unchecked Sendable` conformances, fire-and-forget CLI cleanup, incomplete license enforcement, and test coverage gaps — must be addressed before this framework is production-grade for third-party consumers.
 
 ### Top 5 Critical Risks
 
 | # | Risk | Severity | Location |
 |---|------|----------|----------|
-| 1 | `AsyncReadWriteLock` has a correctness bug: readers admitted after `readLock()` return are not counted when `readLock` suspends | **Blocker** | `WaxCore/Concurrency/ReadWriteLock.swift:87-94` |
-| 2 | ObjC-runtime ivar access to USearch native handle is inherently fragile — breaks silently on library update | **Major** | `WaxVectorSearch/USearchSendable.swift:92-108` |
-| 3 | `WALRingWriter` and `FDFile` are `@unchecked Sendable` with mutable state and no internal locking | **Major** | `WaxCore/WAL/WALRingWriter.swift:510`, `WaxCore/IO/FDFile.swift:456` |
-| 4 | `defer { Task { try? await memory.close() } }` in CLI commands — fire-and-forget close may never complete before exit | **Major** | All `Sources/WaxCLI/*.swift` files |
-| 5 | License validation is client-side format-only; `pingActivation` is a no-op placeholder | **Major** | `WaxMCPServer/LicenseValidator.swift:148-151` |
+| 1 | ObjC-runtime ivar access to USearch native handle is inherently fragile — breaks silently on library update | **Major** | `WaxVectorSearch/USearchSendable.swift:92-108` |
+| 2 | `FDFile` is `@unchecked Sendable` with mutable state and no internal locking; TOCTOU race on `isClosed` | **Major** | `WaxCore/IO/FDFile.swift:456` |
+| 3 | `defer { Task { try? await memory.close() } }` in CLI commands — fire-and-forget close may never complete before exit | **Major** | All `Sources/WaxCLI/*.swift` files |
+| 4 | License validation is client-side format-only; `pingActivation` is a no-op placeholder | **Major** | `WaxMCPServer/LicenseValidator.swift:148-151` |
+| 5 | Crash injection via `WAX_CRASH_INJECT_CHECKPOINT` env var is not gated behind `#if DEBUG` — reachable in release builds | **Major** | `WaxCore/Wax.swift:2267-2276` |
 
 ### Release Blockers
 
-1. **`AsyncReadWriteLock` reader count bug** — can allow readers and writers to execute concurrently, causing data corruption in any code path that uses it (e.g., `Wax` actor's `withReadLock`/`withWriteLock`).
-2. **WALRingWriter `@unchecked Sendable` without locks** — if any code path sends this across isolation boundaries (it's used inside the `Wax` actor which itself calls through `BlockingIOExecutor`), concurrent access is undefined behavior.
+1. **Gate crash injection behind `#if DEBUG`** — the `WAX_CRASH_INJECT_CHECKPOINT` path should never be reachable in a release build. An attacker with env var control could cause data loss by triggering `SIGKILL` mid-commit.
+
+> **Note:** Two previously reported blockers were retracted after verification:
+> - ~~`AsyncReadWriteLock` reader count bug~~ — **False positive.** `writeUnlock()` correctly increments `readers` before resuming continuations, and actor isolation serializes all state mutations.
+> - ~~`WALRingWriter` `@unchecked Sendable` without locks~~ — **Downgraded to Major.** While it has no internal locking, all access is serialized through the `Wax` actor's `io.run {}` closures. The concern is fragility, not a current bug.
 
 ---
 
 ## 2. Correctness Issues
 
-### 2.1 AsyncReadWriteLock Reader Admission Bug [Blocker]
+### 2.1 ~~AsyncReadWriteLock Reader Admission Bug~~ [Verified Safe]
 
 **File:** `Sources/WaxCore/Concurrency/ReadWriteLock.swift:87-94`
 
@@ -48,11 +51,9 @@ public func readLock() async {
 }
 ```
 
-When a reader suspends (enters `readerWaiters`), `readers` is NOT incremented. Later, when `writeUnlock()` resumes waiting readers (line 125-129), it increments `readers` — this part is correct. But the problem is in `readUnlock()` (line 97-105): if `readers` reaches 0 and there are waiting writers, a writer is admitted. If a reader was admitted from the waiter queue but the `readLock()` caller hasn't yet continued past the `await` (cooperative scheduling), and another reader calls `readUnlock()`, the writer can be admitted prematurely while the woken reader hasn't yet observed its critical section.
+~~When a reader suspends (enters `readerWaiters`), `readers` is NOT incremented.~~ **False positive:** `writeUnlock()` (lines 125-129) increments `readers` for each waiting reader **before** resuming the continuation. By the time `readLock()` returns from the `await`, the reader is already counted. The implementation is correct.
 
-**Impact:** Potential writer-reader concurrent execution leading to data corruption.
-
-**Mitigation:** The `Wax` actor already serializes access via actor isolation, so the `opLock` (AsyncReadWriteLock) is an additional mechanism. The real impact depends on whether the lock provides safety beyond actor isolation, but this is still a correctness defect in the primitive itself.
+**Original concern (retracted):** The initial audit hypothesized a race between reader resumption and `readUnlock()` calls, but since `AsyncReadWriteLock` is an actor, all state mutations (including `writeUnlock()` incrementing `readers` and resuming continuations) are serialized. A concurrent `readUnlock()` cannot execute until `writeUnlock()` yields, at which point all resumed readers are already counted.
 
 ### 2.2 `BinaryDecoder` Force Casts [Minor]
 
@@ -129,7 +130,7 @@ The codebase uses `@unchecked Sendable` on **19 types** across the source tree:
 - `ReadWriteLock`, `UnfairLock` — justified (internally synchronized)
 - `FDFile` — **unjustified** (mutable `isClosed` and `faultInjectionState` with no locking)
 - `MappedWritableRegion` — **unjustified** (mutable `isClosed` with no locking)
-- `WALRingWriter` — **unjustified** (extensive mutable state with no internal locking)
+- `WALRingWriter` — **fragile but currently safe** (10 mutable properties, no internal locking, but exclusively accessed through `Wax` actor's `io.run {}` — see Section 4.1)
 - `BertTokenizer`, `BasicTokenizer`, `WordpieceTokenizer` — **justified** (immutable after init)
 - `BatchInputBuffers` — questionable (MLMultiArray pointers)
 - `BlockingIOExecutor` — justified (DispatchQueue is inherently thread-safe)
@@ -138,7 +139,7 @@ The codebase uses `@unchecked Sendable` on **19 types** across the source tree:
 - `MiniLMEmbeddings.ModelCache` — has internal `NSLock`, justified
 - `DatabaseQueue` — GRDB's own synchronization, justified
 
-**Verdict:** At least 4 `@unchecked Sendable` conformances are actively unsafe. They rely on external callers (typically the `Wax` actor) to provide synchronization, which is undocumented and brittle.
+**Verdict:** At least 3 `@unchecked Sendable` conformances (`FDFile`, `MappedWritableRegion`, `FileLock`) are unjustified without internal locking. `WALRingWriter` is safe in practice due to actor serialization but the conformance is fragile and undocumented.
 
 ### 3.2 `Wax` Actor is a God Object (~2,300 lines) [Major]
 
@@ -185,17 +186,19 @@ This is manually synced with `npm/waxmcp/package.json`. A drift here creates con
 
 ## 4. Concurrency & Safety
 
-### 4.1 WALRingWriter Thread Safety [Blocker]
+### 4.1 WALRingWriter Thread Safety [Major — Fragile but Currently Safe]
 
 **File:** `Sources/WaxCore/WAL/WALRingWriter.swift`
 
-`WALRingWriter` is a `final class` marked `@unchecked Sendable` with ~15 mutable stored properties and zero internal synchronization. It relies entirely on the caller (`Wax` actor) for thread safety. However:
+`WALRingWriter` is a `final class` marked `@unchecked Sendable` with 10 mutable stored properties and zero internal synchronization. It relies entirely on the caller (`Wax` actor) for thread safety.
 
 1. The `Wax` actor dispatches I/O through `BlockingIOExecutor.run {}`, which executes on a GCD queue.
 2. `WALRingWriter` methods like `append()` mutate `writePos`, `pendingBytes`, `lastSequence`, etc. and perform I/O.
-3. If `WALRingWriter` is captured in the closure passed to `io.run {}`, Swift's `Sendable` checking is satisfied (because of `@unchecked Sendable`), but the actual access happens on the GCD thread, not the actor's executor.
+3. `WALRingWriter` is captured in closures passed to `io.run {}`. Swift's `Sendable` checking is satisfied (because of `@unchecked Sendable`), but the actual access happens on the GCD thread, not the actor's executor.
 
-This is safe **only** because the `Wax` actor serializes all calls through actor isolation before dispatching to the IO executor. But this invariant is entirely implicit — one misplaced `Task { }` or `nonisolated` method could break it.
+**Verification:** All usage sites were audited. `WALRingWriter` is created inside `io.run {}` closures, stored exclusively in the `Wax` actor, and accessed only through `io.run {}` closures that are serialized by actor isolation. **No current data race exists.** However, the `@unchecked Sendable` conformance is misleading — it tells the type system this is safe to share freely, but actual safety depends on implicit invariants that a future maintainer could violate.
+
+**Recommendation:** Either remove `@unchecked Sendable` (if it doesn't need to cross isolation boundaries) or add a comment documenting the actor-serialization invariant. Adding internal `OSAllocatedUnfairLock` would make the safety explicit at a small performance cost.
 
 ### 4.2 FDFile Thread Safety [Major]
 
@@ -385,7 +388,7 @@ The test suite contains ~80 test files covering:
 
 | Area | Gap |
 |------|-----|
-| `AsyncReadWriteLock` | No tests for concurrent reader/writer interleaving — the bug in Section 2.1 would be caught by stress testing |
+| `AsyncReadWriteLock` | No tests for concurrent reader/writer interleaving — while Section 2.1 was verified correct, stress tests would catch future regressions |
 | `FDFile` concurrent access | No tests verify that `@unchecked Sendable` claim is safe |
 | `WALRingWriter` partial-write recovery | Fault injection exists but no test exercises concurrent writers (N/A given actor isolation, but the `@unchecked Sendable` conformance implies it should be tested) |
 | `LicenseValidator` trial clock manipulation | No test for system clock rollback/advance attacks on trial period |
@@ -452,18 +455,13 @@ The init does parallel async work (tokenizer prewarm), config mutation, file ope
 
 ## 9. Metal / GPU-Specific Issues
 
-### 9.1 MetalVectorEngine `stageForCommit()` Data Race [Major]
+### 9.1 ~~MetalVectorEngine `stageForCommit()` Data Race~~ [Verified Safe]
 
 **File:** `Sources/WaxVectorSearch/MetalVectorEngine.swift`
 
-The `dirty` flag is read without holding the write lock in `stageForCommit()`:
-```swift
-public func stageForCommit(into wax: Wax) async throws {
-    if !dirty { return }  // No lock — data race
-    ...
-}
-```
-Two concurrent `stageForCommit` calls can both see `dirty=true` and submit duplicate index blobs.
+~~The `dirty` flag is read without holding the write lock in `stageForCommit()`.~~
+
+**False positive:** `MetalVectorEngine` is declared as an `actor`. All access to the `dirty` property is serialized by actor isolation. Two concurrent calls to `stageForCommit()` cannot race because they are enqueued on the actor's serial executor.
 
 ### 9.2 SIMD Alignment Assumptions in Metal Shaders [Major]
 
@@ -516,30 +514,31 @@ Three unchecked multiplications on deserialized values can overflow on crafted i
 
 ### Blockers (Must fix before any production release)
 
-1. **Fix `AsyncReadWriteLock` readLock counting** — readers admitted from the waiter queue must be counted atomically with their resumption.
-2. **Audit all `@unchecked Sendable` conformances** — either add internal locking to `WALRingWriter`, `FDFile`, `MappedWritableRegion`, and `FileLock`, or document the invariant that these are only accessed under actor isolation and remove `Sendable` conformance.
-3. **Gate crash injection behind `#if DEBUG`** — the `WAX_CRASH_INJECT_CHECKPOINT` path should never be reachable in a release build.
+1. **Gate crash injection behind `#if DEBUG`** — the `WAX_CRASH_INJECT_CHECKPOINT` path should never be reachable in a release build.
+
+> ~~Fix `AsyncReadWriteLock` readLock counting~~ — **Retracted.** Verified correct; `writeUnlock()` increments `readers` before resuming continuations.
+> ~~Fix `MetalVectorEngine.stageForCommit()` data race~~ — **Retracted.** `MetalVectorEngine` is an actor; `dirty` is protected by actor isolation.
 
 ### Major (Should fix before production)
 
-4. Fix `defer { Task { } }` close pattern in CLI commands.
-5. Replace ObjC runtime ivar access in USearchSendable with a proper USearch API (or pin to specific USearch version).
-6. Add stress tests for `AsyncReadWriteLock`.
-7. Implement actual license validation backend or remove the gate.
-8. Pin `SwiftTUI` dependency to a tagged release.
-9. Guard `NativeBpeTokenizer` regex failure with a throwing init instead of `preconditionFailure`.
-10. Fix `MetalVectorEngine.stageForCommit()` data race on `dirty` flag.
-11. Validate SIMD alignment assumptions in Metal shaders or add runtime dimension checks.
+2. Fix `defer { Task { } }` close pattern in CLI commands.
+3. Replace ObjC runtime ivar access in USearchSendable with a proper USearch API (or pin to specific USearch version).
+4. Resolve `@unchecked Sendable` on `FDFile`, `MappedWritableRegion`, and `FileLock` — either add internal locking or remove the conformance. Document `WALRingWriter`'s actor-serialization invariant.
+5. Implement actual license validation backend or remove the gate.
+6. Pin `SwiftTUI` dependency to a tagged release.
+7. Guard `NativeBpeTokenizer` regex failure with a throwing init instead of `preconditionFailure`.
+8. Validate SIMD alignment assumptions in Metal shaders or add runtime dimension checks.
+9. Add stress tests for `AsyncReadWriteLock` (verified correct, but no regression tests exist).
 
 ### Minor (Improve for robustness)
 
-12. Decompose `Wax` actor into smaller components.
-13. Move fault injection infrastructure behind `#if DEBUG`.
-14. Add USearch ivar name verification test.
-15. Separate benchmarks from integration tests in CI.
-16. Use consistent error domain types.
-17. Fix FTS5Serializer `if let` to `guard let` for `baseAddress` nil safety.
-18. Remove or replace trivial "always pass" dependency tests with meaningful functionality tests.
-19. Strengthen search quality assertions to validate ranking correctness, not just non-empty results.
-20. Add task cancellation and disk-full error path tests.
-21. Add tests for operations on a closed orchestrator.
+10. Decompose `Wax` actor into smaller components.
+11. Move fault injection infrastructure behind `#if DEBUG`.
+12. Add USearch ivar name verification test.
+13. Separate benchmarks from integration tests in CI.
+14. Use consistent error domain types.
+15. Fix FTS5Serializer `if let` to `guard let` for `baseAddress` nil safety.
+16. Remove or replace trivial "always pass" dependency tests with meaningful functionality tests.
+17. Strengthen search quality assertions to validate ranking correctness, not just non-empty results.
+18. Add task cancellation and disk-full error path tests.
+19. Add tests for operations on a closed orchestrator.
