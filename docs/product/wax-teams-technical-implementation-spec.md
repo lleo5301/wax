@@ -209,7 +209,6 @@ The product should preserve existing primitives and add coordination-focused one
 - `handoff`
 - `handoff-latest`
 - `stats`
-- `flush`
 
 ### New CLI Commands To Add
 
