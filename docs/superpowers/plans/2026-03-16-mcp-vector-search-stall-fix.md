@@ -1,5 +1,7 @@
 # MCP Vector Search Stall Fix — Implementation Plan
 
+> Historical note: this plan predates the broker-backed MCP redesign. Current public tool names are unprefixed (`remember`, `recall`, `search`, `session_start`, etc.), and normal agent flows no longer use `flush`, `SESSION_STORE`, or agent-managed store paths.
+
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Fix MCP server stalling when `wax_remember` is called with vector search enabled, and add missing test coverage for the vector-search MCP path.
