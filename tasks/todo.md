@@ -778,3 +778,114 @@
 - `swift test --traits default,MCPServer --filter WaxMCPProcessTests --skip-update --disable-automatic-resolution` passed with `6` tests in about `21.270s`.
 - `swift test --traits default,MCPServer --filter mcpDoctorRecognizesRenamedToolSurface --skip-update --disable-automatic-resolution` passed in about `0.679s`.
 - `swift test --traits default,MCPServer --disable-automatic-resolution` passed with `884` tests and `0` failures.
+## Installer / Workflow Fix Review
+
+- Fixed staged-runtime install validation in `Sources/WaxCLI/WaxCLICommand.swift`.
+  - `stageBundledRuntimeIfNeeded(...)` now rewrites `wax-cli.sha256` and `wax-mcp.sha256` after ad-hoc signing the staged binaries.
+  - This keeps staged runtime validation aligned with the actual signed bytes instead of the pre-signing source checksums.
+- Fixed the release workflow typo in `.github/workflows/release-waxmcp.yml`.
+  - The MCP and CLI smoke-check steps now key off `matrix.source_build` instead of the invalid `matrix.source-build`.
+
+## Installer / Workflow Fix Verification
+
+- `swift test --filter mcpInstallStagesBundledRuntimeIntoStableDirectory --filter mcpInstallRejectsBundledRuntimeWithChecksumMismatch --filter runtimeValidationDetectsChecksumMismatch --disable-automatic-resolution` passed.
+- The install staging test now includes source runtime checksum files and verifies that the staged runtime passes `validateMCPRuntime(...)`, covering the signing/checksum regression directly.
+- Real isolated install verification passed:
+  - `WAX_MCP_INSTALL_ROOT=<temp> .build/arm64-apple-macosx/debug/wax-cli mcp install --scope user --name <temp-name> --server-path Resources/npm/waxmcp/dist/darwin-arm64/wax-mcp --skip-build`
+  - Result: install completed successfully and registered the staged runtime.
+- Workflow verification:
+  - `rg "source-build" .github/workflows/release-waxmcp.yml` no longer finds the invalid matrix key.
+  - `rg "source_build" .github/workflows/release-waxmcp.yml` now covers all intended build/smoke conditions.
+
+- [x] Reproduce the published `waxmcp@0.1.20` install/update flow on this machine and isolate installer-specific failures from runtime behavior.
+- [x] Exercise the published package through `npx`, staged runtime launchers, and local `wax`/`wax-cli` entrypoints.
+- [x] Run targeted MCP smoke flows against fresh stores and shared-store contention paths to identify remaining runtime regressions.
+- [x] Inspect release/install validation logic for checksum, signing, and staged-runtime correctness bugs.
+- [x] Summarize confirmed remaining breakages, classify environment-only issues, and record what is actually fixed versus unverified.
+
+## Published 0.1.20 Investigation
+
+### Confirmed Still Broken
+
+- `npx -y waxmcp@0.1.20 mcp install --scope user` still fails deterministically during staged runtime validation.
+  - Reproduced both on the real user runtime root and on an isolated temp runtime root via `WAX_MCP_INSTALL_ROOT`.
+  - Failure:
+    - `Runtime checksum mismatch for wax-cli`
+    - `Runtime checksum mismatch for wax-mcp`
+  - Root cause in code:
+    - `prepareMCPInstallRuntime(...)` stages the bundled runtime, then `stageBundledRuntimeIfNeeded(...)` calls `adHocSignExecutables(in: staging)`.
+    - After signing, `validateStagedRuntimeCopy(...)` compares the staged executables against the copied `*.sha256` files from the source runtime.
+    - Codesigning mutates the binary bytes, so the staged executables no longer match the source checksums.
+  - Relevant code:
+    - `Sources/WaxCLI/WaxCLICommand.swift` `prepareMCPInstallRuntime(...)`
+    - `Sources/WaxCLI/WaxCLICommand.swift` `stageBundledRuntimeIfNeeded(...)`
+    - `Sources/WaxCLI/WaxCLICommand.swift` `validateStagedRuntimeCopy(...)`
+    - `Sources/WaxCLI/WaxCLICommand.swift` `adHocSignExecutables(in:)`
+- The release workflow has a latent logic bug even if GitHub runners recover.
+  - `.github/workflows/release-waxmcp.yml` uses `matrix.source-build` for the MCP/CLI smoke-check step conditions.
+  - The matrix key is `source_build`, so those smoke-check steps will be skipped instead of running.
+- External launch infrastructure is still broken for this repo:
+  - GitHub Actions release and PR workflows are currently failing before any steps run because no runner is allocated.
+  - That blocked automatic npm publish and artifact packaging from the repo workflow side even though the package itself was published manually.
+
+### Confirmed Working
+
+- The published runtime itself is healthy when invoked directly from npm:
+  - `npx -y waxmcp@0.1.20 --help` passed.
+  - `npx -y waxmcp@0.1.20 remember ...` + `recall ...` passed on a fresh store.
+  - `npx -y waxmcp@0.1.20 vector-health ...` passed on a fresh store.
+  - Real MCP stdio against `npx -y waxmcp@0.1.20 mcp serve --store-path <fresh>` returned:
+    - `serverInfo.version = 0.1.20`
+    - `toolCount = 14`
+- Shared-store runtime behavior is healthy in the published package:
+  - Starting a second `npx ... mcp serve` against the same store did not hang.
+  - It initialized successfully in about `2.33s`, indicating broker reuse rather than lock-timeout regression.
+- Vector-required behavior is healthy in the published package:
+  - `npx -y waxmcp@0.1.20 search "foo" --mode hybrid --no-embedder ...` failed explicitly with:
+    - `Vector search required but --no-embedder was set.`
+- The local staged runtime now works after checksum resync:
+  - `wax --help` passed.
+  - `wax-cli mcp doctor ...` passed.
+  - `wax-cli vector-health ...` passed.
+
+### Environment Notes
+
+- The failed installer still refreshed the staged runtime binaries before returning non-zero.
+- I did not find evidence that the failed isolated install polluted user Claude/Codex MCP config with the temporary test names.
+- The current local environment is usable because I manually regenerated the staged `wax-cli.sha256` and `wax-mcp.sha256` files to match the signed binaries.
+
+## MCP Corpus Search Lock Fix
+
+- [x] Reproduce the remaining MCP tool-call failure and isolate the failing tool.
+- [x] Inspect the broker and compatibility corpus rebuild paths for live session-store lock handling.
+- [x] Patch corpus rebuild to skip locked/unavailable session stores instead of aborting the whole `corpus_search`.
+- [x] Add regression coverage at the builder level and real MCP process level.
+- [x] Re-run corpus-focused tests, the full MCP process suite, and an external stdio tool matrix.
+
+### Findings
+
+- The remaining real MCP failure was `corpus_search`.
+  - Reproduced over stdio against the staged runtime with:
+    - `Lock unavailable: timed out waiting for exclusive lock on ~/.local/share/waxmcp/sessions/<id>.wax after 2.00s`
+  - Root cause:
+    - `Sources/Wax/Broker/BrokerCorpusStore.swift` and `Sources/WaxMCPServer/CorpusStore.swift` attempted to open every discovered session store during corpus rebuild.
+    - A single live lock on one broker-managed session store aborted the entire rebuild, so `corpus_search` failed even when other session stores were readable.
+
+### Fix
+
+- Broker and compatibility corpus builders now skip recoverable source-store failures instead of failing the full rebuild.
+  - Recoverable cases currently include:
+    - `WaxError.lockUnavailable`
+    - source store removed during enumeration/open (`ENOENT` / missing file)
+- Corpus build summaries now report `stores_skipped` in addition to `stores_discovered`, `stores_indexed`, `documents_indexed`, and `documents_skipped`.
+- MCP corpus-search responses now surface `stores_skipped` in both broker-backed and compatibility paths.
+
+### Verification
+
+- Focused corpus tests:
+  - `swift test --traits default,MCPServer --filter corpus --disable-automatic-resolution`
+- Full MCP process suite:
+  - `swift test --traits default,MCPServer --filter WaxMCPProcessTests --disable-automatic-resolution`
+- External stdio sweep against the rebuilt `wax-mcp` binary:
+  - passed `session_start`, `remember`, `recall`, `search`, `remember(session)`, `recall(session)`, `handoff`, `handoff_latest`, `stats`, `entity_upsert`, `entity_resolve`, `fact_assert`, `facts_query`, `fact_retract`, `session_end`, and `corpus_search`
+  - result: `16/16` MCP tool calls passed
