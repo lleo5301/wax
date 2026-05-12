@@ -1746,3 +1746,37 @@
   - P2: WAL pending-entry decode errors are silently dropped while scan state advances. Distinguish trailing corruption from valid-record schema corruption.
   - P2: `fact_assert.relation` is accepted by broker/allowlist but omitted from the published MCP schema.
   - P2: CI should pin Swift before using package traits; Linux lane should pin/install Swift and use `--disable-automatic-resolution`.
+- [x] Fix PR #66 review blockers from the 2026-05-12 review.
+  - [x] Add regressions for durable Markdown secret import, temporal fact args, promotion provenance, raw query event logging, HTTP body limits, and OpenClaw package metadata.
+  - [x] Patch broker Markdown sync so durable imports use the same secret guard as direct writes.
+  - [x] Patch retrieval event logging so raw queries are not persisted.
+  - [x] Patch implicit promotion so resolved sessions drive provenance, recall signals, and events.
+  - [x] Patch MCP/broker temporal fact args so `fact_retract.at_ms` and `facts_query.as_of` work as advertised.
+  - [x] Patch HTTP transport to reject oversized request bodies before buffering them unboundedly.
+  - [x] Patch OpenClaw package metadata so the published package declares the SDK surface it imports.
+  - [x] Run focused verification and record results.
+
+## PR #66 Review Fixes 2026-05-12
+
+- Fixed:
+  - `markdown_sync` now applies the same durable-memory secret guard used by direct writes.
+  - Broker retrieval events persist `query_hash` without the raw query string.
+  - Implicit single-session `memory_promote` now records `wax.promoted_from_session`, recall signals, and promotion events against the resolved session.
+  - `fact_retract.at_ms` and `facts_query.as_of` are accepted by the MCP allowlist and honored by compat/broker execution.
+  - HTTP MCP transport now has a bounded request body policy with `--http-max-body-bytes`.
+  - OpenClaw plugin package metadata declares the `openclaw` SDK peer/dev dependency it imports.
+- Verification:
+  - `swift test --traits default,MCPServer --filter 'temporalFactArgumentsAreHonoredByPublishedTools|httpRequestBodyLimitRejectsContentLengthAndStreamingOverflow|openClawPackageDeclaresSDKPeerDependency|brokerMarkdownSyncRejectsSecretLikeDurableMemoryImports|brokerRetrievalEventsPersistQueryHashWithoutRawQuery|brokerImplicitMemoryPromotePreservesResolvedSessionProvenance'`
+    - Result: passed; 6 tests.
+  - `swift build --product wax-mcp --traits MCPServer`
+    - Result: passed.
+  - `swift test --traits default,MCPServer --filter WaxMCPServerTests`
+    - Result: passed; 78 tests.
+  - `swift build`
+    - Result: passed.
+  - `npm pack --dry-run --json` in `Resources/openclaw/wax-memory-plugin`
+    - Result: passed; 4 files packed.
+  - `npm pack --dry-run --json` in `Resources/npm/waxmcp`
+    - Result: passed; 3 files packed.
+  - `git diff --check`
+    - Result: passed.
