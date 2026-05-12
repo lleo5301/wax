@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" fill="none">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0a"/>
+      <stop offset="100%" style="stop-color:#111111"/>
+    </linearGradient>
+    <linearGradient id="header-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#6366f1"/>
+    </linearGradient>
+    <linearGradient id="wal-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#ef4444"/>
+    </linearGradient>
+    <linearGradient id="frame-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="index-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#d946ef"/>
+    </linearGradient>
+    <linearGradient id="toc-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#64748b"/>
+      <stop offset="100%" style="stop-color:#94a3b8"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="500" fill="url(#bg-grad)"/>
+
+  <!-- Title -->
+  <text x="400" y="35" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="600" fill="#ffffff" text-anchor="middle">WAX File Format (.wax)</text>
+
+  <!-- Main container -->
+  <rect x="50" y="55" width="700" height="420" rx="8" fill="#0f0f0f" stroke="#1e1e1e" stroke-width="1"/>
+
+  <!-- Section 1: Dual Headers -->
+  <rect x="60" y="65" width="680" height="65" rx="6" fill="#0a0a0a" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.5"/>
+  <rect x="60" y="65" width="8" height="65" rx="4" fill="url(#header-grad)" filter="url(#glow)"/>
+  <text x="80" y="85" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600" fill="#3b82f6">DUAL HEADER PAGES (A/B)</text>
+  <text x="80" y="100" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">4KB each • Magic: WAX1 • Generation counter • SHA-256 checksums</text>
+  <text x="80" y="115" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Atomic updates via A/B selection on recovery</text>
+  <text x="710" y="90" font-family="JetBrains Mono, monospace" font-size="11" fill="#3b82f6" text-anchor="end">8 KB</text>
+
+  <!-- Section 2: WAL -->
+  <rect x="60" y="140" width="680" height="65" rx="6" fill="#0a0a0a" stroke="#f59e0b" stroke-width="1" stroke-opacity="0.5"/>
+  <rect x="60" y="140" width="8" height="65" rx="4" fill="url(#wal-grad)" filter="url(#glow)"/>
+  <text x="80" y="160" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600" fill="#f59e0b">WAL (WRITE-AHEAD LOG)</text>
+  <text x="80" y="175" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">256 MB ring buffer • Padding records • Sentinel bytes • Crash-resilient</text>
+  <text x="80" y="190" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">State snapshots for fast recovery • Fsync policies</text>
+  <text x="710" y="175" font-family="JetBrains Mono, monospace" font-size="11" fill="#f59e0b" text-anchor="end">256 MB</text>
+
+  <!-- Section 3: Compressed Frames -->
+  <rect x="60" y="215" width="680" height="80" rx="6" fill="#0a0a0a" stroke="#10b981" stroke-width="1" stroke-opacity="0.5"/>
+  <rect x="60" y="215" width="8" height="80" rx="4" fill="url(#frame-grad)" filter="url(#glow)"/>
+  <text x="80" y="235" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600" fill="#10b981">COMPRESSED DATA FRAMES</text>
+  <text x="80" y="250" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">LZ4 / LZFSE / Deflate • 32-byte SHA-256 checksums • Frame metadata + payloads</text>
+
+  <!-- Frame boxes -->
+  <rect x="80" y="260" width="100" height="25" rx="4" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-opacity="0.5"/>
+  <text x="130" y="277" font-family="JetBrains Mono, monospace" font-size="9" fill="#10b981" text-anchor="middle">Frame 0</text>
+  <rect x="190" y="260" width="100" height="25" rx="4" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-opacity="0.5"/>
+  <text x="240" y="277" font-family="JetBrains Mono, monospace" font-size="9" fill="#10b981" text-anchor="middle">Frame 1</text>
+  <rect x="300" y="260" width="100" height="25" rx="4" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-opacity="0.5"/>
+  <text x="350" y="277" font-family="JetBrains Mono, monospace" font-size="9" fill="#10b981" text-anchor="middle">Frame 2</text>
+  <text x="420" y="277" font-family="JetBrains Mono, monospace" font-size="12" fill="#64748b">...</text>
+
+  <!-- Section 4: Hybrid Indices -->
+  <rect x="60" y="305" width="680" height="80" rx="6" fill="#0a0a0a" stroke="#8b5cf6" stroke-width="1" stroke-opacity="0.5"/>
+  <rect x="60" y="305" width="8" height="80" rx="4" fill="url(#index-grad)" filter="url(#glow)"/>
+  <text x="80" y="325" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600" fill="#8b5cf6">HYBRID SEARCH INDICES</text>
+
+  <!-- FTS5 box -->
+  <rect x="80" y="335" width="280" height="40" rx="4" fill="#8b5cf6" fill-opacity="0.1" stroke="#8b5cf6" stroke-opacity="0.5"/>
+  <text x="220" y="352" font-family="JetBrains Mono, monospace" font-size="10" fill="#8b5cf6" text-anchor="middle">SQLite FTS5</text>
+  <text x="220" y="368" font-family="system-ui, sans-serif" font-size="9" fill="#64748b" text-anchor="middle">BM25 text search + EAV facts</text>
+
+  <!-- HNSW box -->
+  <rect x="380" y="335" width="280" height="40" rx="4" fill="#d946ef" fill-opacity="0.1" stroke="#d946ef" stroke-opacity="0.5"/>
+  <text x="520" y="352" font-family="JetBrains Mono, monospace" font-size="10" fill="#d946ef" text-anchor="middle">Metal HNSW Index</text>
+  <text x="520" y="368" font-family="system-ui, sans-serif" font-size="9" fill="#64748b" text-anchor="middle">GPU-accelerated vector search</text>
+
+  <!-- Section 5: TOC -->
+  <rect x="60" y="395" width="680" height="65" rx="6" fill="#0a0a0a" stroke="#64748b" stroke-width="1" stroke-opacity="0.5"/>
+  <rect x="60" y="395" width="8" height="65" rx="4" fill="url(#toc-grad)" filter="url(#glow)"/>
+  <text x="80" y="415" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600" fill="#94a3b8">TOC + FOOTER</text>
+  <text x="80" y="430" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Frame manifest • Index manifests • Segment catalog • Merkle root</text>
+  <text x="80" y="445" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Footer: "WAX1FOOT" magic + committed sequence</text>
+  <text x="710" y="430" font-family="JetBrains Mono, monospace" font-size="11" fill="#94a3b8" text-anchor="end">~64 KB</text>
+
+  <!-- Footer brand -->
+  <text x="400" y="490" font-family="system-ui, sans-serif" font-size="10" fill="#3f3f46" text-anchor="middle">github.com/christopherkarani/Wax • Apache 2.0</text>
+</svg>
