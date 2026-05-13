@@ -84,7 +84,7 @@ Commit policy:
 - [ ] F070 CoreML errors: `try?` hides CoreML failures.
 - [ ] F071 MiniLM tests: quality test bypasses public batch embedder.
 - [ ] F072 Tokenizer batching: pre-tokenized embeddings always use batch size 1.
-- [ ] F073 Tokenizer: whitespace splitting excludes newlines.
+- [x] F073 Tokenizer: whitespace splitting excludes newlines.
 - [ ] F074 Tokenizer: token type IDs mark SEP/padding as segment 1.
 - [ ] F075 CoreML dtype: unsupported `MLMultiArray` dtype becomes zeros.
 - [x] F076 FTS5: raw MATCH query is not escaped.

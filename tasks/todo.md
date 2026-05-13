@@ -2074,3 +2074,12 @@
 - Verification:
   - `swift test --filter waxMCPProductEnablesMiniLMCompileDefine --disable-automatic-resolution`: passed.
   - `swift build --product wax-mcp --traits MCPServer --disable-automatic-resolution`: passed.
+
+### F073 Review
+
+- Added a regression proving the BERT tokenizer treats newline-separated text the same as space-separated text.
+- Fixed tokenizer whitespace handling so newlines do not produce extra `[UNK]` tokens.
+- Verification:
+  - `swift test --filter bertTokenizerTreatsNewlinesAsWhitespace --disable-automatic-resolution`: passed.
+  - `swift test --filter BertTokenizer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxBertTokenizer/BertTokenizer.swift Tests/WaxIntegrationTests/BertTokenizerReuseTests.swift`: passed.
