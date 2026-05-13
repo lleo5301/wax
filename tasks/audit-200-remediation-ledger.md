@@ -69,7 +69,7 @@ Commit policy:
 - [x] F055 Pending vectors: USearch ignores staged vector bytes.
 - [x] F056 Batch vectors: duplicate IDs in batch overcount vector count.
 - [x] F057 Serialization: unchecked `Int` overflow in vector decode.
-- [ ] F058 Metal vectors: deserialize misses bounds/trailing-byte validation.
+- [x] F058 Metal vectors: deserialize misses bounds/trailing-byte validation.
 - [ ] F059 Metal vectors: unaligned frame ID loads.
 - [ ] F060 Metal scoring: cosine query normalization is missing/inconsistent.
 - [ ] F061 Metal errors: command-buffer error ignored.

@@ -2528,3 +2528,12 @@
 - Verification:
   - `swift test --traits default,MCPServer --filter brokerRememberPreservesContentWhitespace --disable-automatic-resolution`: failed before and passed after.
   - `swift test --traits default,MCPServer --filter 'brokerRememberPreservesContentWhitespace|toolsRememberRecallSearchFlushStatsHappyPath|handoffRoundTripAndStatsSessionBlockWork|brokerRetrievalEventsPersistQueryHashWithoutRawQuery' --disable-automatic-resolution`: passed.
+
+### F058 Review
+
+- Added a Metal-vector regression proving deserialization rejects trailing bytes after an otherwise valid serialized Metal vector segment.
+- Verified the focused regression failed before the fix because the trailing byte was silently accepted.
+- Added checked vector/frame-id byte-count arithmetic, frame-id payload bounds checks, and exact end-of-segment validation in `MetalVectorEngine.deserialize`.
+- Verification:
+  - `swift test --filter metalVectorEngineRejectsTrailingBytesDuringDeserialize --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter 'metalVectorEngineRejectsTrailingBytesDuringDeserialize|metalVectorEngineAddBatchUpdatesExistingIdsCorrectly|metalVectorEngineRejectsNonFiniteVectors|VectorSerializerTests' --disable-automatic-resolution`: passed.
