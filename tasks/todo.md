@@ -2463,3 +2463,12 @@
 - Changed the fixture to use a short `/tmp/wxdc-<id>` daemon root, so the test exercises stable custom-root hashing instead of the separate long-path fallback behavior covered by `brokerSocketFallbackUsesPrivateUserDirectory`.
 - Verification:
   - `swift test --traits default,MCPServer --filter agentDaemonConfigurationUsesStableSocketPaths --disable-automatic-resolution`: failed before and passed after.
+
+### F083 Review
+
+- Added broker socket-root regressions proving `WAX_BROKER_DIR` roots must be private `0700` directories owned by the current user and must reject symlink directories.
+- Verified the focused regressions failed before the fix: short env roots were created as `0755`, and symlink roots were accepted.
+- Reused `ensurePrivateDirectory` for preferred socket roots, making default/env roots follow the same hardening path already used by long-path fallbacks.
+- Verification:
+  - `swift test --traits default,MCPServer --filter 'brokerSocketEnvironmentRootUsesPrivateDirectory|brokerSocketEnvironmentRootRejectsSymlink' --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --traits default,MCPServer --filter WaxCLITests --disable-automatic-resolution`: passed.

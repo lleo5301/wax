@@ -94,7 +94,7 @@ Commit policy:
 - [ ] F080 Schema: FTS schema validation is weak.
 - [ ] F081 Tokenizer: default FTS tokenizer/version is unpinned.
 - [ ] F082 CLI daemon: `--socket-path` can unlink arbitrary file.
-- [ ] F083 CLI daemon: normal broker socket directory is not private.
+- [x] F083 CLI daemon: normal broker socket directory is not private.
 - [ ] F084 CLI daemon: socket `readToEnd` can hang.
 - [x] F085 CLI secrets: license key leaks through dry-run/argv output.
 - [x] F086 CLI flags: direct `stats/flush` ignore `require-vector`.
