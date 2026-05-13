@@ -2537,3 +2537,12 @@
 - Verification:
   - `swift test --filter metalVectorEngineRejectsTrailingBytesDuringDeserialize --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter 'metalVectorEngineRejectsTrailingBytesDuringDeserialize|metalVectorEngineAddBatchUpdatesExistingIdsCorrectly|metalVectorEngineRejectsNonFiniteVectors|VectorSerializerTests' --disable-automatic-resolution`: passed.
+
+### F059 Review
+
+- Added a static Metal deserializer regression proving frame IDs are not decoded through alignment-assuming `bindMemory(to: UInt64.self)`.
+- Verified the regression failed before the fix on the existing frame-id decode.
+- Replaced the frame-id array decode with per-slot `loadUnaligned` little-endian loads from the original byte buffer.
+- Verification:
+  - `swift test --filter metalVectorEngineDeserializeAvoidsAlignedUInt64Binding --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter 'metalVectorEngineDeserializeAvoidsAlignedUInt64Binding|metalVectorEngineRejectsTrailingBytesDuringDeserialize|metalVectorEngineAddBatchUpdatesExistingIdsCorrectly' --disable-automatic-resolution`: passed.
