@@ -2555,3 +2555,12 @@
 - Verification:
   - `swift test --filter metalVectorEngineNormalizesScaledSearchQueries --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter 'metalVectorEngineNormalizesScaledSearchQueries|vectorSearchSessionCosineSearchNormalizesScaledQueries|metalVectorEngineAddBatchUpdatesExistingIdsCorrectly' --disable-automatic-resolution`: passed.
+
+### F061 Review
+
+- Added a focused static regression proving `MetalVectorEngine.search` must inspect completed command-buffer status and error before consuming result buffers.
+- Verified the regression failed before the fix because the search path committed and awaited the command buffer without checking `status` or `error`.
+- Added a post-completion validator that throws a `WaxError` for any non-completed Metal command-buffer status, preserving the Metal error description when available.
+- Verification:
+  - `swift test --filter metalVectorEngineChecksCommandBufferFailureAfterCompletion --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter 'metalVectorEngineChecksCommandBufferFailureAfterCompletion|metalVectorEngineNormalizesScaledSearchQueries|metalVectorEngineRejectsTrailingBytesDuringDeserialize|metalVectorEngineAddBatchUpdatesExistingIdsCorrectly' --disable-automatic-resolution`: passed.
