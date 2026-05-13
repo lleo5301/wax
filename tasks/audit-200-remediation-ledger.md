@@ -111,7 +111,7 @@ Commit policy:
 - [ ] F097 Session end: active session removed before fallible persistence.
 - [ ] F098 Broker commit: `remember/handoff` commit before event failure.
 - [ ] F099 Knowledge capture: graph write before memory write can half-commit.
-- [ ] F100 MCP content: content strings are trimmed.
+- [x] F100 MCP content: content strings are trimmed.
 - [x] F101 Session resume: `session_resume` can pick ended manifest.
 - [ ] F102 HTTP MCP: body limit is enforced after full read.
 - [ ] F103 Corpus: corpus rebuild is non-atomic.

@@ -2519,3 +2519,12 @@
 - Updated selector-based manifest resolution to skip ended manifests; explicit `session_id` lookup still loads the requested manifest and rejects ended sessions in `sessionResume`.
 - Verification:
   - `swift test --traits default,MCPServer --filter 'brokerSessionResumeSelectorSkipsEndedManifests|endedSessionIDIsRejectedOnLaterScopedCalls|brokerBackedSessionResumeReopensPersistedSessionAfterRestart' --disable-automatic-resolution`: failed before for `brokerSessionResumeSelectorSkipsEndedManifests` and passed after.
+
+### F100 Review
+
+- Added a broker-service regression proving `memory_append`/`memory_get` and `handoff`/`handoff_latest` preserve leading whitespace and trailing newlines in authored content.
+- Verified the regression failed before the fix because broker memory content returned without the leading spaces/trailing newline.
+- Added whitespace-preserving argument accessors for content fields only, preserved corpus document payload text while still skipping whitespace-only documents, and stopped trimming handoff content before storage.
+- Verification:
+  - `swift test --traits default,MCPServer --filter brokerRememberPreservesContentWhitespace --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --traits default,MCPServer --filter 'brokerRememberPreservesContentWhitespace|toolsRememberRecallSearchFlushStatsHappyPath|handoffRoundTripAndStatsSessionBlockWork|brokerRetrievalEventsPersistQueryHashWithoutRawQuery' --disable-automatic-resolution`: passed.
