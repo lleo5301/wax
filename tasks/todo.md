@@ -2083,3 +2083,12 @@
   - `swift test --filter bertTokenizerTreatsNewlinesAsWhitespace --disable-automatic-resolution`: passed.
   - `swift test --filter BertTokenizer --disable-automatic-resolution`: passed.
   - `git diff --check -- Sources/WaxBertTokenizer/BertTokenizer.swift Tests/WaxIntegrationTests/BertTokenizerReuseTests.swift`: passed.
+
+### F121 Review
+
+- Added a README regression proving the local waxmcp development command uses the real repo-root path.
+- Fixed the npm README command from `./npm/waxmcp` to `./Resources/npm/waxmcp`.
+- Verification:
+  - `swift test --filter npmReadmeLocalDevelopmentUsesRepoRootPackagePath --disable-automatic-resolution`: passed in a detached verification worktree.
+  - `(cd Resources/npm/waxmcp && npm pack --dry-run)`: passed.
+  - `git diff --check -- Resources/npm/waxmcp/README.md Tests/WaxIntegrationTests/READMEExamplesTests.swift`: passed.

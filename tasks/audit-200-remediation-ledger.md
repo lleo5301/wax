@@ -132,7 +132,7 @@ Commit policy:
 - [ ] F118 Homebrew: formula version is stale.
 - [ ] F119 Homebrew: directory is gitlink-like without `.gitmodules`.
 - [ ] F120 Homebrew: formula Xcode 15 requirement is too old for Swift 6.1 traits.
-- [ ] F121 npm README: local path `./npm/waxmcp` is wrong from repo root.
+- [x] F121 npm README: local path `./npm/waxmcp` is wrong from repo root.
 - [ ] F122 Release scripts: root/nested release scripts rewrite different version files.
 - [x] F123 Readiness gate: pass-rate parser fails on Swift Testing output.
 - [ ] F124 Docs script: docs generation uses wrong root/destructive copy assumptions.
