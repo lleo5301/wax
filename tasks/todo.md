@@ -2350,3 +2350,13 @@
   - `swift test --filter textSearchDocsDoNotShowPackageOnlyStructuredMemoryExamplesAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter TextSearchDocsTests --disable-automatic-resolution`: passed.
   - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxTextSearch/WaxTextSearch.docc/Documentation.md:Sources/WaxTextSearch/WaxTextSearch.docc/Articles/TextSearchEngine.md:Resources/website/docs/text-search/text-search-engine.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F143 Review
+
+- Added a Wax public-docs regression proving `WaxSession` remains `package actor` and must not be listed as a user-facing symbol or shown with direct constructors/config.
+- Verified the focused regression failed before the docs rewrite on the module overview, DocC session article, and website session page.
+- Reframed session-management docs around public orchestrator lifecycle and explicitly marked the lower-level session layer package-only and not public API.
+- Verification:
+  - `swift test --filter waxDocsDoNotAdvertisePackageOnlyWaxSessionAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter WaxPublicDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/Wax/Wax.docc/Documentation.md:Sources/Wax/Wax.docc/Articles/SessionManagement.md:Resources/website/docs/orchestrator/session-management.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
