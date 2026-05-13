@@ -2093,6 +2093,14 @@
   - `(cd Resources/npm/waxmcp && npm pack --dry-run)`: passed.
   - `git diff --check -- Resources/npm/waxmcp/README.md Tests/WaxIntegrationTests/READMEExamplesTests.swift`: passed.
 
+### F043 Review
+
+- Added a regression proving MCP search rejects unknown nested filter keys instead of silently ignoring them.
+- Added an explicit allowlist for supported filter keys in the compatibility MCP filter parser.
+- Verification:
+  - `swift test --traits default,MCPServer --filter searchRejectsUnknownFilterKeys --disable-automatic-resolution`: passed.
+  - `swift test --traits default,MCPServer --filter 'searchRejectsUnknownFilterKeys|metadataFiltersApplyToSearchAndRecall' --disable-automatic-resolution`: passed.
+
 ### F151 Plan
 
 - [x] Prove the default SwiftPM test list omits the MCP trait test target.

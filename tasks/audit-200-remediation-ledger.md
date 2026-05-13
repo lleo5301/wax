@@ -162,7 +162,7 @@ Commit policy:
 - [ ] F148 Photo API: docs say `EmbeddingProvider`, code needs `MultimodalEmbeddingProvider`.
 - [ ] F149 Photo docs: sample uses nonexistent `.all` scope.
 - [ ] F150 Video API: `VideoRAGOrchestrator` documented public but package-only.
-- [ ] F151 Test coverage: default tests miss MCP trait suite.
+- [x] F151 Test coverage: default tests miss MCP trait suite.
 - [ ] F152 MCP tests: many tests use direct-memory compatibility path, not production broker path.
 - [ ] F153 MCP tests: compatibility aliases differ from production renamed-tool behavior.
 - [ ] F154 HTTP smoke: HTTP verifier never calls a tool.
