@@ -2042,3 +2042,11 @@
   - `bash Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
   - `shellcheck Resources/scripts/quality/production_readiness_gates.sh Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
   - `git diff --check HEAD~1..HEAD`: passed.
+
+### F079 Review
+
+- Added a regression proving FTS5 search rejects `topK: 0` instead of silently clamping it to one result.
+- Replaced the search limit clamp with validation that throws `WaxError.encodingError` for non-positive `topK` while still capping oversized positive values.
+- Verification:
+  - `swift test --filter searchRejectsNonPositiveTopK --disable-automatic-resolution`: passed.
+  - `swift test --filter TextSearchEngine --disable-automatic-resolution`: passed.

@@ -90,7 +90,7 @@ Commit policy:
 - [x] F076 FTS5: raw MATCH query is not escaped.
 - [ ] F077 FTS index: delete/supersede do not update FTS index consistently.
 - [ ] F078 Ranking: BM25 score is not normalized versus `minScore`.
-- [ ] F079 Validation: `topK <= 0` clamps to 1.
+- [x] F079 Validation: `topK <= 0` clamps to 1.
 - [ ] F080 Schema: FTS schema validation is weak.
 - [ ] F081 Tokenizer: default FTS tokenizer/version is unpinned.
 - [ ] F082 CLI daemon: `--socket-path` can unlink arbitrary file.
