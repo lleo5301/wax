@@ -2301,3 +2301,13 @@
   - `swift test --filter textSearchDocsDoNotAdvertisePackageOnlyTextSearchResultAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter TextSearchDocsTests --disable-automatic-resolution`: passed.
   - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxTextSearch/WaxTextSearch.docc/Documentation.md:Sources/WaxTextSearch/WaxTextSearch.docc/Articles/TextSearchEngine.md:Resources/website/docs/text-search/text-search-engine.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F139 Review
+
+- Added a vector docs regression proving the package-only `VectorSearchEngine` protocol does not declare `addBatchStreaming` and public/contributor docs must not present it as part of the shared operation flow.
+- Verified the focused regression failed before removing the stale streaming snippet from both vector-engine docs pages.
+- Removed the `addBatchStreaming` snippet from common operations while preserving the documented `addBatch`, `search`, `remove`, and `stageForCommit` flow.
+- Verification:
+  - `swift test --filter vectorSearchDocsDoNotClaimProtocolHasStreamingBatchAPI --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter VectorSearchDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxVectorSearch/WaxVectorSearch.docc/Documentation.md:Sources/WaxVectorSearch/WaxVectorSearch.docc/Articles/VectorSearchEngines.md:Resources/website/docs/vector-search/vector-search-engines.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
