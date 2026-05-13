@@ -2438,3 +2438,12 @@
 - Verification:
   - `swift test --traits default,MCPServer --filter directStatsAndFlushHonorRequireVectorWithNoEmbedder --disable-automatic-resolution`: failed before and passed after.
   - `swift test --traits default,MCPServer --filter 'brokerBackedVectorRequirementFailsFastWhenNoEmbedderIsConfigured|vectorRequiredOpenRejectsNoEmbedderFlag' --disable-automatic-resolution`: passed.
+
+### F087 Review
+
+- Added parser regressions proving invalid embedder runtime flags are rejected instead of silently ignored.
+- Verified the focused regression failed before validation for invalid compute units, blank compute unit, zero batch size, zero prewarm batch size, and zero timeout.
+- Added `VectorStoreOptions` validation for runtime compute-unit names and positive numeric bounds before resolved tuning is applied.
+- Verification:
+  - `swift test --traits default,MCPServer --filter invalidEmbedderRuntimeFlagsAreRejected --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --traits default,MCPServer --filter agentDaemonPolicyPrefersDaemonForVectorCommands --disable-automatic-resolution`: passed.
