@@ -2013,3 +2013,12 @@
 - Verified the test failed before the README change because the snippet used `URL.documentsDirectory` with only `import Wax`.
 - Added `import Foundation` to the README Swift quick-start and CLI snippets.
 - Verification: `swift test --filter readmeQuickStartImportsFoundationBeforeWax --disable-automatic-resolution` passed.
+
+### F111 Review
+
+- Fixed the standalone WaxDemo manifest dependency from missing `../Wax` to the repository root.
+- Follow-up verification showed the path fix exposed package-boundary errors: the demo executables imported `WaxCore` internals that are `package`-scoped in the root package.
+- Reworked the standalone demo executables to depend on the public `Wax` product and use public `Memory` / `FrameStore` APIs only.
+- Verification:
+  - `swift package describe --package-path Resources/WaxDemo --disable-automatic-resolution`: passed.
+  - `swift build --package-path Resources/WaxDemo --disable-automatic-resolution`: passed.

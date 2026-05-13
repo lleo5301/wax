@@ -122,7 +122,7 @@ Commit policy:
 - [ ] F108 MCP tests: locked-session corpus search test times out.
 - [ ] F109 npm package: packed tarball lacks `dist` binaries.
 - [ ] F110 Snippet gate: public snippet verifier is missing.
-- [ ] F111 Demo package: WaxDemo points to missing `../Wax`.
+- [x] F111 Demo package: WaxDemo points to missing `../Wax`.
 - [ ] F112 Release script: version grep targets stale source pattern.
 - [ ] F113 Release script: checksum path is cwd-sensitive.
 - [ ] F114 Release workflow: npm metadata is bumped after build only.
