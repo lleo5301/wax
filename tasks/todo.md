@@ -1951,3 +1951,58 @@
   - `swift test --traits default,MCPServer --filter 'releaseWaxMCPScriptsSyncMetadataVersion|releaseWaxMCPWrapperExecutesCanonicalScriptFromRepoRoot|waxMCPPackageAdvertisesReleaseArchitectures|buildWaxMCPBinariesWritesRelocatableChecksums|brokerSocketFallbackUsesPrivateUserDirectory' --disable-automatic-resolution`: passed; 5 tests.
   - `bash -n Resources/scripts/release-waxmcp.sh scripts/release-waxmcp.sh Resources/scripts/build-waxmcp-binaries.sh`: passed.
   - `git diff --check`: passed.
+
+## 200-Item Audit 2026-05-13
+
+- Scope:
+  - Audit-only: find 200 verified, non-duplicate bugs or implementation gaps.
+  - Do not fix code, stage files, delete generated artifacts, or disturb user-owned dirty work.
+  - Treat a finding as accepted only with exact code path, line/function, failure mode, impact, proof, false-positive check, and recommended fix/test.
+- Plan:
+  - [x] Inventory repo state, dirty files, prior task notes, and reusable memory before deeper work.
+  - [x] Split audit across subagents for Package/build graph, WaxCore durability, Wax facade/search/broker, vector/CoreML/tokenizers, FTS5, CLI, MCP server, npm/OpenClaw, website/docs/snippets/skills, tests/CI/release scripts.
+    - First wave complete: Package/traits, WaxCore durability, structured memory, facade/search/broker, vector engines, MiniLM/Arctic/tokenizers.
+    - Second wave complete: FTS5/text search, CLI, MCP server, npm/OpenClaw artifacts, website/docs/snippets/WaxDemo, tests/CI/release scripts.
+    - Third wave complete: RAG/orchestrator, broker markdown/session, enrichment/surrogates/access stats, media RAG, public API/docs, test-contract gaps.
+  - [x] Run relevant build/test/script/package gates and capture exact pass/fail evidence.
+    - Completed: default build, MCP build, npm pack dry-runs, WaxDemo build probe, WaxCLI focused test, WaxMCPServer focused/full probes, MiniLM quality/embedder probes, WaxCore/focused durability suites, vector suites, iOS Xcode build, script syntax checks.
+  - [x] Deduplicate by root cause, reject style nits and speculative wishlist items, and keep only verified defects/gaps.
+    - Duplicates rejected include commit atomicity across durability/facade, vector-mode schema drift across facade/MCP, broker socket-path findings across CLI/MCP, npm release packaging across package/CI, and access-stat/surrogate duplicates across RAG/enrichment.
+  - [x] Launch targeted follow-up passes for any under-covered area until 200 verified findings survive or a hard blocker proves the target cannot be met honestly.
+  - [x] Add a review/verification section summarizing the audit method, accepted count, blockers, and remaining risk.
+
+## 200-Item Audit Review 2026-05-13
+
+- Verified total: 200 non-duplicate bugs or implementation gaps accepted for the final audit table.
+- Worktree preservation: no source fixes were made; only this task log was updated. Existing untracked `.build-codex/`, `.playwright-mcp/`, `.qwen/`, `issue61_full.png`, and `issue61_snapshot.md` were left untouched.
+- Method: repository inventory, memory lookup, three parallel subagent waves across the requested slices, local gate execution, focused reruns for failing tests, static proof through concrete code paths, and root-cause deduplication before final acceptance.
+- Key gates:
+  - `swift build --disable-automatic-resolution`: passed.
+  - `swift build --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - WaxCore and focused crash/WAL/delete/unified/vector/concurrency test subsets: passed.
+  - `WAX_TEST_MINILM=1 swift test --filter MiniLMEmbeddingQualityTests --disable-automatic-resolution`: passed.
+  - `WAX_TEST_MINILM=1 swift test --filter MiniLMEmbedderTests --disable-automatic-resolution`: failed on MiniLM batch embedding behavior.
+  - `swift test --traits default,MCPServer --filter WaxCLITests --disable-automatic-resolution`: failed on stable socket path expectation.
+  - `swift test --traits default,MCPServer --filter WaxMCPServerTests --disable-automatic-resolution`: failed on two broker-backed timeout tests.
+  - `Resources/scripts/quality/verify_public_snippets.sh`: missing.
+  - `swift build --package-path Resources/WaxDemo --disable-automatic-resolution`: failed because `Resources/WaxDemo` points at missing `../Wax`.
+  - `xcodebuild -scheme Wax -destination 'generic/platform=iOS'`: passed, so iOS build-surface claims were not counted as failures.
+- Blockers: no blocker prevented the audit. Linux runtime verification and external release publishing were not executed locally; Linux/package/release findings were accepted only where static CI/package/script evidence was precise.
+
+## 200-Item Remediation Plan 2026-05-13
+
+- Scope:
+  - Fix all 200 accepted audit findings using TDD and one fix commit per issue.
+  - Preserve the existing dirty/untracked state and do not stage generated artifacts.
+  - Use subagents for disjoint slices, but keep final integration and commits explicit in this worktree.
+- Ledger:
+  - [x] Create `tasks/audit-200-remediation-ledger.md` before source edits.
+- Plan:
+  - [ ] Commit the remediation ledger/planning note separately from issue fixes.
+  - [ ] Batch 1: fix isolated packaging/docs/test-gate issues with fast verification.
+  - [ ] Batch 2: fix MiniLM/tokenizer/vector validation issues with focused failing tests first.
+  - [ ] Batch 3: fix CLI/MCP schema/process issues with trait-enabled tests.
+  - [ ] Batch 4: fix broker/session/markdown/corpus issues with failure-injection tests.
+  - [ ] Batch 5: fix WaxCore durability/structured-memory transactional issues with focused crash/replay tests.
+  - [ ] Batch 6: fix media/API/docs public-surface issues with snippet/external-consumer compile gates.
+  - [ ] After every issue: run focused verification, review diff for regressions, update ledger status, and commit only that issue.
