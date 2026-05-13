@@ -2311,3 +2311,13 @@
   - `swift test --filter vectorSearchDocsDoNotClaimProtocolHasStreamingBatchAPI --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter VectorSearchDocsTests --disable-automatic-resolution`: passed.
   - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxVectorSearch/WaxVectorSearch.docc/Documentation.md:Sources/WaxVectorSearch/WaxVectorSearch.docc/Articles/VectorSearchEngines.md:Resources/website/docs/vector-search/vector-search-engines.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F136 Review
+
+- Added a vector docs regression proving public/contributor docs must not instantiate package-only `USearchVectorEngine` directly.
+- Verified the focused regression failed before removing `USearchVectorEngine(...)` snippets from the module overview, DocC article, and website page.
+- Replaced the CPU construction snippets with contributor-facing prose that Wax package internals select the CPU backend through the loader/session configuration.
+- Verification:
+  - `swift test --filter vectorSearchDocsDoNotInstantiatePackageOnlyUSearchEngineAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter VectorSearchDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxVectorSearch/WaxVectorSearch.docc/Documentation.md:Sources/WaxVectorSearch/WaxVectorSearch.docc/Articles/VectorSearchEngines.md:Resources/website/docs/vector-search/vector-search-engines.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
