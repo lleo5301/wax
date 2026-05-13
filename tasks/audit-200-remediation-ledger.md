@@ -142,7 +142,7 @@ Commit policy:
 - [x] F128 README: quick-start omits required `Foundation` import.
 - [x] F129 README: advertises hybrid recall where public `Memory` path is text-only.
 - [x] F130 Public API: WaxCore documents package-only `Wax` actor.
-- [ ] F131 DocC: WaxCore topics list package-only symbols.
+- [x] F131 DocC: WaxCore topics list package-only symbols.
 - [x] F132 Docs: `WaxOptions` labels are wrong.
 - [ ] F133 Docs: `putFrame/frame/readPayload` methods do not exist.
 - [ ] F134 Docs/API: structured-memory types documented public but package-only.

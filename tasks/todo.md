@@ -2237,6 +2237,25 @@
   - Targeted grep found no remaining direct public `Wax.create`, `Wax.open`, `store.acquireWriterLease`, `store.putFrame`, `store.commit`, `store.releaseWriterLease`, `store.readPayload`, or `store.close` guidance in the owned WaxCore docs.
   - `git diff --check -- Sources/WaxCore/WaxCore.docc/Documentation.md Sources/WaxCore/WaxCore.docc/Articles/GettingStarted.md Sources/WaxCore/WaxCore.docc/Articles/ConcurrencyModel.md Resources/website/docs/core/getting-started.md Resources/website/docs/core/concurrency-model.md Tests/WaxTests/WaxCoreDocsTests.swift tasks/audit-200-remediation-ledger.md tasks/todo.md`: passed.
 
+### F131 Plan
+
+- [x] Prove `Sources/WaxCore/WaxCore.docc/Documentation.md` topic links include package-only symbols.
+- [x] Add a focused docs regression that fails while package-only WaxCore symbols appear in the public DocC topics list.
+- [x] Rewrite only `Sources/WaxCore/WaxCore.docc/Documentation.md` to remove or reframe package-only topics from the public topic list.
+- [x] Verify the focused regression, targeted snippet scan, static grep, and whitespace diff.
+- [x] Mark only F131 complete in the ledger and record the review.
+
+### F131 Review
+
+- Added a focused regression proving WaxCore DocC topics must not link package-only symbols as public topics.
+- Verified the regression failed before the docs rewrite with 42 package-only WaxCore symbol links in the topic list.
+- Reframed the WaxCore landing topic list to expose conceptual articles plus the public `WaxError` symbol, while explicitly omitting package-only implementation symbols.
+- Verification:
+  - `swift test --filter waxCoreDocCTopicsDoNotLinkPackageOnlySymbols --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter WaxCoreDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxCore/WaxCore.docc/Documentation.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+  - Targeted grep confirmed no package-only WaxCore symbol links remain in the `Documentation.md` topic list and `WaxError` remains listed.
+
 ### F057 Review
 
 - Added a vector serializer regression with a huge flat-segment header that previously crashed the test process with Swift's integer overflow trap.
