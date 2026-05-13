@@ -2058,3 +2058,19 @@
 - Verification:
   - `swift test --filter whitespaceOnlyRecallDoesNotRequestEmbedding --disable-automatic-resolution`: passed.
   - `swift test --filter MemoryOrchestratorGapTests --disable-automatic-resolution`: passed.
+
+### F046 Review
+
+- Added a manifest regression proving the `WaxRepo` executable target carries the `MiniLMEmbeddings` compile define when the trait is enabled.
+- Added `.define("MiniLMEmbeddings", .when(traits: ["MiniLMEmbeddings"]))` to the `WaxRepo` executable target settings.
+- Verification:
+  - `swift test --filter waxRepoProductEnablesMiniLMCompileDefine --disable-automatic-resolution`: passed.
+  - `swift build --product WaxRepo --traits MiniLMEmbeddings,WaxRepo --disable-automatic-resolution`: passed.
+
+### F045 Review
+
+- Added a manifest regression proving the `wax-mcp` executable target carries the `MiniLMEmbeddings` compile define when the trait is enabled.
+- Added `.define("MiniLMEmbeddings", .when(traits: ["MiniLMEmbeddings"]))` to the `wax-mcp` executable target settings.
+- Verification:
+  - `swift test --filter waxMCPProductEnablesMiniLMCompileDefine --disable-automatic-resolution`: passed.
+  - `swift build --product wax-mcp --traits MCPServer --disable-automatic-resolution`: passed.

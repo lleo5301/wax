@@ -56,8 +56,8 @@ Commit policy:
 - [ ] F042 MCP filters: non-integer time filters are ignored.
 - [ ] F043 MCP filters: unknown nested filters are ignored.
 - [x] F044 Recall: whitespace-only recall can embed/search unrelated content.
-- [ ] F045 Traits: `wax-mcp` missing `MiniLMEmbeddings` define.
-- [ ] F046 Traits: `WaxRepo` missing `MiniLMEmbeddings` define.
+- [x] F045 Traits: `wax-mcp` missing `MiniLMEmbeddings` define.
+- [x] F046 Traits: `WaxRepo` missing `MiniLMEmbeddings` define.
 - [ ] F047 Linux: MCP Linux path imports Darwin/CoreGraphics-only APIs.
 - [ ] F048 Linux: `Darwin.exit` used unconditionally.
 - [ ] F049 Linux tests: excludes miss Darwin benchmark files.
