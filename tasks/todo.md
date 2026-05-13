@@ -2456,3 +2456,10 @@
 - Verification:
   - `swift test --traits default,MCPServer --filter 'mcpInstallDryRunRedactsLicenseKey|mcpServePassesLicenseKeyInEnvironmentOnly' --disable-automatic-resolution`: failed before and passed after.
   - `swift test --traits default,MCPServer --filter WaxCLITests --disable-automatic-resolution`: existing failure in `agentDaemonConfigurationUsesStableSocketPaths`, where `AgentDaemonTransport.configuration` ignored `WAX_CLI_DAEMON_DIR` and used `/tmp/wax-broker-501/...`; the new F085 tests passed inside this gate.
+
+### F093 Review
+
+- Used the existing daemon stable-socket regression as the red proof: on this machine the test fixture's `FileManager.default.temporaryDirectory` path was long enough that `AgentBrokerPathing` correctly fell back to `/tmp/wax-broker-<uid>/...`, making the test's custom-root prefix assertion fail.
+- Changed the fixture to use a short `/tmp/wxdc-<id>` daemon root, so the test exercises stable custom-root hashing instead of the separate long-path fallback behavior covered by `brokerSocketFallbackUsesPrivateUserDirectory`.
+- Verification:
+  - `swift test --traits default,MCPServer --filter agentDaemonConfigurationUsesStableSocketPaths --disable-automatic-resolution`: failed before and passed after.
