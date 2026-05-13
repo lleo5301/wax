@@ -2217,3 +2217,22 @@
 - Verification:
   - `swift test --filter stageVecIndexRejectsMalformedSegmentBytes --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter 'IndexStagingNoOpTests|DurabilityRegressionTests|VectorSearchEngine' --disable-automatic-resolution`: passed.
+
+### F130 Plan
+
+- [x] Prove `Wax` is `package actor` while the owned WaxCore docs advertise it as public-facing API.
+- [x] Add a focused docs regression that fails on public Wax actor snippets/phrasing.
+- [x] Rewrite only WaxCore DocC and website core docs to describe the package-only boundary.
+- [x] Verify the focused docs regression, targeted snippet scan, static grep, and whitespace diff.
+- [x] Mark only F130 complete in the ledger and record the review.
+
+### F130 Review
+
+- Added a focused docs regression proving `Sources/WaxCore/Wax.swift` keeps `Wax` as a `package actor` while the owned WaxCore docs must not advertise direct `Wax` actor usage as public API.
+- Verified the regression failed before the docs rewrite on public-facing `Wax.create`, `Wax.open`, writer-lease, frame-write, commit, read, and close snippets.
+- Rewrote the owned WaxCore DocC and website core docs to describe the package-only boundary and point downstream consumers at the top-level `Wax` product APIs.
+- Verification:
+  - `swift test --filter waxCoreDocsDoNotAdvertisePackageOnlyWaxActorAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxCore/WaxCore.docc/Documentation.md:Sources/WaxCore/WaxCore.docc/Articles/GettingStarted.md:Sources/WaxCore/WaxCore.docc/Articles/ConcurrencyModel.md:Resources/website/docs/core/getting-started.md:Resources/website/docs/core/concurrency-model.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+  - Targeted grep found no remaining direct public `Wax.create`, `Wax.open`, `store.acquireWriterLease`, `store.putFrame`, `store.commit`, `store.releaseWriterLease`, `store.readPayload`, or `store.close` guidance in the owned WaxCore docs.
+  - `git diff --check -- Sources/WaxCore/WaxCore.docc/Documentation.md Sources/WaxCore/WaxCore.docc/Articles/GettingStarted.md Sources/WaxCore/WaxCore.docc/Articles/ConcurrencyModel.md Resources/website/docs/core/getting-started.md Resources/website/docs/core/concurrency-model.md Tests/WaxTests/WaxCoreDocsTests.swift tasks/audit-200-remediation-ledger.md tasks/todo.md`: passed.
