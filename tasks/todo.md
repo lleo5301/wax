@@ -2331,3 +2331,12 @@
   - `swift test --filter vectorSearchDocsDoNotInstantiatePackageOnlyMetalEngineAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter VectorSearchDocsTests --disable-automatic-resolution`: passed.
   - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxVectorSearch/WaxVectorSearch.docc/Documentation.md:Sources/WaxVectorSearch/WaxVectorSearch.docc/Articles/VectorSearchEngines.md:Resources/website/docs/vector-search/vector-search-engines.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F148 Review
+
+- Added a PhotoRAG docs regression proving the package-only orchestrator requires `MultimodalEmbeddingProvider` and the owned docs must not advertise plain `EmbeddingProvider` for PhotoRAG.
+- Static proof showed `PhotoRAGOrchestrator` stores `embedder: any MultimodalEmbeddingProvider`; the current PhotoRAG docs already name that requirement after the earlier package-only rewrite.
+- Verification:
+  - `swift test --filter photoRAGDocsNameMultimodalEmbeddingProviderRequirement --disable-automatic-resolution`: passed.
+  - `swift test --filter PhotoRAGDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/Wax/Wax.docc/Articles/PhotoRAG.md:Resources/website/docs/media/photo-rag.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
