@@ -2014,6 +2014,22 @@
 - Added `import Foundation` to the README Swift quick-start and CLI snippets.
 - Verification: `swift test --filter readmeQuickStartImportsFoundationBeforeWax --disable-automatic-resolution` passed.
 
+
+### F129 Plan
+
+- [x] Add a focused README static regression that fails while the public `Memory(at:)` quick-start advertises hybrid recall without an embedding provider.
+- [x] Update only the root README quick-start wording so the public no-embedding `Memory` path is described as text-only.
+- [x] Run the focused README regression, review the diff for unrelated changes, update the F129 ledger entry, and commit only the F129 files.
+
+### F129 Review
+
+- Added a README regression that extracts the root Swift quick-start and fails if the no-embedding public `Memory(at:)` example advertises hybrid or `text + vector` recall.
+- Verified the focused test failed before the README fix on the existing `hybrid recall (text + vector)` claim.
+- Reworded the root README quick-start comment to describe text-only recall without an embedding provider.
+- Verification:
+  - `swift test --filter readmePublicMemoryQuickStartDoesNotAdvertiseHybridWithoutEmbedding --disable-automatic-resolution`: failed before the README change, then passed after.
+  - `swift test --filter READMEExamplesTests --disable-automatic-resolution`: passed.
+  - `git diff --check -- README.md Tests/WaxIntegrationTests/READMEExamplesTests.swift tasks/audit-200-remediation-ledger.md tasks/todo.md`: passed.
 ### F111 Review
 
 - Fixed the standalone WaxDemo manifest dependency from missing `../Wax` to the repository root.

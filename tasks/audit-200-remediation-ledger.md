@@ -140,7 +140,7 @@ Commit policy:
 - [x] F126 Test gate: skip detector misses Swift Testing skip format.
 - [ ] F127 CI scope: Linux CI omits Wax/CLI/MCP product builds.
 - [x] F128 README: quick-start omits required `Foundation` import.
-- [ ] F129 README: advertises hybrid recall where public `Memory` path is text-only.
+- [x] F129 README: advertises hybrid recall where public `Memory` path is text-only.
 - [ ] F130 Public API: WaxCore documents package-only `Wax` actor.
 - [ ] F131 DocC: WaxCore topics list package-only symbols.
 - [x] F132 Docs: `WaxOptions` labels are wrong.
