@@ -2370,3 +2370,13 @@
   - `swift test --filter waxDocsDoNotAdvertisePackageOnlyWaxSessionAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter WaxPublicDocsTests --disable-automatic-resolution`: passed.
   - `WAX_PUBLIC_SNIPPET_FILES="Sources/Wax/Wax.docc/Documentation.md:Sources/Wax/Wax.docc/Articles/SessionManagement.md:Resources/website/docs/orchestrator/session-management.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F146 Review
+
+- Added a Wax public-docs regression proving `WaxSession` has `Data`-based `put` overloads, no `put(text:)` overload, and session docs must not advertise nonexistent text or text-batch signatures.
+- Static before-proof from `git show HEAD~2:Sources/Wax/Wax.docc/Articles/SessionManagement.md` showed `session.put(text:)`, `timestamp: nowMs`, `embedding: vectorData`, and `putBatch(texts:)` examples.
+- The F143 session docs rewrite removed the stale examples; this commit adds the dedicated F146 guard and ledger closeout.
+- Verification:
+  - `swift test --filter sessionDocsDoNotAdvertiseNonexistentTextPutOverloads --disable-automatic-resolution`: passed.
+  - `swift test --filter WaxPublicDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/Wax/Wax.docc/Articles/SessionManagement.md:Resources/website/docs/orchestrator/session-management.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
