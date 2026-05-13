@@ -52,7 +52,7 @@ Commit policy:
 - [ ] F038 Diagnostics: broker filters lack includeDeleted/superseded/frame IDs.
 - [ ] F039 MCP schema: `fact_assert` omits relation/version relation.
 - [ ] F040 MCP schema: generic `type/value` fact schema is rejected by broker.
-- [ ] F041 MCP filters: non-array `labels` filter is ignored.
+- [x] F041 MCP filters: non-array `labels` filter is ignored.
 - [ ] F042 MCP filters: non-integer time filters are ignored.
 - [x] F043 MCP filters: unknown nested filters are ignored.
 - [x] F044 Recall: whitespace-only recall can embed/search unrelated content.
