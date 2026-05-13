@@ -2410,3 +2410,13 @@
   - `swift test --filter docsDoNotAdvertiseNonexistentFramePayloadMethods --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter WaxCoreDocsTests --disable-automatic-resolution`: passed.
   - `WAX_PUBLIC_SNIPPET_FILES="Sources/Wax/Wax.docc/Articles/Architecture.md:Resources/website/docs/architecture.md:Sources/WaxCore/WaxCore.docc/Articles/GettingStarted.md:Resources/website/docs/core/getting-started.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F022 Review
+
+- Added a structured-memory regression proving empty, whitespace-only, and overlong entity/predicate keys are rejected for entity upserts, fact subjects, fact predicates, and entity-valued fact objects.
+- Verified the focused regression failed before validation with 12 missing expected errors.
+- Added shared structured-memory key validation and applied it at entity upsert, fact assertion, fact lookup filters, and fact hashing so invalid keys cannot bypass the text-search engine path.
+- Verification:
+  - `swift test --filter structuredMemoryRejectsInvalidEntityAndPredicateKeys --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter StructuredMemoryCRUDTests --disable-automatic-resolution`: passed.
+  - `swift test --filter 'StructuredMemoryCRUDTests|StructuredMemoryHashingTests|WaxSessionTests' --disable-automatic-resolution`: passed.
