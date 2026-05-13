@@ -2092,3 +2092,24 @@
   - `swift test --filter npmReadmeLocalDevelopmentUsesRepoRootPackagePath --disable-automatic-resolution`: passed in a detached verification worktree.
   - `(cd Resources/npm/waxmcp && npm pack --dry-run)`: passed.
   - `git diff --check -- Resources/npm/waxmcp/README.md Tests/WaxIntegrationTests/READMEExamplesTests.swift`: passed.
+
+### F151 Plan
+
+- [x] Prove the default SwiftPM test list omits the MCP trait test target.
+- [x] Prove the MCPServer trait SwiftPM test list includes the MCP trait test target.
+- [x] Add a required CI/quality-gate check that documents and enforces the MCP trait test target is present before the production MCP lane runs.
+- [x] Run syntax/static checks for the touched scripts and record the F151 review.
+
+### F151 Review
+
+- Added a production-readiness inventory check that runs SwiftPM test discovery in default mode and `MCPServer` trait mode before the production MCP test lane.
+- The new gate allows the default no-trait `wax_mcpTests.mcpServerTestsRequireTrait()` sentinel but fails if default test discovery unexpectedly includes real MCP trait suites.
+- The MCP trait inventory now fails unless the trait list includes `wax_mcpTests.WaxMCPProcessTests/...` and `wax_mcpTests.toolsListContainsExpectedTools()`.
+- Static proof:
+  - Default test list: `0` real MCP trait entries.
+  - MCP trait test list: `81` `wax_mcpTests` entries.
+- Verification:
+  - `bash -n Resources/scripts/quality/production_readiness_gates.sh Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+  - `bash Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+  - `shellcheck Resources/scripts/quality/production_readiness_gates.sh Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+  - `assert_mcp_trait_test_inventory`: passed against real SwiftPM test discovery.
