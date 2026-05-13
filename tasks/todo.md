@@ -2511,3 +2511,11 @@
 - Moved `knowledge_capture` into the structured-only schema group and added it to structured command validation so broker and compatibility call paths reject it when disabled.
 - Verification:
   - `swift test --traits default,MCPServer --filter 'toolsListHonorsStructuredMemoryFlag|toolsBlockStructuredMemoryOnlyToolsWhenDisabled|toolSchemaRegression' --disable-automatic-resolution`: failed before and passed after.
+
+### F101 Review
+
+- Added a broker-service regression with two manifests sharing the same `agent_id`/`run_id`: the newer manifest is ended, while the older one remains active.
+- Verified the regression failed before the fix because selector-based `session_resume` chose the newest ended manifest and returned an error.
+- Updated selector-based manifest resolution to skip ended manifests; explicit `session_id` lookup still loads the requested manifest and rejects ended sessions in `sessionResume`.
+- Verification:
+  - `swift test --traits default,MCPServer --filter 'brokerSessionResumeSelectorSkipsEndedManifests|endedSessionIDIsRejectedOnLaterScopedCalls|brokerBackedSessionResumeReopensPersistedSessionAfterRestart' --disable-automatic-resolution`: failed before for `brokerSessionResumeSelectorSkipsEndedManifests` and passed after.
