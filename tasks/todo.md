@@ -2491,3 +2491,15 @@
 - Verification:
   - `swift test --traits default,MCPServer --filter daemonSocketClientTimeoutDoesNotBlockLaterRequests --disable-automatic-resolution`: failed before and passed after.
   - `swift test --traits default,MCPServer --filter WaxCLITests --disable-automatic-resolution`: passed.
+
+### F095 Review
+
+- Added a broker-backed CLI regression proving `WAX_MCP_FEATURE_ACCESS_STATS=1` must surface as `features.accessStatsScoringEnabled == true` in stats.
+- Verified the focused regression failed before the fix because broker-backed stats still reported `false`.
+- Passed the access-stats feature flag from daemon environment into `AgentBrokerService`, then applied it to long-term, session, and ad-hoc orchestrator configs.
+- Verification:
+  - `swift test --traits default,MCPServer --filter brokerStatsHonorAccessStatsFeatureFlag --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --traits default,MCPServer --filter WaxCLITests --disable-automatic-resolution`: passed.
+  - `swift test --traits default,MCPServer --filter WaxMCPServerTests --disable-automatic-resolution`: failed in existing focused-reproducible cases `rememberSearchAndRecallExposeTypedExplainableMemory` and `waxMCPProcessRememberWithRealCoreMLEmbedder`.
+  - `swift test --traits default,MCPServer --filter rememberSearchAndRecallExposeTypedExplainableMemory --disable-automatic-resolution`: failed, recall explanations did not contain `user preference`.
+  - `swift test --traits default,MCPServer --filter waxMCPProcessRememberWithRealCoreMLEmbedder --disable-automatic-resolution`: failed, tool payload was not a JSON object.

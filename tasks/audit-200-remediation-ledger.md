@@ -106,7 +106,7 @@ Commit policy:
 - [ ] F092 WaxRepo: repo search parses preview instead of metadata.
 - [x] F093 CLI tests: daemon stable socket path expectation fails.
 - [ ] F094 MCP structured: `knowledge_capture` bypasses structured-memory flag.
-- [ ] F095 Broker config: access-stats env is parsed/logged but ignored.
+- [x] F095 Broker config: access-stats env is parsed/logged but ignored.
 - [ ] F096 HTTP MCP: HTTP transport has no auth off-loopback.
 - [ ] F097 Session end: active session removed before fallible persistence.
 - [ ] F098 Broker commit: `remember/handoff` commit before event failure.
