@@ -2006,3 +2006,10 @@
   - [ ] Batch 5: fix WaxCore durability/structured-memory transactional issues with focused crash/replay tests.
   - [ ] Batch 6: fix media/API/docs public-surface issues with snippet/external-consumer compile gates.
   - [ ] After every issue: run focused verification, review diff for regressions, update ledger status, and commit only that issue.
+
+### F128 Review
+
+- Added a README regression test that proves the quick-start Swift snippet imports `Foundation` before `Wax`.
+- Verified the test failed before the README change because the snippet used `URL.documentsDirectory` with only `import Wax`.
+- Added `import Foundation` to the README Swift quick-start and CLI snippets.
+- Verification: `swift test --filter readmeQuickStartImportsFoundationBeforeWax --disable-automatic-resolution` passed.
