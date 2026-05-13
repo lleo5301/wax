@@ -2482,3 +2482,12 @@
   - `swift test --traits default,MCPServer --filter daemonSocketPathDoesNotReplaceRegularFile --disable-automatic-resolution`: failed before and passed after.
   - `swift test --traits default,MCPServer --filter WaxCLITests --disable-automatic-resolution`: F082 test passed; `pathLaunchedWaxMCPResolvesSiblingWaxCLIFromPath` timed out once waiting for MCP `tools/list`.
   - `swift test --traits default,MCPServer --filter pathLaunchedWaxMCPResolvesSiblingWaxCLIFromPath --disable-automatic-resolution`: passed on immediate focused rerun.
+
+### F084 Review
+
+- Added a daemon socket regression that holds one client connection open after writing a partial JSON payload, then verifies a later valid stats request still receives a response.
+- Verified the focused regression failed before the fix by timing out waiting for the second client's broker socket response.
+- Replaced EOF-only socket reads with bounded newline-oriented `poll`/`recv` loops on both the daemon request side and broker-client response side, preserving EOF fallback for clients that close after a partial final line.
+- Verification:
+  - `swift test --traits default,MCPServer --filter daemonSocketClientTimeoutDoesNotBlockLaterRequests --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --traits default,MCPServer --filter WaxCLITests --disable-automatic-resolution`: passed.

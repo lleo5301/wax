@@ -95,7 +95,7 @@ Commit policy:
 - [ ] F081 Tokenizer: default FTS tokenizer/version is unpinned.
 - [x] F082 CLI daemon: `--socket-path` can unlink arbitrary file.
 - [x] F083 CLI daemon: normal broker socket directory is not private.
-- [ ] F084 CLI daemon: socket `readToEnd` can hang.
+- [x] F084 CLI daemon: socket `readToEnd` can hang.
 - [x] F085 CLI secrets: license key leaks through dry-run/argv output.
 - [x] F086 CLI flags: direct `stats/flush` ignore `require-vector`.
 - [x] F087 CLI flags: invalid runtime flags are silently ignored.
