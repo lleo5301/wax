@@ -2390,3 +2390,13 @@
   - `swift test --filter unifiedSearchDocsDoNotConstructPackageOnlySearchRequestAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter WaxPublicDocsTests --disable-automatic-resolution`: passed.
   - `WAX_PUBLIC_SNIPPET_FILES="Sources/Wax/Wax.docc/Articles/UnifiedSearch.md:Resources/website/docs/orchestrator/unified-search.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F145 Review
+
+- Added a vector/docs regression proving `VectorEnginePreference` is package-only and public/config docs must not expose that enum, deprecated Metal knob, or CPU/GPU-only cases as user configuration.
+- Verified the focused regression failed before the docs rewrite across vector-search docs, MemoryOrchestrator config tables, and Photo/Video RAG config tables.
+- Removed the package-only preference topic and replaced user-facing config rows with implementation-level backend-selection prose.
+- Verification:
+  - `swift test --filter docsDoNotExposePackageOnlyVectorEnginePreferenceAsPublicConfig --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter VectorSearchDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxVectorSearch/WaxVectorSearch.docc/Documentation.md:Sources/WaxVectorSearch/WaxVectorSearch.docc/Articles/VectorSearchEngines.md:Resources/website/docs/vector-search/vector-search-engines.md:Sources/Wax/Wax.docc/Articles/MemoryOrchestrator.md:Resources/website/docs/orchestrator/memory-orchestrator.md:Sources/Wax/Wax.docc/Articles/PhotoRAG.md:Resources/website/docs/media/photo-rag.md:Sources/Wax/Wax.docc/Articles/VideoRAG.md:Resources/website/docs/media/video-rag.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
