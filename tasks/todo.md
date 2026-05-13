@@ -2564,3 +2564,14 @@
 - Verification:
   - `swift test --filter metalVectorEngineChecksCommandBufferFailureAfterCompletion --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter 'metalVectorEngineChecksCommandBufferFailureAfterCompletion|metalVectorEngineNormalizesScaledSearchQueries|metalVectorEngineRejectsTrailingBytesDuringDeserialize|metalVectorEngineAddBatchUpdatesExistingIdsCorrectly' --disable-automatic-resolution`: passed.
+
+### F062 Review
+
+- Added a static vector-load regression proving manifest and decoded segment `vectorCount` values must not be converted through unchecked `Int(...)` casts.
+- Verified the regression failed before the fix on both `Int(manifest.vectorCount)` and `Int(info.vectorCount)` in `LoadedVectorSearchEngine`.
+- Added checked `UInt64` to `Int` conversion for committed manifests and decoded vector segments, plus checked addition for committed/staged count plus pending embeddings.
+- Added a review-driven behavioral regression for projected-count addition overflow using `Int.max + 1`.
+- Verification:
+  - `swift test --filter loadedVectorSearchEngineChecksVectorCountConversions --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter loadedVectorSearchEngineRejectsProjectedVectorCountOverflow --disable-automatic-resolution`: failed before the helper existed and passed after.
+  - `swift test --filter 'loadedVectorSearchEngineRejectsProjectedVectorCountOverflow|loadedVectorSearchEngineChecksVectorCountConversions|uSearchVectorEngineLoadPrefersStagedVectorIndexBytes|unifiedSearchFallsBackToUSearchWhenMetalCannotDeserialize|vectorSearchSessionCosineSearchNormalizesScaledQueries' --disable-automatic-resolution`: passed.

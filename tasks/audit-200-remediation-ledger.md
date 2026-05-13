@@ -73,7 +73,7 @@ Commit policy:
 - [x] F059 Metal vectors: unaligned frame ID loads.
 - [x] F060 Metal scoring: cosine query normalization is missing/inconsistent.
 - [x] F061 Metal errors: command-buffer error ignored.
-- [ ] F062 Manifest: `vectorCount` unchecked cast.
+- [x] F062 Manifest: `vectorCount` unchecked cast.
 - [ ] F063 Vector restore: duplicate frame IDs deserialize inconsistently.
 - [ ] F064 Serialization: private Objective-C ivar serialization is fragile.
 - [ ] F065 MiniLM: batch size 2/4 fails.
