@@ -146,7 +146,7 @@ Commit policy:
 - [x] F132 Docs: `WaxOptions` labels are wrong.
 - [ ] F133 Docs: `putFrame/frame/readPayload` methods do not exist.
 - [ ] F134 Docs/API: structured-memory types documented public but package-only.
-- [ ] F135 Vector API: `VectorSearchEngine` documented public but package-only.
+- [x] F135 Vector API: `VectorSearchEngine` documented public but package-only.
 - [ ] F136 Vector docs: docs instantiate package-only `USearchVectorEngine`.
 - [ ] F137 Vector docs: docs instantiate package-only `MetalVectorEngine`.
 - [x] F138 Vector docs: docs teach deprecated `.metalPreferred`.

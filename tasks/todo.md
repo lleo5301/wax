@@ -2256,6 +2256,24 @@
   - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxCore/WaxCore.docc/Documentation.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
   - Targeted grep confirmed no package-only WaxCore symbol links remain in the `Documentation.md` topic list and `WaxError` remains listed.
 
+### F135 Plan
+
+- [x] Prove `VectorSearchEngine` is package-only while the owned vector-search docs advertise it as public API.
+- [x] Add a focused docs regression for the `VectorSearchEngine` public-surface claim.
+- [x] Rewrite only the owned WaxVectorSearch DocC and website vector-search docs to describe the package-only contributor surface.
+- [x] Verify the focused regression, targeted snippet scan, static grep, and whitespace diff.
+- [x] Mark only F135 complete in the ledger and record the review.
+
+### F135 Review
+
+- Added a focused docs regression proving `Sources/WaxVectorSearch/VectorSearchEngine.swift` keeps `VectorSearchEngine` as a `package protocol` while the owned vector-search docs must not advertise it as public API.
+- Verified the regression failed before the docs rewrite on the public-looking protocol topic and shared-protocol phrasing.
+- Reframed the owned WaxVectorSearch DocC and website vector-search docs to call `VectorSearchEngine` package-only and not public API, and removed it from the DocC engine topic list.
+- Verification:
+  - `swift test --filter vectorSearchDocsDoNotAdvertisePackageOnlyProtocolAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxVectorSearch/WaxVectorSearch.docc/Documentation.md:Sources/WaxVectorSearch/WaxVectorSearch.docc/Articles/VectorSearchEngines.md:Resources/website/docs/vector-search/vector-search-engines.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+  - Static grep confirmed `VectorSearchEngine` remains `package protocol`, the owned docs now call it package-only and not public API, and the stale public-protocol phrases are absent.
+
 ### F057 Review
 
 - Added a vector serializer regression with a huge flat-segment header that previously crashed the test process with Swift's integer overflow trap.
