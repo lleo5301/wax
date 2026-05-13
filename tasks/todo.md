@@ -2546,3 +2546,12 @@
 - Verification:
   - `swift test --filter metalVectorEngineDeserializeAvoidsAlignedUInt64Binding --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter 'metalVectorEngineDeserializeAvoidsAlignedUInt64Binding|metalVectorEngineRejectsTrailingBytesDuringDeserialize|metalVectorEngineAddBatchUpdatesExistingIdsCorrectly' --disable-automatic-resolution`: passed.
+
+### F060 Review
+
+- Added a direct Metal-vector regression proving scaled cosine query vectors must not inflate similarity scores above the normalized cosine range.
+- Verified the focused regression failed before the fix with a score delta of `9.0` from the expected `1.0`.
+- Normalized validated search queries before copying them into the transient Metal query buffer, matching the shader's normalized-query contract.
+- Verification:
+  - `swift test --filter metalVectorEngineNormalizesScaledSearchQueries --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter 'metalVectorEngineNormalizesScaledSearchQueries|vectorSearchSessionCosineSearchNormalizesScaledQueries|metalVectorEngineAddBatchUpdatesExistingIdsCorrectly' --disable-automatic-resolution`: passed.

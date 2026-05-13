@@ -71,7 +71,7 @@ Commit policy:
 - [x] F057 Serialization: unchecked `Int` overflow in vector decode.
 - [x] F058 Metal vectors: deserialize misses bounds/trailing-byte validation.
 - [x] F059 Metal vectors: unaligned frame ID loads.
-- [ ] F060 Metal scoring: cosine query normalization is missing/inconsistent.
+- [x] F060 Metal scoring: cosine query normalization is missing/inconsistent.
 - [ ] F061 Metal errors: command-buffer error ignored.
 - [ ] F062 Manifest: `vectorCount` unchecked cast.
 - [ ] F063 Vector restore: duplicate frame IDs deserialize inconsistently.
