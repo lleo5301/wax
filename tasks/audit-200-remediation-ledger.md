@@ -137,7 +137,7 @@ Commit policy:
 - [x] F123 Readiness gate: pass-rate parser fails on Swift Testing output.
 - [ ] F124 Docs script: docs generation uses wrong root/destructive copy assumptions.
 - [ ] F125 Website CI: no PR build gate for website/docs.
-- [ ] F126 Test gate: skip detector misses Swift Testing skip format.
+- [x] F126 Test gate: skip detector misses Swift Testing skip format.
 - [ ] F127 CI scope: Linux CI omits Wax/CLI/MCP product builds.
 - [x] F128 README: quick-start omits required `Foundation` import.
 - [ ] F129 README: advertises hybrid recall where public `Memory` path is text-only.
