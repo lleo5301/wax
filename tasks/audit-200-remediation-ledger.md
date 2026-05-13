@@ -87,7 +87,7 @@ Commit policy:
 - [ ] F073 Tokenizer: whitespace splitting excludes newlines.
 - [ ] F074 Tokenizer: token type IDs mark SEP/padding as segment 1.
 - [ ] F075 CoreML dtype: unsupported `MLMultiArray` dtype becomes zeros.
-- [ ] F076 FTS5: raw MATCH query is not escaped.
+- [x] F076 FTS5: raw MATCH query is not escaped.
 - [ ] F077 FTS index: delete/supersede do not update FTS index consistently.
 - [ ] F078 Ranking: BM25 score is not normalized versus `minScore`.
 - [ ] F079 Validation: `topK <= 0` clamps to 1.

@@ -2022,3 +2022,12 @@
 - Verification:
   - `swift package describe --package-path Resources/WaxDemo --disable-automatic-resolution`: passed.
   - `swift build --package-path Resources/WaxDemo --disable-automatic-resolution`: passed.
+
+### F076 Review
+
+- Added a regression that searches for FTS5 syntax/punctuation as literal user text instead of raw MATCH syntax.
+- The focused test failed before the fix and passed after escaping/tokenizing query terms.
+- Verification:
+  - `swift test --filter searchTreatsFTS5SyntaxAndPunctuationAsLiteralText`: passed.
+  - `swift test --filter TextSearchEngine`: passed.
+  - `swift test --filter FTS5Serializer`: passed.
