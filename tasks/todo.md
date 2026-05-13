@@ -2340,3 +2340,13 @@
   - `swift test --filter photoRAGDocsNameMultimodalEmbeddingProviderRequirement --disable-automatic-resolution`: passed.
   - `swift test --filter PhotoRAGDocsTests --disable-automatic-resolution`: passed.
   - `WAX_PUBLIC_SNIPPET_FILES="Sources/Wax/Wax.docc/Articles/PhotoRAG.md:Resources/website/docs/media/photo-rag.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F142 Review
+
+- Added a text-search docs regression proving structured-memory examples must not expose package-only engine methods and types such as `upsertEntity`, `assertFact`, `EntityKey`, `StructuredTimeRange`, or `StructuredMemoryAsOf`.
+- Verified the focused regression failed before removing the structured entity/fact code samples from the DocC article and website page.
+- Replaced those samples with implementation-level prose that describes entity, alias, fact, bitemporal, and evidence behavior without advertising package-only calls.
+- Verification:
+  - `swift test --filter textSearchDocsDoNotShowPackageOnlyStructuredMemoryExamplesAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter TextSearchDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxTextSearch/WaxTextSearch.docc/Documentation.md:Sources/WaxTextSearch/WaxTextSearch.docc/Articles/TextSearchEngine.md:Resources/website/docs/text-search/text-search-engine.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
