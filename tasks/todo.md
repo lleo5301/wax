@@ -2447,3 +2447,12 @@
 - Verification:
   - `swift test --traits default,MCPServer --filter invalidEmbedderRuntimeFlagsAreRejected --disable-automatic-resolution`: failed before and passed after.
   - `swift test --traits default,MCPServer --filter agentDaemonPolicyPrefersDaemonForVectorCommands --disable-automatic-resolution`: passed.
+
+### F085 Review
+
+- Added CLI regressions proving `mcp install --dry-run --license-key` must not print the raw key and `mcp serve --license-key` must not pass the raw key through child argv.
+- Verified the focused regressions failed before the fix: dry-run output included `WAX_LICENSE_KEY=<secret>`, and the stub server observed `--license-key <secret>` in argv with no `WAX_LICENSE_KEY` environment value.
+- Kept real install registration behavior unchanged while redacting the displayed dry-run command; changed `mcp serve` to pass the normalized key via `WAX_LICENSE_KEY`, which `wax-mcp` already treats as the documented fallback.
+- Verification:
+  - `swift test --traits default,MCPServer --filter 'mcpInstallDryRunRedactsLicenseKey|mcpServePassesLicenseKeyInEnvironmentOnly' --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --traits default,MCPServer --filter WaxCLITests --disable-automatic-resolution`: existing failure in `agentDaemonConfigurationUsesStableSocketPaths`, where `AgentDaemonTransport.configuration` ignored `WAX_CLI_DAEMON_DIR` and used `/tmp/wax-broker-501/...`; the new F085 tests passed inside this gate.
