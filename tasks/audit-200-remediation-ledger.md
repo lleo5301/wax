@@ -155,7 +155,7 @@ Commit policy:
 - [x] F141 Text API: `TextSearchResult` documented public but package-only.
 - [x] F142 Text docs: structured text examples use package-only engine/types.
 - [x] F143 Session API: `WaxSession` documented user-facing but package-only.
-- [ ] F144 Unified API: docs construct package-only `SearchRequest`.
+- [x] F144 Unified API: docs construct package-only `SearchRequest`.
 - [ ] F145 Config docs: docs expose package-only vector config enums.
 - [x] F146 Session docs: `session.put(text:)` signatures do not exist.
 - [x] F147 Photo API: `PhotoRAGOrchestrator` documented public but package-only.

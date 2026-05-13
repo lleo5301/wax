@@ -2380,3 +2380,13 @@
   - `swift test --filter sessionDocsDoNotAdvertiseNonexistentTextPutOverloads --disable-automatic-resolution`: passed.
   - `swift test --filter WaxPublicDocsTests --disable-automatic-resolution`: passed.
   - `WAX_PUBLIC_SNIPPET_FILES="Sources/Wax/Wax.docc/Articles/SessionManagement.md:Resources/website/docs/orchestrator/session-management.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F144 Review
+
+- Added a Wax public-docs regression proving `SearchRequest` is package-only and public docs must not list it as a topic or show direct request construction/search calls.
+- Verified the focused regression failed before the docs rewrite on the module topics, DocC unified-search article, and website unified-search page.
+- Reframed unified-search docs as an internal retrieval/fusion behavior explanation and pointed public callers to orchestrator recall instead of package-only request/response/filter diagnostics types.
+- Verification:
+  - `swift test --filter unifiedSearchDocsDoNotConstructPackageOnlySearchRequestAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter WaxPublicDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/Wax/Wax.docc/Articles/UnifiedSearch.md:Resources/website/docs/orchestrator/unified-search.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
