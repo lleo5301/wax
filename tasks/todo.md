@@ -2130,3 +2130,35 @@
 - Verification:
   - `swift test --filter 'RejectsNonFiniteVectors|uSearchVectorEngineRejectsNonFiniteVectors|accelerateVectorEngineRejectsNonFiniteVectors|metalVectorEngineRejectsNonFiniteVectors' --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter VectorSearchEngine --disable-automatic-resolution`: passed.
+
+### F132 Review
+
+- Corrected Getting Started docs to use the real `WaxOptions` labels.
+- Verification:
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxCore/WaxCore.docc/Articles/GettingStarted.md:Resources/website/docs/core/getting-started.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+  - `git diff --check -- Sources/WaxCore/WaxCore.docc/Articles/GettingStarted.md Resources/website/docs/core/getting-started.md Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F138 Review
+
+- Replaced deprecated `.metalPreferred` vector engine docs with `.auto`, `.gpuOnly`, and `.cpuOnly`.
+- Verification:
+  - Targeted grep found no remaining `.metalPreferred` references in the owned vector-search docs.
+  - Targeted public snippet verification for the vector-search docs passed.
+  - `git diff --check` passed for the owned docs.
+
+### F149 Review
+
+- Replaced PhotoRAG `.all` scope examples with the actual `.fullLibrary` API.
+- Verification:
+  - Static grep proved `PhotoScope` exposes `.fullLibrary`, not `.all`.
+  - Public snippet verification passed across `64 files, 294 fenced snippets`.
+  - `git diff --check` passed.
+
+### F150 Review
+
+- Added a regression proving VideoRAG docs must not advertise package-only `VideoRAGOrchestrator` as public API.
+- Rewrote VideoRAG docs to describe the package-only status and removed public-consumer setup/ingest snippets.
+- Verification:
+  - `swift test --filter videoRAGDocsDoNotAdvertisePackageOnlyOrchestratorAsPublicAPI`: failed before and passed after.
+  - Targeted public snippet verification for VideoRAG docs passed.
+  - Static grep confirmed `VideoRAGOrchestrator` remains `package actor` and docs now call it package-only.

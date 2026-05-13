@@ -143,13 +143,13 @@ Commit policy:
 - [ ] F129 README: advertises hybrid recall where public `Memory` path is text-only.
 - [ ] F130 Public API: WaxCore documents package-only `Wax` actor.
 - [ ] F131 DocC: WaxCore topics list package-only symbols.
-- [ ] F132 Docs: `WaxOptions` labels are wrong.
+- [x] F132 Docs: `WaxOptions` labels are wrong.
 - [ ] F133 Docs: `putFrame/frame/readPayload` methods do not exist.
 - [ ] F134 Docs/API: structured-memory types documented public but package-only.
 - [ ] F135 Vector API: `VectorSearchEngine` documented public but package-only.
 - [ ] F136 Vector docs: docs instantiate package-only `USearchVectorEngine`.
 - [ ] F137 Vector docs: docs instantiate package-only `MetalVectorEngine`.
-- [ ] F138 Vector docs: docs teach deprecated `.metalPreferred`.
+- [x] F138 Vector docs: docs teach deprecated `.metalPreferred`.
 - [ ] F139 Vector docs: docs claim protocol has `addBatchStreaming`.
 - [ ] F140 Text API: `FTS5SearchEngine` documented public but package-only.
 - [ ] F141 Text API: `TextSearchResult` documented public but package-only.
@@ -160,8 +160,8 @@ Commit policy:
 - [ ] F146 Session docs: `session.put(text:)` signatures do not exist.
 - [ ] F147 Photo API: `PhotoRAGOrchestrator` documented public but package-only.
 - [ ] F148 Photo API: docs say `EmbeddingProvider`, code needs `MultimodalEmbeddingProvider`.
-- [ ] F149 Photo docs: sample uses nonexistent `.all` scope.
-- [ ] F150 Video API: `VideoRAGOrchestrator` documented public but package-only.
+- [x] F149 Photo docs: sample uses nonexistent `.all` scope.
+- [x] F150 Video API: `VideoRAGOrchestrator` documented public but package-only.
 - [x] F151 Test coverage: default tests miss MCP trait suite.
 - [ ] F152 MCP tests: many tests use direct-memory compatibility path, not production broker path.
 - [ ] F153 MCP tests: compatibility aliases differ from production renamed-tool behavior.
