@@ -1780,3 +1780,174 @@
     - Result: passed; 3 files packed.
   - `git diff --check`
     - Result: passed.
+  - `gh issue view 68 --repo christopherkarani/Wax`: confirmed the live report is open and the failure path is `CNumKong.o` under `mlx-swift-examples` DerivedData.
+  - `rg` over Wax source, manifests, tests, resources, and checked-out dependencies found no Wax-owned `CNumKong` / `NumKong` references.
+  - `swift package show-dependencies --format json`: passed; dependency graph contains `USearch` `2.24.0`, `MetalANNS` `0.1.3`, `GRDB`, Swift packages, but no `NumKong`.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `swift build --target WaxVectorSearch --disable-automatic-resolution`: passed.
+  - `swift test --filter DependencyTests --disable-automatic-resolution`: passed; 4 tests.
+  - `xcodebuild -scheme Wax -destination 'generic/platform=iOS' -derivedDataPath .build-codex/Issue68DerivedData build`: failed on separate iOS availability issues in `AgentBrokerClient.swift` / `AgentBrokerProtocol.swift` (`Process` unavailable and `homeDirectoryForCurrentUser` unavailable), not on `CNumKong`.
+
+## Codebase Audit and Rating 2026-05-12
+
+- Scope:
+  - Read-only audit of the current Wax codebase and release surface.
+  - Rate the codebase out of 100 with concrete evidence, not broad impressions.
+  - Preserve the existing dirty worktree and untracked local artifacts.
+- Assumptions to validate:
+  - Trait-aware verification is still required for MCP and CLI surfaces.
+  - Prior known risk areas remain storage/WAL, vector/search, broker/MCP, CLI/package release, docs/examples, and cross-platform availability.
+  - Current dirty changes may be user-owned context and should be classified, not reverted.
+- Plan:
+  - [x] Inventory package layout, dirty worktree, public targets, scripts, and release surfaces.
+  - [x] Review core storage/durability/search/vector code for correctness and production risks.
+  - [x] Review MCP/CLI/broker/API schemas and process lifecycle behavior.
+  - [x] Review package/release/docs/examples and platform boundaries.
+  - [x] Run focused build/test/package gates that are proportional to an audit.
+  - [x] Record findings, score rationale, and residual risks.
+- Review:
+  - Overall rating: 70/100.
+  - Strong foundation: large Swift package with actor-isolated core storage, explicit WAL/recovery model, checksum-heavy file format, public `Memory` facade, broad Swift Testing coverage, MCP/CLI harnesses, npm/OpenClaw packaging, and release scripts.
+  - Main blockers: advertised iOS support fails to compile; pending WAL payload recovery can commit payload bytes without checksum validation; MCP broker process suite still has a suite-order flake; release/docs surfaces disagree around x64 npm artifacts and public website examples.
+  - Highest-priority fixes should be TDD regressions for the iOS build gate, corrupt pending WAL payload recovery, broker socket/read envelope limits, and release/package x64 contract.
+- Verification:
+  - `git diff --check`: passed.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `swift build --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `swift test --disable-automatic-resolution --filter WaxCoreTests`: passed; 332 tests passed, crash harness skipped unless `WAX_RUN_CRASH_HARNESS=1`.
+  - `swift test --traits default,MCPServer --filter WaxCLITests --disable-automatic-resolution`: passed; 30 tests passed.
+  - `swift test --traits default,MCPServer --filter WaxMCPServerTests --disable-automatic-resolution`: failed; 72/73 passed, `brokerBackedMemorySearchSignalsInfluenceSynthesis` failed once with `Missing tool resource payload`.
+  - `swift test --traits default,MCPServer --filter brokerBackedMemorySearchSignalsInfluenceSynthesis --disable-automatic-resolution`: passed on targeted rerun.
+  - `xcodebuild -quiet -scheme Wax -destination 'generic/platform=iOS' -derivedDataPath .build-codex/AuditIOSDerivedData2 build`: failed; `Process` unavailable in `AgentBrokerClient.swift` and `AgentBrokerProtocol.swift`, and `homeDirectoryForCurrentUser` unavailable in iOS.
+  - `(cd Resources/npm/waxmcp && npm pack --dry-run)`: passed; package contains darwin-arm64 only.
+  - `swift build --package-path Resources/WaxDemo --disable-automatic-resolution`: passed.
+
+## Fix Audit Findings 2026-05-12
+
+- Scope:
+  - Fix all issues identified in the 2026-05-12 codebase audit.
+  - Preserve existing user-owned dirty changes and local artifacts.
+  - Use focused regression tests before behavior changes where practical.
+- Plan:
+  - [x] Add/adjust tests for iOS build, corrupt pending WAL recovery, vector segment overflow, broker envelope/timeout behavior, package x64 contract, docs snippets, and release script drift.
+  - [x] Make broker code compile-safe on iOS without exposing unsupported process-backed behavior there.
+  - [x] Validate pending WAL payload checksums before promoting recovered pending frames, and harden batch mmap write durability.
+  - [x] Harden vector segment decoding overflow checks and improve stale-vector/live-result behavior where feasible.
+  - [x] Bound broker socket/stdin request reads and make `mcp doctor` terminate on timeout.
+  - [x] Resolve MCP `flush`/null/schema issues and npm x64 contract drift.
+  - [x] Fix website/docs/demo/release-script drift.
+  - [x] Run focused and release-surface verification, then record results.
+- Review:
+  - iOS generic builds now pass by gating process-backed broker client behavior on macOS/Linux and providing clear unsupported-platform errors elsewhere.
+  - Pending WAL frame payloads are checksum-validated during reopen recovery and again before commit promotion; mmap batch writes now `msync`/`fsync` before WAL publication.
+  - Vector segment decode now uses checked integer conversions, sums, and products; pending vector-only hits now return previews through pending-aware frame previews.
+  - Broker stdin/socket envelopes are size/read-time bounded, `mcp doctor` kills hung smoke-check children, MCP rejects JSON `null` optional arguments, and hidden `flush`/`wax_flush` is consistently rejected from the public MCP surface.
+  - Docs, demo, npm metadata, launcher, and release scripts now agree on public API usage and `darwin-arm64`/`darwin-x64` release artifacts.
+- Verification:
+  - `swift build --disable-automatic-resolution`: passed.
+  - `xcodebuild -quiet -scheme Wax -destination 'generic/platform=iOS' -derivedDataPath .build-codex/FixAuditIOSDerivedData build`: passed.
+  - `swift test --filter 'CrashRecoveryTests|FDFileTests|VectorSerializerTests|UnifiedSearchTests' --disable-automatic-resolution`: passed; 64 tests.
+  - `swift test --traits default,MCPServer --filter WaxMCPServerTests --disable-automatic-resolution`: passed; 75 tests.
+  - Focused new regressions for corrupt pending WAL payloads, mmap sync, vector overflow, pending vector previews, broker envelope limits, doctor timeout cleanup, MCP null policy, hidden flush rejection, docs/demo/package release contracts: passed.
+  - `bash -n Resources/scripts/release-waxmcp.sh scripts/release-waxmcp.sh Resources/scripts/build-waxmcp-binaries.sh`: passed.
+  - `node --check Resources/npm/waxmcp/bin/waxmcp.js`: passed.
+  - `swift build --package-path Resources/WaxDemo --disable-automatic-resolution`: passed.
+  - `(cd Resources/npm/waxmcp && npm pack --dry-run)`: passed.
+  - `git diff --check`: passed.
+
+## MCP/CLI Broker Robustness Fixes 2026-05-12
+
+- Scope:
+  - Fix the audit findings owned by `Sources/WaxCLI/DaemonCommand.swift`, `Sources/WaxCLI/WaxCLICommand.swift`, `Sources/WaxMCPServer/WaxMCPTools.swift`, the `Sources/WaxMCPServer/main.swift` no-trait fallback, and focused CLI/MCP tests.
+  - Preserve existing dirty changes and unrelated local artifacts.
+- Assumptions to validate:
+  - Public MCP tools intentionally exclude `flush`, so broker-backed MCP calls should reject `flush` and legacy `wax_flush` consistently instead of exposing a hidden command.
+  - MCP JSON `null` should not stand in for absent optional string/integer fields unless a tool explicitly documents null.
+  - Daemon stdin and socket requests should be one JSON envelope per line with size and read-time bounds.
+  - Trait-aware tests are the relevant gates for CLI/MCP behavior.
+- Plan:
+  - [x] Add focused regressions for bounded daemon envelopes, doctor timeout kill/reap behavior, MCP null optional rejection, hidden `flush` rejection, and no-trait musl fallback compilation.
+  - [x] Implement bounded stdin/socket read behavior in the broker daemon.
+  - [x] Make `mcp doctor` kill and reap the smoke-check child after timeout.
+  - [x] Tighten MCP argument validation/null handling and hidden `flush` consistency.
+  - [x] Fix the musl no-trait fallback import.
+  - [x] Run focused CLI/MCP builds and tests, then record verification.
+- Review:
+  - `DaemonCommand` now reads broker stdin/socket JSONL envelopes with configurable maximum size and socket read timeout, returning structured errors instead of waiting for EOF or accepting unbounded input.
+  - `mcp doctor` now times out the smoke-check process, terminates it, escalates to SIGKILL if needed, and reports the timeout as a failure.
+  - MCP validation rejects unknown arguments and JSON `null` optional arguments before forwarding to the broker, and both `flush` and `wax_flush` are rejected from the public tool surface.
+  - Musl imports were added to the touched CLI/server paths and `FDFile` libc shims.
+- Verification:
+  - `swift test --filter 'brokerDaemonStdinRejectsOversizedEnvelope|brokerDaemonSocketRejectsOversizedEnvelopeWithoutWaitingForEOF|mcpDoctorKillsHungSmokeCheckProcessAfterTimeout' --disable-automatic-resolution`: passed.
+  - `swift test --traits default,MCPServer --filter nullOptionalArgumentsAreRejectedInsteadOfForwardedToBroker --disable-automatic-resolution`: passed.
+  - `swift test --traits default,MCPServer --filter hiddenFlushToolIsRejectedConsistently --disable-automatic-resolution`: passed.
+  - `swift test --traits default,MCPServer --filter legacyWaxFlushIsRejectedBecauseFlushIsNotPublished --disable-automatic-resolution`: passed.
+  - `swift test --traits default,MCPServer --filter WaxMCPServerTests --disable-automatic-resolution`: passed; 75 tests.
+
+## Public Docs Demo Release Package Fixes 2026-05-12
+
+- Scope:
+  - Fix the audit findings for public website docs, the WaxDemo package baseline, duplicate release scripts, and the npm x64 release contract.
+  - Stay inside the requested ownership set and preserve unrelated dirty files/artifacts.
+- Plan:
+  - [x] Rewrite `Resources/website/docs/intro.md` around the public `Memory` facade, the real GitHub repo URL, and current pre-1.0 version guidance.
+  - [x] Align `Resources/WaxDemo/Package.swift` with the root package Swift tools and supported macOS baseline unless verification proves a blocker.
+  - [x] Remove drift between `scripts/release-waxmcp.sh` and `Resources/scripts/release-waxmcp.sh`.
+  - [x] Make the npm package `cpu` metadata and launcher behavior match the release workflow's `darwin-arm64` and `darwin-x64` artifacts.
+  - [x] Run focused docs/package/demo verification and record results.
+- Review:
+  - Website intro now uses the public `Memory` facade, the real `christopherkarani/Wax` repo URL, and current `0.1.21` pre-1.0 guidance with exact pinning for apps.
+  - WaxDemo now matches the root Swift tools and macOS baseline: Swift 6.1 and macOS 15.
+  - `scripts/release-waxmcp.sh` is now a wrapper around the canonical `Resources/scripts/release-waxmcp.sh`, removing duplicate release logic.
+  - The canonical release helper stages both `darwin-arm64` and `darwin-x64`; `package.json` and `waxmcp.js` now advertise and resolve both architectures.
+- Verification:
+  - `git diff --check`: passed.
+  - `bash -n Resources/scripts/release-waxmcp.sh scripts/release-waxmcp.sh Resources/scripts/build-waxmcp-binaries.sh`: passed.
+  - `node --check Resources/npm/waxmcp/bin/waxmcp.js`: passed.
+  - `swift build --package-path Resources/WaxDemo --disable-automatic-resolution`: passed.
+  - `(cd Resources/npm/waxmcp && npm pack --dry-run)`: passed.
+  - `rg -n "MemoryOrchestrator|MiniLMEmbedder|github.com/user/Wax|1\\.0\\.0" Resources/website/docs/intro.md || true`: no matches.
+  - `swift test --filter 'releaseWaxMCPScriptsSyncMetadataVersion|waxMCPPackageAdvertisesReleaseArchitectures|publicWebsiteIntroUsesPublicMemoryFacade|waxDemoMatchesRootPackageBaseline' --disable-automatic-resolution`: passed in focused slices.
+
+## PR #70 Review Fixes 2026-05-12
+
+- Scope:
+  - Fix the release-script root regression found in PR review.
+  - Align npm README architecture docs with the arm64+x64 package and launcher contract.
+  - Add behavior coverage that executes the root release wrapper against a temporary fixture.
+- Plan:
+  - [x] Add an executable release-wrapper regression test with a stubbed build script.
+  - [x] Fix `Resources/scripts/release-waxmcp.sh` to resolve the repo root from its nested location.
+  - [x] Update `Resources/npm/waxmcp/README.md` to describe both Darwin release architectures.
+  - [x] Run focused release tests, script syntax checks, node syntax check, package dry-run, and direct wrapper smoke.
+- Review:
+  - `Resources/scripts/release-waxmcp.sh` now resolves the repo root from `Resources/scripts` via `../..`, so the public `scripts/release-waxmcp.sh` wrapper no longer looks under `Resources/Resources`.
+  - `releaseWaxMCPWrapperExecutesCanonicalScriptFromRepoRoot` copies the wrapper/canonical script into a temporary repo fixture, stubs `build-waxmcp-binaries.sh`, executes the root wrapper, and verifies package/server version mutation plus both Darwin build calls.
+  - `Resources/npm/waxmcp/README.md` now documents the `darwin-arm64` and `darwin-x64` bundled runtime contract and `dist/darwin-${arch}` lookup behavior.
+- Verification:
+  - `swift test --traits default,MCPServer --filter 'releaseWaxMCPScriptsSyncMetadataVersion|releaseWaxMCPWrapperExecutesCanonicalScriptFromRepoRoot|waxMCPPackageAdvertisesReleaseArchitectures' --disable-automatic-resolution`: passed; 3 tests.
+  - `bash -n Resources/scripts/release-waxmcp.sh scripts/release-waxmcp.sh Resources/scripts/quality/production_readiness_gates.sh scripts/verify-waxmcp-http.sh`: passed.
+  - `node --check Resources/npm/waxmcp/bin/waxmcp.js`: passed.
+  - `git diff --check`: passed.
+  - `(cd Resources/npm/waxmcp && npm pack --dry-run)`: passed.
+
+## PR #70 Follow-up Review Fixes 2026-05-13
+
+- Scope:
+  - Fix the broker socket fallback so long preferred paths never move an unauthenticated broker socket into a shared `/tmp` directory.
+  - Preserve relocatable release checksum files when staging `wax-cli` and `wax-mcp` binaries.
+  - Keep the changes limited to broker pathing, the release helper, focused CLI tests, and this task log.
+- Plan:
+  - [x] Add regression coverage for private long-path broker fallback directories and relative checksum entries.
+  - [x] Make the broker fallback use a user-private `0700` directory or fail with a clear error.
+  - [x] Make staged release checksums use binary basenames instead of absolute build paths.
+  - [x] Run focused tests, script checks, diff checks, then merge to `main`.
+- Review:
+  - Long broker socket paths now fall back under `/tmp/wax-broker-<uid>/wxb-<hash>` and both directories are checked for current-user ownership, `0700` permissions, and non-symlink status.
+  - The fallback now fails with an actionable `ENAMETOOLONG` error if even the private short path cannot satisfy the Unix socket byte limit.
+  - `build-waxmcp-binaries.sh` now writes checksum files as `<digest>  wax-cli` and `<digest>  wax-mcp`, preserving `shasum -c` portability after moving or publishing the dist directory.
+- Verification:
+  - `swift test --filter 'brokerSocketFallbackUsesPrivateUserDirectory|buildWaxMCPBinariesWritesRelocatableChecksums' --disable-automatic-resolution`: passed; 2 tests.
+  - `swift test --traits default,MCPServer --filter 'releaseWaxMCPScriptsSyncMetadataVersion|releaseWaxMCPWrapperExecutesCanonicalScriptFromRepoRoot|waxMCPPackageAdvertisesReleaseArchitectures|buildWaxMCPBinariesWritesRelocatableChecksums|brokerSocketFallbackUsesPrivateUserDirectory' --disable-automatic-resolution`: passed; 5 tests.
+  - `bash -n Resources/scripts/release-waxmcp.sh scripts/release-waxmcp.sh Resources/scripts/build-waxmcp-binaries.sh`: passed.
+  - `git diff --check`: passed.
