@@ -2178,3 +2178,13 @@
   - `swift test --filter videoRAGDocsDoNotAdvertisePackageOnlyOrchestratorAsPublicAPI`: failed before and passed after.
   - Targeted public snippet verification for VideoRAG docs passed.
   - Static grep confirmed `VideoRAGOrchestrator` remains `package actor` and docs now call it package-only.
+
+### F140 Review
+
+- Added a regression proving Text Search docs must not advertise package-only `FTS5SearchEngine` as public API.
+- Verified the focused regression failed before the docs rewrite on the owned WaxTextSearch and website text-search docs.
+- Reframed the owned text-search docs as package-only contributor documentation and removed DocC topic links that promoted `FTS5SearchEngine` as a public symbol.
+- Verification:
+  - `swift test --filter textSearchDocsDoNotAdvertisePackageOnlyFTS5EngineAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxTextSearch/WaxTextSearch.docc/Documentation.md:Sources/WaxTextSearch/WaxTextSearch.docc/Articles/TextSearchEngine.md:Resources/website/docs/text-search/text-search-engine.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+  - Static grep confirmed `FTS5SearchEngine` remains `package actor` and the owned docs now call the surface package-only and not public API.

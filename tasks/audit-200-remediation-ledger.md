@@ -151,7 +151,7 @@ Commit policy:
 - [ ] F137 Vector docs: docs instantiate package-only `MetalVectorEngine`.
 - [x] F138 Vector docs: docs teach deprecated `.metalPreferred`.
 - [ ] F139 Vector docs: docs claim protocol has `addBatchStreaming`.
-- [ ] F140 Text API: `FTS5SearchEngine` documented public but package-only.
+- [x] F140 Text API: `FTS5SearchEngine` documented public but package-only.
 - [ ] F141 Text API: `TextSearchResult` documented public but package-only.
 - [ ] F142 Text docs: structured text examples use package-only engine/types.
 - [ ] F143 Session API: `WaxSession` documented user-facing but package-only.
