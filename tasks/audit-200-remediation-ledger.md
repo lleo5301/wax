@@ -158,7 +158,7 @@ Commit policy:
 - [ ] F144 Unified API: docs construct package-only `SearchRequest`.
 - [ ] F145 Config docs: docs expose package-only vector config enums.
 - [ ] F146 Session docs: `session.put(text:)` signatures do not exist.
-- [ ] F147 Photo API: `PhotoRAGOrchestrator` documented public but package-only.
+- [x] F147 Photo API: `PhotoRAGOrchestrator` documented public but package-only.
 - [ ] F148 Photo API: docs say `EmbeddingProvider`, code needs `MultimodalEmbeddingProvider`.
 - [x] F149 Photo docs: sample uses nonexistent `.all` scope.
 - [x] F150 Video API: `VideoRAGOrchestrator` documented public but package-only.

@@ -2179,6 +2179,25 @@
   - Targeted public snippet verification for VideoRAG docs passed.
   - Static grep confirmed `VideoRAGOrchestrator` remains `package actor` and docs now call it package-only.
 
+### F147 Plan
+
+- [x] Prove `PhotoRAGOrchestrator` is package-only and the owned docs still advertise it like public API.
+- [x] Add a focused docs regression for the PhotoRAG public-surface claim.
+- [x] Rewrite only the owned PhotoRAG docs to describe the package-only contributor surface.
+- [x] Verify the focused test, targeted snippet scan, static grep, and whitespace diff.
+- [x] Mark only F147 complete in the ledger and record the review.
+
+### F147 Review
+
+- Added a regression proving PhotoRAG docs must not advertise package-only `PhotoRAGOrchestrator` as public API.
+- Verified the focused regression failed before the docs rewrite on both owned docs.
+- Rewrote the DocC and website PhotoRAG pages as package-only contributor documentation and removed public construction, ingest, sync, and recall snippets.
+- Verification:
+  - `swift test --filter photoRAGDocsDoNotAdvertisePackageOnlyOrchestratorAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/Wax/Wax.docc/Articles/PhotoRAG.md:Resources/website/docs/media/photo-rag.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+  - Static grep confirmed `PhotoRAGOrchestrator` remains `package actor` with a `package init`, and the owned docs now call the surface package-only and not public API.
+  - `git diff --check -- Sources/Wax/Wax.docc/Articles/PhotoRAG.md Resources/website/docs/media/photo-rag.md Tests/WaxTests/PhotoRAGDocsTests.swift tasks/audit-200-remediation-ledger.md tasks/todo.md`: passed.
+
 ### F140 Review
 
 - Added a regression proving Text Search docs must not advertise package-only `FTS5SearchEngine` as public API.
