@@ -2031,3 +2031,14 @@
   - `swift test --filter searchTreatsFTS5SyntaxAndPunctuationAsLiteralText`: passed.
   - `swift test --filter TextSearchEngine`: passed.
   - `swift test --filter FTS5Serializer`: passed.
+
+### F123 Review
+
+- Added a shell fixture for Swift Testing summary lines using `with 0 failures`.
+- Fixed `production_readiness_gates.sh` to parse both `and N failures` and `with N failures` summary formats.
+- Verification:
+  - `bash -n Resources/scripts/quality/production_readiness_gates.sh`: passed.
+  - `bash -n Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+  - `bash Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+  - `shellcheck Resources/scripts/quality/production_readiness_gates.sh Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+  - `git diff --check HEAD~1..HEAD`: passed.

@@ -134,7 +134,7 @@ Commit policy:
 - [ ] F120 Homebrew: formula Xcode 15 requirement is too old for Swift 6.1 traits.
 - [ ] F121 npm README: local path `./npm/waxmcp` is wrong from repo root.
 - [ ] F122 Release scripts: root/nested release scripts rewrite different version files.
-- [ ] F123 Readiness gate: pass-rate parser fails on Swift Testing output.
+- [x] F123 Readiness gate: pass-rate parser fails on Swift Testing output.
 - [ ] F124 Docs script: docs generation uses wrong root/destructive copy assumptions.
 - [ ] F125 Website CI: no PR build gate for website/docs.
 - [ ] F126 Test gate: skip detector misses Swift Testing skip format.
