@@ -66,7 +66,7 @@ Commit policy:
 - [x] F052 Embeddings: NaN/Inf embeddings accepted.
 - [ ] F053 USearch: `add` is not atomic.
 - [ ] F054 USearch: concurrent reads are unchecked around mutable index.
-- [ ] F055 Pending vectors: USearch ignores staged vector bytes.
+- [x] F055 Pending vectors: USearch ignores staged vector bytes.
 - [x] F056 Batch vectors: duplicate IDs in batch overcount vector count.
 - [x] F057 Serialization: unchecked `Int` overflow in vector decode.
 - [ ] F058 Metal vectors: deserialize misses bounds/trailing-byte validation.

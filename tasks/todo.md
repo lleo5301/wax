@@ -2420,3 +2420,12 @@
   - `swift test --filter structuredMemoryRejectsInvalidEntityAndPredicateKeys --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter StructuredMemoryCRUDTests --disable-automatic-resolution`: passed.
   - `swift test --filter 'StructuredMemoryCRUDTests|StructuredMemoryHashingTests|WaxSessionTests' --disable-automatic-resolution`: passed.
+
+### F055 Review
+
+- Added a USearch load regression proving staged vector index bytes must be visible before commit.
+- Verified the focused regression failed before the fix because `USearchVectorEngine.load` loaded no staged vectors and returned no hits.
+- Updated USearch loading to prefer `readStagedVecIndexBytes()` before committed vector index bytes, matching the Accelerate loader behavior.
+- Verification:
+  - `swift test --filter uSearchVectorEngineLoadPrefersStagedVectorIndexBytes --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter VectorSearchEngineTests --disable-automatic-resolution`: passed.
