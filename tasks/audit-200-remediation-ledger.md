@@ -62,7 +62,7 @@ Commit policy:
 - [ ] F048 Linux: `Darwin.exit` used unconditionally.
 - [ ] F049 Linux tests: excludes miss Darwin benchmark files.
 - [ ] F050 Dependencies: top-level dependency leakage pulls SwiftTUI into non-CLI builds.
-- [ ] F051 Vector WAL: malformed vector staged/verify accepted.
+- [x] F051 Vector WAL: malformed vector staged/verify accepted.
 - [x] F052 Embeddings: NaN/Inf embeddings accepted.
 - [ ] F053 USearch: `add` is not atomic.
 - [ ] F054 USearch: concurrent reads are unchecked around mutable index.

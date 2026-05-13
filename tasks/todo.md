@@ -2207,3 +2207,13 @@
   - `swift test --filter textSearchDocsDoNotAdvertisePackageOnlyFTS5EngineAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
   - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxTextSearch/WaxTextSearch.docc/Documentation.md:Sources/WaxTextSearch/WaxTextSearch.docc/Articles/TextSearchEngine.md:Resources/website/docs/text-search/text-search-engine.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
   - Static grep confirmed `FTS5SearchEngine` remains `package actor` and the owned docs now call the surface package-only and not public API.
+
+### F051 Review
+
+- Added a WaxCore regression proving malformed staged vector-index bytes are rejected before commit.
+- The focused regression failed before validation because `stageVecIndexForNextCommit` accepted `Data([0x01])`.
+- Added MV2V header, length, metadata, and flat/Metal/uSearch segment consistency validation in WaxCore staging.
+- Replaced stale/no-op test fixtures that used dummy vector bytes with minimal valid flat-vector segments.
+- Verification:
+  - `swift test --filter stageVecIndexRejectsMalformedSegmentBytes --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter 'IndexStagingNoOpTests|DurabilityRegressionTests|VectorSearchEngine' --disable-automatic-resolution`: passed.
