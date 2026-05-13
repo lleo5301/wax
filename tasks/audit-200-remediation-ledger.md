@@ -63,7 +63,7 @@ Commit policy:
 - [ ] F049 Linux tests: excludes miss Darwin benchmark files.
 - [ ] F050 Dependencies: top-level dependency leakage pulls SwiftTUI into non-CLI builds.
 - [ ] F051 Vector WAL: malformed vector staged/verify accepted.
-- [ ] F052 Embeddings: NaN/Inf embeddings accepted.
+- [x] F052 Embeddings: NaN/Inf embeddings accepted.
 - [ ] F053 USearch: `add` is not atomic.
 - [ ] F054 USearch: concurrent reads are unchecked around mutable index.
 - [ ] F055 Pending vectors: USearch ignores staged vector bytes.

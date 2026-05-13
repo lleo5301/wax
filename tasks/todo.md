@@ -2121,3 +2121,12 @@
   - `bash Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
   - `shellcheck Resources/scripts/quality/production_readiness_gates.sh Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
   - `assert_mcp_trait_test_inventory`: passed against real SwiftPM test discovery.
+
+### F052 Review
+
+- Added regressions proving USearch, Accelerate, and Metal vector engines reject NaN/Inf vectors for `add`, `addBatch`, and query search, including empty-index searches.
+- The focused regressions failed before validation with nine expectation failures.
+- Centralized vector dimension/capacity/finite checks and routed USearch, Accelerate, Metal, and Metal ANNS validation through the shared helper.
+- Verification:
+  - `swift test --filter 'RejectsNonFiniteVectors|uSearchVectorEngineRejectsNonFiniteVectors|accelerateVectorEngineRejectsNonFiniteVectors|metalVectorEngineRejectsNonFiniteVectors' --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter VectorSearchEngine --disable-automatic-resolution`: passed.
