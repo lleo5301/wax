@@ -2282,3 +2282,12 @@
 - Verification:
   - `swift test --filter flatSegmentDecodeRejectsVectorByteCountOverflow --disable-automatic-resolution`: crashed before and passed after.
   - `swift test --filter VectorSerializer --disable-automatic-resolution`: passed.
+
+### F056 Review
+
+- Added a USearch batch regression proving duplicate frame IDs in one batch should behave like repeated adds and serialize one live vector.
+- The focused regression failed before the fix with `duplicateKeysError` on an empty-index batch containing duplicate IDs.
+- Deduplicated USearch batch inputs before reserve/add, preserving the last vector for each frame ID.
+- Verification:
+  - `swift test --filter uSearchVectorEngineAddBatchDuplicateIdsDoNotOvercount --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter VectorSearchEngine --disable-automatic-resolution`: passed.
