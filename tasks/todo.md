@@ -2351,6 +2351,16 @@
   - `swift test --filter TextSearchDocsTests --disable-automatic-resolution`: passed.
   - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxTextSearch/WaxTextSearch.docc/Documentation.md:Sources/WaxTextSearch/WaxTextSearch.docc/Articles/TextSearchEngine.md:Resources/website/docs/text-search/text-search-engine.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
 
+### F134 Review
+
+- Added a WaxCore docs regression proving structured-memory implementation types and engine calls are package-only and must not be advertised as public consumer API.
+- Verified the focused regression failed before the docs rewrite on both the DocC article and website page.
+- Reframed the structured-memory docs as a storage-model explanation, preserving entity/fact/bitemporal/evidence semantics while removing package-only Swift type construction and engine calls.
+- Verification:
+  - `swift test --filter waxCoreStructuredMemoryDocsDoNotAdvertisePackageOnlyTypesAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter WaxCoreDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxCore/WaxCore.docc/Articles/StructuredMemory.md:Resources/website/docs/core/structured-memory.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
 ### F143 Review
 
 - Added a Wax public-docs regression proving `WaxSession` remains `package actor` and must not be listed as a user-facing symbol or shown with direct constructors/config.
