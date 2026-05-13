@@ -53,7 +53,7 @@ Commit policy:
 - [ ] F039 MCP schema: `fact_assert` omits relation/version relation.
 - [ ] F040 MCP schema: generic `type/value` fact schema is rejected by broker.
 - [x] F041 MCP filters: non-array `labels` filter is ignored.
-- [ ] F042 MCP filters: non-integer time filters are ignored.
+- [x] F042 MCP filters: non-integer time filters are ignored.
 - [x] F043 MCP filters: unknown nested filters are ignored.
 - [x] F044 Recall: whitespace-only recall can embed/search unrelated content.
 - [x] F045 Traits: `wax-mcp` missing `MiniLMEmbeddings` define.
