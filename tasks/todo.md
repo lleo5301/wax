@@ -2291,3 +2291,13 @@
 - Verification:
   - `swift test --filter uSearchVectorEngineAddBatchDuplicateIdsDoNotOvercount --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter VectorSearchEngine --disable-automatic-resolution`: passed.
+
+### F141 Review
+
+- Added a regression proving Text Search docs must not advertise package-only `TextSearchResult` as public API.
+- Verified the focused regression failed before the docs rewrite on the DocC module topics, DocC article, and website text-search page.
+- Reframed the owned text-search docs so the result value is described as a package-only implementation detail instead of a documented public symbol/type.
+- Verification:
+  - `swift test --filter textSearchDocsDoNotAdvertisePackageOnlyTextSearchResultAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter TextSearchDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxTextSearch/WaxTextSearch.docc/Documentation.md:Sources/WaxTextSearch/WaxTextSearch.docc/Articles/TextSearchEngine.md:Resources/website/docs/text-search/text-search-engine.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
