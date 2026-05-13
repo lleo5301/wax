@@ -93,7 +93,7 @@ Commit policy:
 - [x] F079 Validation: `topK <= 0` clamps to 1.
 - [ ] F080 Schema: FTS schema validation is weak.
 - [ ] F081 Tokenizer: default FTS tokenizer/version is unpinned.
-- [ ] F082 CLI daemon: `--socket-path` can unlink arbitrary file.
+- [x] F082 CLI daemon: `--socket-path` can unlink arbitrary file.
 - [x] F083 CLI daemon: normal broker socket directory is not private.
 - [ ] F084 CLI daemon: socket `readToEnd` can hang.
 - [x] F085 CLI secrets: license key leaks through dry-run/argv output.

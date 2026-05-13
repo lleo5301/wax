@@ -2472,3 +2472,13 @@
 - Verification:
   - `swift test --traits default,MCPServer --filter 'brokerSocketEnvironmentRootUsesPrivateDirectory|brokerSocketEnvironmentRootRejectsSymlink' --disable-automatic-resolution`: failed before and passed after.
   - `swift test --traits default,MCPServer --filter WaxCLITests --disable-automatic-resolution`: passed.
+
+### F082 Review
+
+- Added a process-level daemon regression proving `wax-cli daemon --socket-path <regular-file>` must reject the path and preserve the file contents.
+- Verified the focused regression failed before the fix because daemon startup unlinked the regular file before binding.
+- Replaced the blind pre-bind `unlink` with a stale-socket check using `lstat`: missing paths are allowed, existing Unix sockets are removed, and every other existing path is rejected.
+- Verification:
+  - `swift test --traits default,MCPServer --filter daemonSocketPathDoesNotReplaceRegularFile --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --traits default,MCPServer --filter WaxCLITests --disable-automatic-resolution`: F082 test passed; `pathLaunchedWaxMCPResolvesSiblingWaxCLIFromPath` timed out once waiting for MCP `tools/list`.
+  - `swift test --traits default,MCPServer --filter pathLaunchedWaxMCPResolvesSiblingWaxCLIFromPath --disable-automatic-resolution`: passed on immediate focused rerun.
