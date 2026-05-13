@@ -97,7 +97,7 @@ Commit policy:
 - [ ] F083 CLI daemon: normal broker socket directory is not private.
 - [ ] F084 CLI daemon: socket `readToEnd` can hang.
 - [ ] F085 CLI secrets: license key leaks through dry-run/argv output.
-- [ ] F086 CLI flags: direct `stats/flush` ignore `require-vector`.
+- [x] F086 CLI flags: direct `stats/flush` ignore `require-vector`.
 - [ ] F087 CLI flags: invalid runtime flags are silently ignored.
 - [ ] F088 CLI surface: CLI lacks broker/MCP parity subcommands.
 - [ ] F089 WaxRepo: `wax-repo search` still launches TUI.

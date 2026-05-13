@@ -2429,3 +2429,12 @@
 - Verification:
   - `swift test --filter uSearchVectorEngineLoadPrefersStagedVectorIndexBytes --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter VectorSearchEngineTests --disable-automatic-resolution`: passed.
+
+### F086 Review
+
+- Added a CLI regression proving direct-store `stats` and `flush` fail when `--require-vector` is combined with `--no-embedder`.
+- Verified the focused regression failed before the fix: both direct commands exited 0 with text-only/vector-disabled output.
+- Passed `store.requireVector` through direct-store stats/flush `StoreSession.withOpen` calls so direct and broker-backed paths enforce the same vector requirement.
+- Verification:
+  - `swift test --traits default,MCPServer --filter directStatsAndFlushHonorRequireVectorWithNoEmbedder --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --traits default,MCPServer --filter 'brokerBackedVectorRequirementFailsFastWhenNoEmbedderIsConfigured|vectorRequiredOpenRejectsNoEmbedderFlag' --disable-automatic-resolution`: passed.
