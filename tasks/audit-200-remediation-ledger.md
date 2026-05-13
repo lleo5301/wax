@@ -105,7 +105,7 @@ Commit policy:
 - [ ] F091 WaxRepo: `max-commits` checkpoint can skip older history permanently.
 - [ ] F092 WaxRepo: repo search parses preview instead of metadata.
 - [x] F093 CLI tests: daemon stable socket path expectation fails.
-- [ ] F094 MCP structured: `knowledge_capture` bypasses structured-memory flag.
+- [x] F094 MCP structured: `knowledge_capture` bypasses structured-memory flag.
 - [x] F095 Broker config: access-stats env is parsed/logged but ignored.
 - [ ] F096 HTTP MCP: HTTP transport has no auth off-loopback.
 - [ ] F097 Session end: active session removed before fallible persistence.

@@ -2503,3 +2503,11 @@
   - `swift test --traits default,MCPServer --filter WaxMCPServerTests --disable-automatic-resolution`: failed in existing focused-reproducible cases `rememberSearchAndRecallExposeTypedExplainableMemory` and `waxMCPProcessRememberWithRealCoreMLEmbedder`.
   - `swift test --traits default,MCPServer --filter rememberSearchAndRecallExposeTypedExplainableMemory --disable-automatic-resolution`: failed, recall explanations did not contain `user preference`.
   - `swift test --traits default,MCPServer --filter waxMCPProcessRememberWithRealCoreMLEmbedder --disable-automatic-resolution`: failed, tool payload was not a JSON object.
+
+### F094 Review
+
+- Added schema and tool-call regressions proving `knowledge_capture` must be unavailable when structured memory is disabled.
+- Verified the focused regressions failed before the fix: disabled schema still published `knowledge_capture`, and a disabled direct call returned success.
+- Moved `knowledge_capture` into the structured-only schema group and added it to structured command validation so broker and compatibility call paths reject it when disabled.
+- Verification:
+  - `swift test --traits default,MCPServer --filter 'toolsListHonorsStructuredMemoryFlag|toolsBlockStructuredMemoryOnlyToolsWhenDisabled|toolSchemaRegression' --disable-automatic-resolution`: failed before and passed after.
