@@ -121,7 +121,7 @@ Commit policy:
 - [ ] F107 MCP tests: broker-backed durable capture test times out.
 - [ ] F108 MCP tests: locked-session corpus search test times out.
 - [ ] F109 npm package: packed tarball lacks `dist` binaries.
-- [ ] F110 Snippet gate: public snippet verifier is missing.
+- [x] F110 Snippet gate: public snippet verifier is missing.
 - [x] F111 Demo package: WaxDemo points to missing `../Wax`.
 - [ ] F112 Release script: version grep targets stale source pattern.
 - [ ] F113 Release script: checksum path is cwd-sensitive.
