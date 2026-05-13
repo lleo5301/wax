@@ -2400,3 +2400,13 @@
   - `swift test --filter docsDoNotExposePackageOnlyVectorEnginePreferenceAsPublicConfig --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter VectorSearchDocsTests --disable-automatic-resolution`: passed.
   - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxVectorSearch/WaxVectorSearch.docc/Documentation.md:Sources/WaxVectorSearch/WaxVectorSearch.docc/Articles/VectorSearchEngines.md:Resources/website/docs/vector-search/vector-search-engines.md:Sources/Wax/Wax.docc/Articles/MemoryOrchestrator.md:Resources/website/docs/orchestrator/memory-orchestrator.md:Sources/Wax/Wax.docc/Articles/PhotoRAG.md:Resources/website/docs/media/photo-rag.md:Sources/Wax/Wax.docc/Articles/VideoRAG.md:Resources/website/docs/media/video-rag.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F133 Review
+
+- Added a WaxCore docs regression proving `Wax` has no `putFrame`, `frame`, or `readPayload` methods and public docs must not show those method-shaped calls.
+- Verified the focused regression failed before the architecture docs rewrite on `Wax.putFrame()`.
+- Replaced the stale architecture diagram call with a generic frame payload write into the WAL while preserving legitimate WAL opcode terminology elsewhere.
+- Verification:
+  - `swift test --filter docsDoNotAdvertiseNonexistentFramePayloadMethods --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter WaxCoreDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/Wax/Wax.docc/Articles/Architecture.md:Resources/website/docs/architecture.md:Sources/WaxCore/WaxCore.docc/Articles/GettingStarted.md:Resources/website/docs/core/getting-started.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.

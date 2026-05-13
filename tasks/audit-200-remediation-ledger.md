@@ -144,7 +144,7 @@ Commit policy:
 - [x] F130 Public API: WaxCore documents package-only `Wax` actor.
 - [x] F131 DocC: WaxCore topics list package-only symbols.
 - [x] F132 Docs: `WaxOptions` labels are wrong.
-- [ ] F133 Docs: `putFrame/frame/readPayload` methods do not exist.
+- [x] F133 Docs: `putFrame/frame/readPayload` methods do not exist.
 - [x] F134 Docs/API: structured-memory types documented public but package-only.
 - [x] F135 Vector API: `VectorSearchEngine` documented public but package-only.
 - [x] F136 Vector docs: docs instantiate package-only `USearchVectorEngine`.
