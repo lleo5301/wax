@@ -2236,3 +2236,12 @@
   - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxCore/WaxCore.docc/Documentation.md:Sources/WaxCore/WaxCore.docc/Articles/GettingStarted.md:Sources/WaxCore/WaxCore.docc/Articles/ConcurrencyModel.md:Resources/website/docs/core/getting-started.md:Resources/website/docs/core/concurrency-model.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
   - Targeted grep found no remaining direct public `Wax.create`, `Wax.open`, `store.acquireWriterLease`, `store.putFrame`, `store.commit`, `store.releaseWriterLease`, `store.readPayload`, or `store.close` guidance in the owned WaxCore docs.
   - `git diff --check -- Sources/WaxCore/WaxCore.docc/Documentation.md Sources/WaxCore/WaxCore.docc/Articles/GettingStarted.md Sources/WaxCore/WaxCore.docc/Articles/ConcurrencyModel.md Resources/website/docs/core/getting-started.md Resources/website/docs/core/concurrency-model.md Tests/WaxTests/WaxCoreDocsTests.swift tasks/audit-200-remediation-ledger.md tasks/todo.md`: passed.
+
+### F057 Review
+
+- Added a vector serializer regression with a huge flat-segment header that previously crashed the test process with Swift's integer overflow trap.
+- Replaced unchecked `Int` byte-count multiplications with checked `UInt64` arithmetic before converting to `Int`.
+- Added explicit overflow and `Int.max` diagnostics for vector payload and frame-id byte counts.
+- Verification:
+  - `swift test --filter flatSegmentDecodeRejectsVectorByteCountOverflow --disable-automatic-resolution`: crashed before and passed after.
+  - `swift test --filter VectorSerializer --disable-automatic-resolution`: passed.
