@@ -2050,3 +2050,11 @@
 - Verification:
   - `swift test --filter searchRejectsNonPositiveTopK --disable-automatic-resolution`: passed.
   - `swift test --filter TextSearchEngine --disable-automatic-resolution`: passed.
+
+### F044 Review
+
+- Added a regression proving whitespace-only recall returns an empty context without calling the query embedder.
+- Trimmed the recall query before embedding/search and added an early empty-query return from the shared recall execution path.
+- Verification:
+  - `swift test --filter whitespaceOnlyRecallDoesNotRequestEmbedding --disable-automatic-resolution`: passed.
+  - `swift test --filter MemoryOrchestratorGapTests --disable-automatic-resolution`: passed.
