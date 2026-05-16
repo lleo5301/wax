@@ -2603,7 +2603,7 @@ Execution order:
 Checklist:
 - [x] F063: review and commit existing duplicate vector frame-id restore work.
 - [ ] F-tier: F156, F154, F159, F160, F125, F118, F120, F119, F113, F112, F122, F114, F109, F115, F116, F117, F124, F127, F155, F158.
-- [ ] D-tier: F035, F036, F039, F040, F191, F080, F081, F078, F074, F075, F068, F069, F070, F071, F072.
+- [ ] D-tier: F035, F036, F039, F040, F080, F081, F078, F074, F075, F068, F069, F070, F071, F072.
 
 ### F023 Review
 
@@ -2661,6 +2661,14 @@ Checklist:
 - Verification:
   - `swift test --traits default,MCPServer --filter markdownProjectionMarkerEscapesCommentTerminators --disable-automatic-resolution`
   - `swift test --traits default,MCPServer --filter 'brokerBackedMarkdownExportProjectsCompatibilityFiles|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`
+
+### F191 Review
+
+- Added a regression proving hostile `wax.source_date` metadata such as `../escape` cannot write a daily note outside the Markdown projection `memory/` directory.
+- Added daily-note date-key validation for exported durable daily notes; invalid values fall back to the document timestamp day.
+- Verification:
+  - `swift test --traits default,MCPServer --filter markdownExportSanitizesDailySourceDateFilenames --disable-automatic-resolution`
+  - `swift test --traits default,MCPServer --filter brokerBackedMarkdownExportProjectsCompatibilityFiles --disable-automatic-resolution`
 - [ ] C-tier: F089, F090, F092, F088, F038, F029, F033, F096, F102, F106, F107, F108, F152, F153, F157.
 - [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.

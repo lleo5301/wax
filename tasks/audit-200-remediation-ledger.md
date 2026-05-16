@@ -319,7 +319,7 @@ Support commit not counted as a finding fix:
 - [ ] F188 DREAMS: projection closes session stores in unawaited task.
 - [ ] F189 Markdown export: opens active sessions owned by other brokers.
 - [ ] F190 Markdown export: leaves stale generated files.
-- [ ] F191 Markdown export: `wax.source_date` path traversal in daily filename.
+- [x] F191 Markdown export: `wax.source_date` path traversal in daily filename.
 - [x] F192 Markdown marker: marker JSON is not escaped for `-->`.
 - [ ] F193 Markdown export: reclassifies text instead of metadata type.
 - [ ] F194 Compact context: references raw chunk frame IDs.
