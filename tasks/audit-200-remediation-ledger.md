@@ -75,6 +75,7 @@ Known existing verification blockers from earlier runs:
 | F095 | `f5c8d24b` | Honor broker access-stats feature flag. |
 | F100 | `63ce6e52` | Preserve broker memory content whitespace. |
 | F101 | `ffa14be3` | Skip ended session manifests on resume. |
+| F109 | `pending` | Add waxmcp prepack validation for required dist artifacts. |
 | F112 | `b8c8fe18` | Update waxmcp release version extraction to `WaxMCPServerMetadata.version`. |
 | F113 | `30c8bdef` | Verify basename-only release checksums from artifact directories. |
 | F114 | `fa058cbb` | Set waxmcp release version before building binaries. |
@@ -91,7 +92,7 @@ Known existing verification blockers from earlier runs:
 | F127 | `cee3dee0` | Add Wax, wax-cli, and wax-mcp product builds to Linux CI. |
 | F158 | `54d25930` | Replace generated-at-test-time migration fixtures with packaged fixture bytes. |
 | F159 | `63272352` | Replace silent MiniLM inference test returns with explicit disabled metadata. |
-| F160 | `pending` | Assert exact MiniLM missing-resource errors. |
+| F160 | `4bf2c825` | Assert exact MiniLM missing-resource errors. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -234,7 +235,7 @@ Support commit not counted as a finding fix:
 - [ ] F106 HTTP lifecycle: cleanup loop has no cancellation.
 - [ ] F107 MCP tests: broker-backed durable capture test times out.
 - [ ] F108 MCP tests: locked-session corpus search test times out.
-- [ ] F109 npm package: packed tarball lacks `dist` binaries.
+- [x] F109 npm package: packed tarball lacks `dist` binaries.
 - [x] F110 Snippet gate: public snippet verifier is missing.
 - [x] F111 Demo package: WaxDemo points to missing `../Wax`.
 - [x] F112 Release script: version grep targets stale source pattern.

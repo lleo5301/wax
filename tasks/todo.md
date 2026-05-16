@@ -2756,3 +2756,12 @@ Checklist:
   - `bash Resources/scripts/quality/minilm_test_gating_tests.sh`: failed before and passed after.
   - `swift test --filter MiniLMResourceFailureTests --disable-automatic-resolution`: passed.
   - `swift test --filter MiniLMInitTimeoutTests --disable-automatic-resolution`: passed.
+
+### F109 Review
+
+- Added a package artifact regression proving `Resources/npm/waxmcp` must verify Darwin `dist` artifacts before packing.
+- Verified the regression failed before the fix because `package.json` had no prepack artifact check.
+- Added `scripts/verify-dist.mjs` and wired it to npm `prepack`; it requires `wax-cli`, `wax-mcp`, and checksum files for both `darwin-arm64` and `darwin-x64`.
+- Verification:
+  - `bash Resources/scripts/quality/package_artifact_tests.sh`: failed before and passed after.
+  - `WAXMCP_PACKAGE_DIR=<fake complete dist> node Resources/npm/waxmcp/scripts/verify-dist.mjs`: passed.
