@@ -2715,3 +2715,12 @@ Checklist:
 - Verification:
   - `bash Resources/scripts/quality/docs_generation_tests.sh`: failed before and passed after.
   - `bash -n Resources/scripts/generate-docs.sh`: passed.
+
+### F127/F155 Review
+
+- Added a Linux CI workflow regression proving the workflow must install Swift and build the public `Wax`, `wax-cli`, and `wax-mcp` products.
+- Verified the regression failed before the fix because `.github/workflows/waxcore-linux.yml` only built the `WaxCore` target.
+- Added Swift 6.2 setup plus explicit product builds for `Wax`, `wax-cli --traits default,MCPServer`, and `wax-mcp --traits default,MCPServer`.
+- Marked F155 as the same verified root cause as F127.
+- Verification:
+  - `bash Resources/scripts/quality/linux_ci_workflow_tests.sh`: failed before and passed after.
