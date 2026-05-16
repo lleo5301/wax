@@ -164,7 +164,7 @@ Support commit not counted as a finding fix:
 - [ ] F033 MCP search: `memory_search topK` caps before post-filtering.
 - [ ] F034 Sessions: multiple active sessions can silently ignore working memory.
 - [x] F035 MCP schema: vector search mode/options are hidden.
-- [ ] F036 MCP tools: flush handler exists but is undiscoverable/rejected inconsistently.
+- [x] F036 MCP tools: flush handler exists but is undiscoverable/rejected inconsistently.
 - [ ] F037 Pending memory: pending duplicate dedupe gap.
 - [ ] F038 Diagnostics: broker filters lack includeDeleted/superseded/frame IDs.
 - [ ] F039 MCP schema: `fact_assert` omits relation/version relation.
