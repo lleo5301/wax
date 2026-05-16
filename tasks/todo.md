@@ -2650,3 +2650,12 @@ Checklist:
 - Verification:
   - `bash Resources/scripts/quality/homebrew_formula_tests.sh`: failed before and passed after.
   - `curl -fsSL https://github.com/christopherkarani/Wax/archive/refs/tags/waxmcp-v0.1.21.tar.gz | shasum -a 256`: produced `450be06af9698ce8baab1d74fc4060b34dcc98eb6eb3b1a450329c71d68abb43`.
+
+### F120 Review
+
+- Extended the Homebrew formula regression to compare the formula Xcode dependency against the root `swift-tools-version`.
+- Verified the regression failed before the fix because the formula required Xcode `15.0` while the package declares Swift tools `6.1`.
+- Updated the Homebrew tap formula to require Xcode `16.3`.
+- Committed the nested Homebrew tap change as `347847d` and recorded the submodule pointer in the root repo.
+- Verification:
+  - `bash Resources/scripts/quality/homebrew_formula_tests.sh`: failed before and passed after.

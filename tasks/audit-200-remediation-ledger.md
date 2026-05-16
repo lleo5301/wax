@@ -79,8 +79,9 @@ Known existing verification blockers from earlier runs:
 | F111 | `6372a5eb`, `f89be8f7` | Repair WaxDemo package path and public API usage. |
 | F121 | `a22e5c1` | Fix waxmcp local npm README path. |
 | F123 | `69470858` | Record/fix readiness parser remediation. |
-| F118 | `pending` | Update Homebrew formula to the current waxmcp package version. |
+| F118 | `02ff5896` | Update Homebrew formula to the current waxmcp package version. |
 | F119 | `80ec3020` | Add missing `.gitmodules` metadata for the Homebrew tap gitlink. |
+| F120 | `pending` | Require an Xcode version compatible with Swift tools 6.1 in the Homebrew formula. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -234,7 +235,7 @@ Support commit not counted as a finding fix:
 - [ ] F117 Release arch: local release stages only arm64 while metadata advertises x64.
 - [x] F118 Homebrew: formula version is stale.
 - [x] F119 Homebrew: directory is gitlink-like without `.gitmodules`.
-- [ ] F120 Homebrew: formula Xcode 15 requirement is too old for Swift 6.1 traits.
+- [x] F120 Homebrew: formula Xcode 15 requirement is too old for Swift 6.1 traits.
 - [x] F121 npm README: local path `./npm/waxmcp` is wrong from repo root.
 - [ ] F122 Release scripts: root/nested release scripts rewrite different version files.
 - [x] F123 Readiness gate: pass-rate parser fails on Swift Testing output.
