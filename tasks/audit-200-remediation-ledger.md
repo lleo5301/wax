@@ -75,7 +75,7 @@ Known existing verification blockers from earlier runs:
 | F095 | `f5c8d24b` | Honor broker access-stats feature flag. |
 | F100 | `63ce6e52` | Preserve broker memory content whitespace. |
 | F101 | `ffa14be3` | Skip ended session manifests on resume. |
-| F112 | `pending` | Update waxmcp release version extraction to `WaxMCPServerMetadata.version`. |
+| F112 | `b8c8fe18` | Update waxmcp release version extraction to `WaxMCPServerMetadata.version`. |
 | F113 | `30c8bdef` | Verify basename-only release checksums from artifact directories. |
 | F110 | `e742da53` | Add public snippet verifier. |
 | F111 | `6372a5eb`, `f89be8f7` | Repair WaxDemo package path and public API usage. |
@@ -84,6 +84,7 @@ Known existing verification blockers from earlier runs:
 | F118 | `02ff5896` | Update Homebrew formula to the current waxmcp package version. |
 | F119 | `80ec3020` | Add missing `.gitmodules` metadata for the Homebrew tap gitlink. |
 | F120 | `a3b9111c` | Require an Xcode version compatible with Swift tools 6.1 in the Homebrew formula. |
+| F122 | `pending` | Make root waxmcp release script delegate to the canonical Resources script. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -239,7 +240,7 @@ Support commit not counted as a finding fix:
 - [x] F119 Homebrew: directory is gitlink-like without `.gitmodules`.
 - [x] F120 Homebrew: formula Xcode 15 requirement is too old for Swift 6.1 traits.
 - [x] F121 npm README: local path `./npm/waxmcp` is wrong from repo root.
-- [ ] F122 Release scripts: root/nested release scripts rewrite different version files.
+- [x] F122 Release scripts: root/nested release scripts rewrite different version files.
 - [x] F123 Readiness gate: pass-rate parser fails on Swift Testing output.
 - [ ] F124 Docs script: docs generation uses wrong root/destructive copy assumptions.
 - [x] F125 Website CI: no PR build gate for website/docs.

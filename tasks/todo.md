@@ -2677,3 +2677,12 @@ Checklist:
 - Verification:
   - `bash Resources/scripts/quality/release_workflow_tests.sh`: failed before and passed after.
   - `bash -n scripts/release-waxmcp.sh Resources/scripts/release-waxmcp.sh`: passed.
+
+### F122 Review
+
+- Extended the release workflow regression to reject duplicated mutation logic in the root `scripts/release-waxmcp.sh` wrapper.
+- Verified the regression failed before the fix because the root script duplicated package/source version edits, build staging, bundle copy, and checksum generation separately from `Resources/scripts/release-waxmcp.sh`.
+- Replaced the root script with an executable wrapper that delegates to `Resources/scripts/release-waxmcp.sh`.
+- Verification:
+  - `bash Resources/scripts/quality/release_workflow_tests.sh`: failed before and passed after.
+  - `bash -n scripts/release-waxmcp.sh Resources/scripts/release-waxmcp.sh`: passed.
