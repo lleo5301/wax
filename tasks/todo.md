@@ -2607,3 +2607,10 @@ Checklist:
 - [ ] C-tier: F089, F090, F092, F088, F038, F029, F033, F096, F102, F106, F107, F108, F152, F153, F157.
 - [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
+
+### F156 Review
+
+- Proved F156 is a duplicate of the completed F126 skip-detector fix.
+- `Resources/scripts/quality/production_readiness_gates_tests.sh` already includes Swift Testing suite and test skip fixtures: `Suite FeatureFlaggedTests skipped: ...` and `Test testRequiresFixture() skipped: ...`.
+- Verification:
+  - `bash Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
