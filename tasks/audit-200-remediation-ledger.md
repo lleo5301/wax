@@ -232,7 +232,7 @@ Support commit not counted as a finding fix:
 - [x] F101 Session resume: `session_resume` can pick ended manifest.
 - [ ] F102 HTTP MCP: body limit is enforced after full read.
 - [ ] F103 Corpus: corpus rebuild is non-atomic.
-- [ ] F104 MCP config: invalid embedder choice falls back to MiniLM.
+- [x] F104 MCP config: invalid embedder choice falls back to MiniLM.
 - [ ] F105 Multimodal MCP: multimodal is advertised but not wired.
 - [ ] F106 HTTP lifecycle: cleanup loop has no cancellation.
 - [ ] F107 MCP tests: broker-backed durable capture test times out.
