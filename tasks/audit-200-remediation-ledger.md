@@ -301,7 +301,7 @@ Support commit not counted as a finding fix:
 - [ ] F170 Photo sync: `syncState` frame kind is never written.
 - [ ] F171 Photo tags: tags overpromise classifier labels.
 - [ ] F172 Video thumbnails: Photos video local URL discarded, thumbnails fail.
-- [ ] F173 Broker validation: direct broker ignores unknown args.
+- [x] F173 Broker validation: direct broker ignores unknown args.
 - [ ] F174 Session start: manifest saved before `.started` event.
 - [ ] F175 Session resume: lease stolen before `.resumed` event.
 - [ ] F176 Events: first event file creation return ignored.
