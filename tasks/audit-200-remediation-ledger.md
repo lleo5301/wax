@@ -309,7 +309,7 @@ Support commit not counted as a finding fix:
 - [ ] F178 Manifests: corrupt stray manifest aborts all listing.
 - [ ] F179 Promotion: memory written before stale-session validation.
 - [ ] F180 Promotion: metadata keeps raw `session_id`.
-- [ ] F181 Promotion: `max_candidates` unbounded above.
+- [x] F181 Promotion: `max_candidates` unbounded above.
 - [ ] F182 Markdown sync: marker trust uses frame ID only.
 - [ ] F183 Markdown sync: locked memory can be deleted by removing markdown line.
 - [ ] F184 Markdown sync: dry-run skips durable-write validation.
