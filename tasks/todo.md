@@ -2697,3 +2697,12 @@ Checklist:
   - `bash Resources/scripts/quality/release_workflow_tests.sh`: failed before and passed after.
   - `bash -n Resources/scripts/sync-waxmcp-version.sh Resources/scripts/release-waxmcp.sh scripts/release-waxmcp.sh`: passed.
   - `Resources/scripts/sync-waxmcp-version.sh 0.1.21`: passed and left `Resources/npm/waxmcp/package.json` and `Sources/WaxMCPServer/main.swift` unchanged.
+
+### F117 Review
+
+- Extended the release workflow regression to require the canonical release script to stage `darwin-x64` artifacts and to use the shared binary builder.
+- Verified the regression failed before the fix because `Resources/scripts/release-waxmcp.sh` only built and staged `darwin-arm64`.
+- Replaced the hand-staging path with a loop over `darwin-arm64 arm64-apple-macosx14.0` and `darwin-x64 x86_64-apple-macosx14.0`, delegating artifact copy, bundles, permissions, and checksums to `build-waxmcp-binaries.sh`.
+- Verification:
+  - `bash Resources/scripts/quality/release_workflow_tests.sh`: failed before and passed after.
+  - `bash -n Resources/scripts/release-waxmcp.sh scripts/release-waxmcp.sh Resources/scripts/build-waxmcp-binaries.sh`: passed.

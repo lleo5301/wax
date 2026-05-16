@@ -77,7 +77,8 @@ Known existing verification blockers from earlier runs:
 | F101 | `ffa14be3` | Skip ended session manifests on resume. |
 | F112 | `b8c8fe18` | Update waxmcp release version extraction to `WaxMCPServerMetadata.version`. |
 | F113 | `30c8bdef` | Verify basename-only release checksums from artifact directories. |
-| F114 | `pending` | Set waxmcp release version before building binaries. |
+| F114 | `fa058cbb` | Set waxmcp release version before building binaries. |
+| F117 | `pending` | Stage both darwin-arm64 and darwin-x64 artifacts in the local waxmcp release script. |
 | F110 | `e742da53` | Add public snippet verifier. |
 | F111 | `6372a5eb`, `f89be8f7` | Repair WaxDemo package path and public API usage. |
 | F121 | `a22e5c1` | Fix waxmcp local npm README path. |
@@ -236,7 +237,7 @@ Support commit not counted as a finding fix:
 - [x] F114 Release workflow: npm metadata is bumped after build only.
 - [ ] F115 OpenClaw npm: package ships TypeScript source without loader/build.
 - [ ] F116 OpenClaw: default command `wax-mcp` unavailable from plugin package.
-- [ ] F117 Release arch: local release stages only arm64 while metadata advertises x64.
+- [x] F117 Release arch: local release stages only arm64 while metadata advertises x64.
 - [x] F118 Homebrew: formula version is stale.
 - [x] F119 Homebrew: directory is gitlink-like without `.gitmodules`.
 - [x] F120 Homebrew: formula Xcode 15 requirement is too old for Swift 6.1 traits.
