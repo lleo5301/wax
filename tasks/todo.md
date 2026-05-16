@@ -2640,3 +2640,13 @@ Checklist:
 - Added `.gitmodules` metadata pointing the Homebrew tap gitlink at `https://github.com/christopherkarani/homebrew-wax.git`.
 - Verification:
   - `bash Resources/scripts/quality/submodule_contract_tests.sh`: failed before and passed after.
+
+### F118 Review
+
+- Added a Homebrew formula regression proving the formula tag version must match `Resources/npm/waxmcp/package.json`.
+- Verified the regression failed before the fix because the formula used `waxmcp-v0.1.15` while the package version is `0.1.21`.
+- Updated the Homebrew tap formula to `waxmcp-v0.1.21` and replaced the archive SHA-256 with the freshly computed hash for that tag.
+- Committed the nested Homebrew tap change as `3b1b150` and recorded the submodule pointer in the root repo.
+- Verification:
+  - `bash Resources/scripts/quality/homebrew_formula_tests.sh`: failed before and passed after.
+  - `curl -fsSL https://github.com/christopherkarani/Wax/archive/refs/tags/waxmcp-v0.1.21.tar.gz | shasum -a 256`: produced `450be06af9698ce8baab1d74fc4060b34dcc98eb6eb3b1a450329c71d68abb43`.
