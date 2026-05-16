@@ -156,7 +156,7 @@ Support commit not counted as a finding fix:
 - [ ] F025 Structured search: object-side entity facts are not used in `evidenceFrameIds`.
 - [ ] F026 Bitemporal MCP: orchestrator/MCP collapses bitemporal `asOf`.
 - [ ] F027 Unified search: `timeRange.before` is treated as system as-of.
-- [ ] F028 Alias resolution: alias matching is exact despite fuzzy docs.
+- [x] F028 Alias resolution: alias matching is exact despite fuzzy docs.
 - [ ] F029 MCP facts: `fact_assert` lacks evidence support.
 - [ ] F030 Unified search: metadata filters can starve candidate results.
 - [ ] F031 Pending search: pending metadata can match while previews are committed-only.
