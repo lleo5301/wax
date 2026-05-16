@@ -78,7 +78,7 @@ Known existing verification blockers from earlier runs:
 | F112 | `b8c8fe18` | Update waxmcp release version extraction to `WaxMCPServerMetadata.version`. |
 | F113 | `30c8bdef` | Verify basename-only release checksums from artifact directories. |
 | F114 | `fa058cbb` | Set waxmcp release version before building binaries. |
-| F117 | `pending` | Stage both darwin-arm64 and darwin-x64 artifacts in the local waxmcp release script. |
+| F117 | `cf2141aa` | Stage both darwin-arm64 and darwin-x64 artifacts in the local waxmcp release script. |
 | F110 | `e742da53` | Add public snippet verifier. |
 | F111 | `6372a5eb`, `f89be8f7` | Repair WaxDemo package path and public API usage. |
 | F121 | `a22e5c1` | Fix waxmcp local npm README path. |
@@ -87,6 +87,7 @@ Known existing verification blockers from earlier runs:
 | F119 | `80ec3020` | Add missing `.gitmodules` metadata for the Homebrew tap gitlink. |
 | F120 | `a3b9111c` | Require an Xcode version compatible with Swift tools 6.1 in the Homebrew formula. |
 | F122 | `3c0507b5` | Make root waxmcp release script delegate to the canonical Resources script. |
+| F124 | `pending` | Fix docs generation root resolution and atomic output replacement. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -244,7 +245,7 @@ Support commit not counted as a finding fix:
 - [x] F121 npm README: local path `./npm/waxmcp` is wrong from repo root.
 - [x] F122 Release scripts: root/nested release scripts rewrite different version files.
 - [x] F123 Readiness gate: pass-rate parser fails on Swift Testing output.
-- [ ] F124 Docs script: docs generation uses wrong root/destructive copy assumptions.
+- [x] F124 Docs script: docs generation uses wrong root/destructive copy assumptions.
 - [x] F125 Website CI: no PR build gate for website/docs.
 - [x] F126 Test gate: skip detector misses Swift Testing skip format.
 - [ ] F127 CI scope: Linux CI omits Wax/CLI/MCP product builds.

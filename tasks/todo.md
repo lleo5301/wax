@@ -2706,3 +2706,12 @@ Checklist:
 - Verification:
   - `bash Resources/scripts/quality/release_workflow_tests.sh`: failed before and passed after.
   - `bash -n Resources/scripts/release-waxmcp.sh scripts/release-waxmcp.sh Resources/scripts/build-waxmcp-binaries.sh`: passed.
+
+### F124 Review
+
+- Added a docs-generation regression proving `Resources/scripts/generate-docs.sh` must resolve the repository root and render into a temporary directory before replacing output.
+- Verified the regression failed before the fix because the script resolved `PROJECT_DIR` to `Resources`.
+- Updated docs generation to run SwiftPM from the repo root, render DocC output into `.build/docc-html.*`, and replace `docs/docc-html` only after generation succeeds.
+- Verification:
+  - `bash Resources/scripts/quality/docs_generation_tests.sh`: failed before and passed after.
+  - `bash -n Resources/scripts/generate-docs.sh`: passed.
