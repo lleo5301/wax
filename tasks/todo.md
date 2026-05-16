@@ -2736,3 +2736,13 @@ Checklist:
   - Fixture SHA-256:
     - `migration-n-1.wax.gz`: `bb8f60e240316a83851b822172c4d4385b7e5ddd79fd998acaf9d36f0190b56a`
     - `migration-n-2.wax.gz`: `8b383b9675461c31bbb96c02cbe20389c786c5b3fff15a1101e7b1434013fe6e`
+
+### F159 Review
+
+- Added a MiniLM gating regression proving inference tests must not silently `return` when `WAX_TEST_MINILM` is unset.
+- Verified the regression failed before the fix because MiniLM embedder and quality tests used `guard isMiniLMInferenceEnabled() else { return }`.
+- Replaced those guards with Swift Testing `.disabled(if:)` metadata so default runs report explicit skips; kept the non-inference MiniLM asset regression enabled.
+- Verification:
+  - `bash Resources/scripts/quality/minilm_test_gating_tests.sh`: failed before and passed after.
+  - `swift test --filter MiniLMEmbedderTests --disable-automatic-resolution`: passed with 4 explicit skips when `WAX_TEST_MINILM` was unset.
+  - `swift test --filter MiniLMEmbeddingQualityTests --disable-automatic-resolution`: passed with the asset test running and 2 explicit skips when MiniLM generation/inference env vars were unset.
