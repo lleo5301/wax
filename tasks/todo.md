@@ -2746,3 +2746,13 @@ Checklist:
   - `bash Resources/scripts/quality/minilm_test_gating_tests.sh`: failed before and passed after.
   - `swift test --filter MiniLMEmbedderTests --disable-automatic-resolution`: passed with 4 explicit skips when `WAX_TEST_MINILM` was unset.
   - `swift test --filter MiniLMEmbeddingQualityTests --disable-automatic-resolution`: passed with the asset test running and 2 explicit skips when MiniLM generation/inference env vars were unset.
+
+### F160 Review
+
+- Extended the MiniLM quality regression to reject resource-failure tests that catch any error and assert `true`.
+- Verified the regression failed before the fix because both missing-resource tests accepted all thrown errors.
+- Updated the tests to assert `MiniLMEmbeddings.InitError.missingModelResource` and `MiniLMEmbeddings.InitError.tokenizerLoadFailed("override requested failure")`.
+- Verification:
+  - `bash Resources/scripts/quality/minilm_test_gating_tests.sh`: failed before and passed after.
+  - `swift test --filter MiniLMResourceFailureTests --disable-automatic-resolution`: passed.
+  - `swift test --filter MiniLMInitTimeoutTests --disable-automatic-resolution`: passed.
