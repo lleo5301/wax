@@ -2774,3 +2774,12 @@ Checklist:
 - Verification:
   - `bash Resources/scripts/quality/package_artifact_tests.sh`: failed before and passed after.
   - `npm pack --dry-run` in `Resources/openclaw/wax-memory-plugin`: passed and included `dist/index.js` with no `src` files.
+
+### F116 Review
+
+- Extended the package artifact regression to require the OpenClaw runtime to default to the packaged `waxmcp` launcher and to depend on the matching `waxmcp` npm version.
+- Verified the regression failed before the fix because the package had no `waxmcp` dependency and the runtime/metadata still suggested `wax-mcp`.
+- Updated the source and built OpenClaw plugin entries to launch `waxmcp mcp serve ...`, added a matching `waxmcp` dependency, and updated plugin metadata/README examples.
+- Verification:
+  - `bash Resources/scripts/quality/package_artifact_tests.sh`: failed before and passed after.
+  - `npm pack --dry-run` in `Resources/openclaw/wax-memory-plugin`: passed.

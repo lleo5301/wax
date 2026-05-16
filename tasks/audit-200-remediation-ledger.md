@@ -79,7 +79,8 @@ Known existing verification blockers from earlier runs:
 | F112 | `b8c8fe18` | Update waxmcp release version extraction to `WaxMCPServerMetadata.version`. |
 | F113 | `30c8bdef` | Verify basename-only release checksums from artifact directories. |
 | F114 | `fa058cbb` | Set waxmcp release version before building binaries. |
-| F115 | `pending` | Publish OpenClaw plugin JavaScript entry from dist instead of TypeScript source. |
+| F115 | `841b0763` | Publish OpenClaw plugin JavaScript entry from dist instead of TypeScript source. |
+| F116 | `pending` | Default OpenClaw runtime to the packaged waxmcp launcher. |
 | F117 | `cf2141aa` | Stage both darwin-arm64 and darwin-x64 artifacts in the local waxmcp release script. |
 | F110 | `e742da53` | Add public snippet verifier. |
 | F111 | `6372a5eb`, `f89be8f7` | Repair WaxDemo package path and public API usage. |
@@ -243,7 +244,7 @@ Support commit not counted as a finding fix:
 - [x] F113 Release script: checksum path is cwd-sensitive.
 - [x] F114 Release workflow: npm metadata is bumped after build only.
 - [x] F115 OpenClaw npm: package ships TypeScript source without loader/build.
-- [ ] F116 OpenClaw: default command `wax-mcp` unavailable from plugin package.
+- [x] F116 OpenClaw: default command `wax-mcp` unavailable from plugin package.
 - [x] F117 Release arch: local release stages only arm64 while metadata advertises x64.
 - [x] F118 Homebrew: formula version is stale.
 - [x] F119 Homebrew: directory is gitlink-like without `.gitmodules`.
