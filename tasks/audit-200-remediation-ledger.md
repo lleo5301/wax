@@ -168,7 +168,7 @@ Support commit not counted as a finding fix:
 - [ ] F037 Pending memory: pending duplicate dedupe gap.
 - [ ] F038 Diagnostics: broker filters lack includeDeleted/superseded/frame IDs.
 - [x] F039 MCP schema: `fact_assert` omits relation/version relation.
-- [ ] F040 MCP schema: generic `type/value` fact schema is rejected by broker.
+- [x] F040 MCP schema: generic `type/value` fact schema is rejected by broker.
 - [x] F041 MCP filters: non-array `labels` filter is ignored.
 - [x] F042 MCP filters: non-integer time filters are ignored.
 - [x] F043 MCP filters: unknown nested filters are ignored.
