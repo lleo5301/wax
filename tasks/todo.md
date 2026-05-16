@@ -2668,3 +2668,12 @@ Checklist:
 - Verification:
   - `bash Resources/scripts/quality/release_workflow_tests.sh`: failed before and passed after.
   - `bash -n Resources/scripts/build-waxmcp-binaries.sh scripts/release-waxmcp.sh Resources/scripts/release-waxmcp.sh`: passed.
+
+### F112 Review
+
+- Extended the release workflow regression to reject stale `let serverVersion = "..."` extraction and release-script rewrites.
+- Verified the regression failed before the fix because the workflow still grepped for the old literal `serverVersion` declaration.
+- Updated the workflow version consistency check and both release scripts to target `WaxMCPServerMetadata.version`.
+- Verification:
+  - `bash Resources/scripts/quality/release_workflow_tests.sh`: failed before and passed after.
+  - `bash -n scripts/release-waxmcp.sh Resources/scripts/release-waxmcp.sh`: passed.

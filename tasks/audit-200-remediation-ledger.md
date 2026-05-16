@@ -75,7 +75,8 @@ Known existing verification blockers from earlier runs:
 | F095 | `f5c8d24b` | Honor broker access-stats feature flag. |
 | F100 | `63ce6e52` | Preserve broker memory content whitespace. |
 | F101 | `ffa14be3` | Skip ended session manifests on resume. |
-| F113 | `pending` | Verify basename-only release checksums from artifact directories. |
+| F112 | `pending` | Update waxmcp release version extraction to `WaxMCPServerMetadata.version`. |
+| F113 | `30c8bdef` | Verify basename-only release checksums from artifact directories. |
 | F110 | `e742da53` | Add public snippet verifier. |
 | F111 | `6372a5eb`, `f89be8f7` | Repair WaxDemo package path and public API usage. |
 | F121 | `a22e5c1` | Fix waxmcp local npm README path. |
@@ -228,7 +229,7 @@ Support commit not counted as a finding fix:
 - [ ] F109 npm package: packed tarball lacks `dist` binaries.
 - [x] F110 Snippet gate: public snippet verifier is missing.
 - [x] F111 Demo package: WaxDemo points to missing `../Wax`.
-- [ ] F112 Release script: version grep targets stale source pattern.
+- [x] F112 Release script: version grep targets stale source pattern.
 - [x] F113 Release script: checksum path is cwd-sensitive.
 - [ ] F114 Release workflow: npm metadata is bumped after build only.
 - [ ] F115 OpenClaw npm: package ships TypeScript source without loader/build.
