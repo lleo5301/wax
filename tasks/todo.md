@@ -2659,3 +2659,12 @@ Checklist:
 - Committed the nested Homebrew tap change as `347847d` and recorded the submodule pointer in the root repo.
 - Verification:
   - `bash Resources/scripts/quality/homebrew_formula_tests.sh`: failed before and passed after.
+
+### F113 Review
+
+- Added a release workflow regression rejecting checksum verification from the repo root when checksum files contain basename paths.
+- Verified the regression failed before the fix because build and publish jobs called `shasum -c`/`sha256sum -c` on checksum files under `Resources/npm/waxmcp/dist/...` while still running from the repo root.
+- Updated build and publish checksum verification to `cd` into each artifact directory before checking `wax-cli.sha256` or `wax-mcp.sha256`.
+- Verification:
+  - `bash Resources/scripts/quality/release_workflow_tests.sh`: failed before and passed after.
+  - `bash -n Resources/scripts/build-waxmcp-binaries.sh scripts/release-waxmcp.sh Resources/scripts/release-waxmcp.sh`: passed.

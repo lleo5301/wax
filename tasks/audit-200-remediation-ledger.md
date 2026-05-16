@@ -75,13 +75,14 @@ Known existing verification blockers from earlier runs:
 | F095 | `f5c8d24b` | Honor broker access-stats feature flag. |
 | F100 | `63ce6e52` | Preserve broker memory content whitespace. |
 | F101 | `ffa14be3` | Skip ended session manifests on resume. |
+| F113 | `pending` | Verify basename-only release checksums from artifact directories. |
 | F110 | `e742da53` | Add public snippet verifier. |
 | F111 | `6372a5eb`, `f89be8f7` | Repair WaxDemo package path and public API usage. |
 | F121 | `a22e5c1` | Fix waxmcp local npm README path. |
 | F123 | `69470858` | Record/fix readiness parser remediation. |
 | F118 | `02ff5896` | Update Homebrew formula to the current waxmcp package version. |
 | F119 | `80ec3020` | Add missing `.gitmodules` metadata for the Homebrew tap gitlink. |
-| F120 | `pending` | Require an Xcode version compatible with Swift tools 6.1 in the Homebrew formula. |
+| F120 | `a3b9111c` | Require an Xcode version compatible with Swift tools 6.1 in the Homebrew formula. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -228,7 +229,7 @@ Support commit not counted as a finding fix:
 - [x] F110 Snippet gate: public snippet verifier is missing.
 - [x] F111 Demo package: WaxDemo points to missing `../Wax`.
 - [ ] F112 Release script: version grep targets stale source pattern.
-- [ ] F113 Release script: checksum path is cwd-sensitive.
+- [x] F113 Release script: checksum path is cwd-sensitive.
 - [ ] F114 Release workflow: npm metadata is bumped after build only.
 - [ ] F115 OpenClaw npm: package ships TypeScript source without loader/build.
 - [ ] F116 OpenClaw: default command `wax-mcp` unavailable from plugin package.
