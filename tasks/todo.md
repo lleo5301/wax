@@ -2765,3 +2765,12 @@ Checklist:
 - Verification:
   - `bash Resources/scripts/quality/package_artifact_tests.sh`: failed before and passed after.
   - `WAXMCP_PACKAGE_DIR=<fake complete dist> node Resources/npm/waxmcp/scripts/verify-dist.mjs`: passed.
+
+### F115 Review
+
+- Extended the package artifact regression to require the OpenClaw package to publish a built `dist/index.js` extension instead of `src/index.ts`.
+- Verified the regression failed before the fix because package metadata pointed OpenClaw at `./src/index.ts` and included `src` in published files.
+- Added `dist/index.js`, changed OpenClaw metadata to load it, and limited published files to `dist`, plugin metadata, and README while keeping `src/index.ts` for maintainers.
+- Verification:
+  - `bash Resources/scripts/quality/package_artifact_tests.sh`: failed before and passed after.
+  - `npm pack --dry-run` in `Resources/openclaw/wax-memory-plugin`: passed and included `dist/index.js` with no `src` files.
