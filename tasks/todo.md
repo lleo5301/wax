@@ -2601,7 +2601,7 @@ Execution order:
 6. Fix A-tier search, pending/committed, and corpus semantics issues.
 
 Checklist:
-- [ ] F063: review and commit existing duplicate vector frame-id restore work.
+- [x] F063: review and commit existing duplicate vector frame-id restore work.
 - [ ] F-tier: F156, F154, F159, F160, F125, F118, F120, F119, F113, F112, F122, F114, F109, F115, F116, F117, F124, F127, F155, F158.
 - [ ] D-tier: F023, F028, F035, F036, F039, F040, F104, F173, F181, F192, F191, F080, F081, F078, F074, F075, F068, F069, F070, F071, F072.
 - [ ] C-tier: F089, F090, F092, F088, F038, F029, F033, F096, F102, F106, F107, F108, F152, F153, F157.
@@ -2624,3 +2624,11 @@ Checklist:
   - `bash scripts/verify-waxmcp-http-tests.sh`: failed before and passed after.
   - `bash scripts/verify-waxmcp-http-tests.sh && bash -n scripts/verify-waxmcp-http.sh scripts/verify-waxmcp-http-tests.sh`: passed.
   - `bash scripts/verify-waxmcp-http.sh`: passed.
+
+### F125 Review
+
+- Added a workflow regression requiring the website workflow to run on `pull_request` for website/docs changes and requiring the deploy job to skip PR events.
+- Verified the regression failed before the workflow change because `.github/workflows/deploy-website.yml` only had `push` and `workflow_dispatch` triggers.
+- Added a `pull_request` path gate for `Resources/website/**` and the workflow file, while preserving GitHub Pages deployment only for non-PR events.
+- Verification:
+  - `bash Resources/scripts/quality/website_workflow_tests.sh`: failed before and passed after.

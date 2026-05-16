@@ -79,9 +79,10 @@ Known existing verification blockers from earlier runs:
 | F111 | `6372a5eb`, `f89be8f7` | Repair WaxDemo package path and public API usage. |
 | F121 | `a22e5c1` | Fix waxmcp local npm README path. |
 | F123 | `69470858` | Record/fix readiness parser remediation. |
+| F125 | `pending` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
-| F154 | `pending` | Make HTTP MCP verifier perform a real `tools/call`. |
-| F156 | `pending` | Duplicate of F126; Swift Testing skip detector is already covered by production readiness gate tests. |
+| F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
+| F156 | `e42638a3` | Duplicate of F126; Swift Testing skip detector is already covered by production readiness gate tests. |
 | F128 | `c57937ca` | Add Foundation import to README quick start. |
 | F129 | `e941be9e` | Clarify README memory recall mode. |
 | F130 | `80726257` | Fix WaxCore docs public surface. |
@@ -236,7 +237,7 @@ Support commit not counted as a finding fix:
 - [ ] F122 Release scripts: root/nested release scripts rewrite different version files.
 - [x] F123 Readiness gate: pass-rate parser fails on Swift Testing output.
 - [ ] F124 Docs script: docs generation uses wrong root/destructive copy assumptions.
-- [ ] F125 Website CI: no PR build gate for website/docs.
+- [x] F125 Website CI: no PR build gate for website/docs.
 - [x] F126 Test gate: skip detector misses Swift Testing skip format.
 - [ ] F127 CI scope: Linux CI omits Wax/CLI/MCP product builds.
 - [x] F128 README: quick-start omits required `Foundation` import.
