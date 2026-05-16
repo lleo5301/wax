@@ -2724,3 +2724,15 @@ Checklist:
 - Marked F155 as the same verified root cause as F127.
 - Verification:
   - `bash Resources/scripts/quality/linux_ci_workflow_tests.sh`: failed before and passed after.
+
+### F158 Review
+
+- Converted the migration compatibility test from generating N-1/N-2 stores with current code to loading packaged compressed fixture bytes.
+- Verified the revised test failed before fixtures were present with `missing migration fixture migration-n-1.wax`.
+- Generated fixture bytes once, stored them as compressed `.wax.gz` test resources, and removed the temporary generator test before committing.
+- Added `WaxCoreTests` fixture resources in `Package.swift`; the test expands each gzip fixture into a temp `.wax` file before opening it.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter migrationFixturesNMinus1AndNMinus2Load`: failed before fixtures and passed after.
+  - Fixture SHA-256:
+    - `migration-n-1.wax.gz`: `bb8f60e240316a83851b822172c4d4385b7e5ddd79fd998acaf9d36f0190b56a`
+    - `migration-n-2.wax.gz`: `8b383b9675461c31bbb96c02cbe20389c786c5b3fff15a1101e7b1434013fe6e`
