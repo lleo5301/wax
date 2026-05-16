@@ -2575,3 +2575,35 @@
   - `swift test --filter loadedVectorSearchEngineChecksVectorCountConversions --disable-automatic-resolution`: failed before and passed after.
   - `swift test --filter loadedVectorSearchEngineRejectsProjectedVectorCountOverflow --disable-automatic-resolution`: failed before the helper existed and passed after.
   - `swift test --filter 'loadedVectorSearchEngineRejectsProjectedVectorCountOverflow|loadedVectorSearchEngineChecksVectorCountConversions|uSearchVectorEngineLoadPrefersStagedVectorIndexBytes|unifiedSearchFallsBackToUSearchWhenMetalCannotDeserialize|vectorSearchSessionCosineSearchNormalizesScaledQueries' --disable-automatic-resolution`: passed.
+
+### F063 Review
+
+- Added duplicate-frame-id regressions for flat vector serialization, flat/Metal segment decode, direct `MetalVectorEngine.deserialize`, and core vector-index staging.
+- Verified each focused regression failed before the corresponding validation boundary was added.
+- Added shared frame-id uniqueness validation in `VectorSerializer`, reused it for direct Metal restore, and added an equivalent core validator for staged vector segments before commit.
+- Code review approved the focused F063 changes with no findings.
+- Verification:
+  - `swift test --filter 'flatVectorSerializationRejectsDuplicateFrameIds|metalSegmentDecodeRejectsDuplicateFrameIds|metalVectorEngineDeserializeRejectsDuplicateFrameIds|stageVecIndexRejectsDuplicateFrameIds' --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter 'flatVectorSerializationRejectsDuplicateFrameIds|metalSegmentDecodeRejectsDuplicateFrameIds|metalVectorEngineDeserializeRejectsDuplicateFrameIds|stageVecIndexRejectsDuplicateFrameIds|metalSegmentDecodeRoundTrip|vectorEngineSerializeDeserializeRoundtripPreservesSearch|metalVectorEngineRejectsTrailingBytesDuringDeserialize|metalVectorEngineDeserializeAvoidsAlignedUInt64Binding|waxVecIndexPersistsAndReopens' --disable-automatic-resolution`: passed.
+
+## F-to-A Remediation Plan
+
+Requested: 2026-05-17
+
+Goal: fix every remaining item ranked F through A in the difficulty table, with one issue fix per commit and focused TDD verification for each issue.
+
+Execution order:
+1. Land F063 first because it is already implemented locally and blocks a clean worktree.
+2. Fix F-tier packaging/docs/gate issues.
+3. Fix D-tier schema, validation, tokenizer, CoreML guard, and runtime flag issues.
+4. Fix C-tier CLI/MCP/WaxRepo surface issues.
+5. Fix B-tier local subsystem/runtime issues.
+6. Fix A-tier search, pending/committed, and corpus semantics issues.
+
+Checklist:
+- [ ] F063: review and commit existing duplicate vector frame-id restore work.
+- [ ] F-tier: F156, F154, F159, F160, F125, F118, F120, F119, F113, F112, F122, F114, F109, F115, F116, F117, F124, F127, F155, F158.
+- [ ] D-tier: F023, F028, F035, F036, F039, F040, F104, F173, F181, F192, F191, F080, F081, F078, F074, F075, F068, F069, F070, F071, F072.
+- [ ] C-tier: F089, F090, F092, F088, F038, F029, F033, F096, F102, F106, F107, F108, F152, F153, F157.
+- [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
+- [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.

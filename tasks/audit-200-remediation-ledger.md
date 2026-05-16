@@ -10,6 +10,104 @@ Commit policy:
 - After each issue commit, run the focused verification for that issue and record the result here or in `tasks/todo.md`.
 - Do not stage/delete unrelated generated artifacts.
 
+## Stop-Point Status
+
+Updated: 2026-05-17
+
+Checklist legend:
+- `[x]` means the issue has a committed fix on `bug-hunt` with focused verification recorded.
+- `[ ]` means the issue is not fully complete. Some unchecked items may have local work in progress, but they are not counted complete until review and commit are done.
+
+Current count:
+- Target findings: 200
+- Fully completed and committed: 61
+- Work in progress, not counted complete: 0
+- Remaining not fully completed: 139
+
+Current resume point:
+- `F063` duplicate vector frame-id restore/staging validation is reviewed and ready to commit.
+- The active request is to fix all remaining F-through-A tier findings.
+
+Current untracked/generated artifacts to preserve and not stage/delete:
+- `.build-codex/`
+- `.playwright-mcp/`
+- `.qwen/`
+- `issue61_full.png`
+- `issue61_snapshot.md`
+
+Known existing verification blockers from earlier runs:
+- Full `WaxMCPServerTests` has reproducible existing failures in `rememberSearchAndRecallExposeTypedExplainableMemory` and `waxMCPProcessRememberWithRealCoreMLEmbedder`.
+- Those failures are tracked separately and must not be attributed to unrelated issue fixes without a focused repro.
+
+## Completed Issue Commits
+
+| ID | Commit | Summary |
+|---|---:|---|
+| F022 | `c1aa8e44` | Reject invalid structured-memory key values. |
+| F041 | `d50b7b4b` | Cover and enforce MCP labels filter validation. |
+| F042 | `77d7edf4` | Cover and enforce MCP time filter validation. |
+| F043 | `11479b07` | Reject unknown MCP filter keys. |
+| F044 | `e5b11dd2` | Skip embeddings for blank recall queries. |
+| F045 | `be54a0c6` | Add `MiniLMEmbeddings` trait define for `wax-mcp`. |
+| F046 | `8b295f3e` | Add `MiniLMEmbeddings` trait define for `WaxRepo`. |
+| F051 | `b057acdf` | Reject malformed staged vector index bytes. |
+| F052 | `aed403bc` | Reject non-finite vector inputs. |
+| F055 | `4db66e30` | Load staged USearch vector indexes. |
+| F056 | `0da5001e` | Deduplicate USearch batch vector IDs. |
+| F057 | `ffd36bcb` | Check vector decode byte-count overflow. |
+| F058 | `6cc378b2` | Validate Metal vector segment bounds/trailing bytes. |
+| F059 | `6607603c` | Use unaligned Metal frame ID loads. |
+| F060 | `3b5e816b` | Normalize direct Metal vector search queries. |
+| F061 | `9540c6a5` | Surface Metal command-buffer failures. |
+| F062 | `3e8335e7` | Check projected vector counts and overflow. |
+| F063 | `pending` | Reject duplicate vector frame IDs during restore/staging. |
+| F073 | `50554c87` | Treat tokenizer newlines as whitespace. |
+| F076 | `5e1025be` | Escape FTS5 MATCH queries. |
+| F079 | `8b513214` | Reject non-positive FTS `topK`. |
+| F082 | `bd2a6582` | Preserve non-socket daemon paths. |
+| F083 | `9a650260` | Harden broker socket roots. |
+| F084 | `8ef9048f` | Bound daemon socket reads. |
+| F085 | `f8ffb6e7` | Redact CLI license key output. |
+| F086 | `858b83b6` | Enforce require-vector for direct stats/flush. |
+| F087 | `2495c05d` | Reject invalid embedder runtime flags. |
+| F093 | `89140c79` | Stabilize daemon socket path regression. |
+| F094 | `29f997c8` | Gate `knowledge_capture` by structured-memory flag. |
+| F095 | `f5c8d24b` | Honor broker access-stats feature flag. |
+| F100 | `63ce6e52` | Preserve broker memory content whitespace. |
+| F101 | `ffa14be3` | Skip ended session manifests on resume. |
+| F110 | `e742da53` | Add public snippet verifier. |
+| F111 | `6372a5eb`, `f89be8f7` | Repair WaxDemo package path and public API usage. |
+| F121 | `a22e5c1` | Fix waxmcp local npm README path. |
+| F123 | `69470858` | Record/fix readiness parser remediation. |
+| F126 | `67291613` | Fix Swift Testing skip detection gate. |
+| F128 | `c57937ca` | Add Foundation import to README quick start. |
+| F129 | `e941be9e` | Clarify README memory recall mode. |
+| F130 | `80726257` | Fix WaxCore docs public surface. |
+| F131 | `8b2cd1a2` | Remove package-only WaxCore DocC topics. |
+| F132 | `2605cbb0` | Fix WaxCore getting-started option labels. |
+| F133 | `abf9841e` | Remove nonexistent frame method docs. |
+| F134 | `fec3d9f7` | Remove structured-memory public docs. |
+| F135 | `7568c54f` | Fix vector docs public API boundary. |
+| F136 | `b8bf7a4d` | Remove USearch construction docs. |
+| F137 | `39e691f7` | Remove Metal construction docs. |
+| F138 | `7bf87d20` | Update vector engine preference docs. |
+| F139 | `373bfb99` | Remove stale vector streaming docs. |
+| F140 | `06e1627d` | Fix text search docs public surface. |
+| F141 | `9f015f39` | Remove `TextSearchResult` public docs. |
+| F142 | `28dd7e1d` | Remove structured text package-only examples. |
+| F143 | `7b9fa267` | Remove `WaxSession` public docs. |
+| F144 | `6c7b25cd` | Remove `SearchRequest` public docs. |
+| F145 | `4b635876` | Remove vector preference public docs. |
+| F146 | `b3e2100d` | Cover session text put docs. |
+| F147 | `419d5cbf` | Fix PhotoRAG docs public surface. |
+| F148 | `c9b68117` | Cover PhotoRAG embedding provider docs. |
+| F149 | `58f0e63d` | Fix PhotoRAG sync scope docs. |
+| F150 | `281c5b5f` | Clarify VideoRAG docs access level. |
+| F151 | `0cf62175` | Enforce MCP trait test inventory. |
+
+Support commit not counted as a finding fix:
+- `cb400efe` hardened structured-memory docs guard tests.
+
 ## Findings
 
 - [ ] F001 Durability: `Wax.create` truncates/open-writes before lock ownership is proven.
@@ -74,7 +172,7 @@ Commit policy:
 - [x] F060 Metal scoring: cosine query normalization is missing/inconsistent.
 - [x] F061 Metal errors: command-buffer error ignored.
 - [x] F062 Manifest: `vectorCount` unchecked cast.
-- [ ] F063 Vector restore: duplicate frame IDs deserialize inconsistently.
+- [x] F063 Vector restore: duplicate frame IDs deserialize inconsistently.
 - [ ] F064 Serialization: private Objective-C ivar serialization is fragile.
 - [ ] F065 MiniLM: batch size 2/4 fails.
 - [ ] F066 MiniLM: default batch 256 exceeds asset shape 64.
