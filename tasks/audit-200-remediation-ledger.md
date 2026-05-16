@@ -80,6 +80,7 @@ Known existing verification blockers from earlier runs:
 | F121 | `a22e5c1` | Fix waxmcp local npm README path. |
 | F123 | `69470858` | Record/fix readiness parser remediation. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
+| F154 | `pending` | Make HTTP MCP verifier perform a real `tools/call`. |
 | F156 | `pending` | Duplicate of F126; Swift Testing skip detector is already covered by production readiness gate tests. |
 | F128 | `c57937ca` | Add Foundation import to README quick start. |
 | F129 | `e941be9e` | Clarify README memory recall mode. |
@@ -264,7 +265,7 @@ Support commit not counted as a finding fix:
 - [x] F151 Test coverage: default tests miss MCP trait suite.
 - [ ] F152 MCP tests: many tests use direct-memory compatibility path, not production broker path.
 - [ ] F153 MCP tests: compatibility aliases differ from production renamed-tool behavior.
-- [ ] F154 HTTP smoke: HTTP verifier never calls a tool.
+- [x] F154 HTTP smoke: HTTP verifier never calls a tool.
 - [ ] F155 CI: Linux CI omits Wax/CLI/MCP product builds.
 - [x] F156 Gate script: skip detector misses Swift Testing skips. Duplicate of F126; focused gate tests cover Swift Testing suite/test skip output.
 - [ ] F157 Readiness tests: stability gate is text-search only.

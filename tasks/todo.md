@@ -2614,3 +2614,13 @@ Checklist:
 - `Resources/scripts/quality/production_readiness_gates_tests.sh` already includes Swift Testing suite and test skip fixtures: `Suite FeatureFlaggedTests skipped: ...` and `Test testRequiresFixture() skipped: ...`.
 - Verification:
   - `bash Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+
+### F154 Review
+
+- Added a script-level regression proving `scripts/verify-waxmcp-http.sh` must send a real `tools/call`, not only initialize and list tools.
+- Verified the regression failed before the fix because the verifier had no `tools/call` request.
+- Extended the HTTP verifier to call the `stats` MCP tool over the established HTTP session and reject error or empty tool responses.
+- Verification:
+  - `bash scripts/verify-waxmcp-http-tests.sh`: failed before and passed after.
+  - `bash scripts/verify-waxmcp-http-tests.sh && bash -n scripts/verify-waxmcp-http.sh scripts/verify-waxmcp-http-tests.sh`: passed.
+  - `bash scripts/verify-waxmcp-http.sh`: passed.
