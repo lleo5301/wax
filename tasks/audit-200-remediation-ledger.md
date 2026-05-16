@@ -151,7 +151,7 @@ Support commit not counted as a finding fix:
 - [ ] F020 Query metadata: `wasTruncated` can be false-positive.
 - [ ] F021 Entities: entity kind cannot be corrected.
 - [x] F022 Validation: key types accept empty, whitespace, or unbounded values.
-- [ ] F023 Evidence: invalid spans/confidence are accepted.
+- [x] F023 Evidence: invalid spans/confidence are accepted.
 - [ ] F024 Graph API: edge traversal API is unwired/dead.
 - [ ] F025 Structured search: object-side entity facts are not used in `evidenceFrameIds`.
 - [ ] F026 Bitemporal MCP: orchestrator/MCP collapses bitemporal `asOf`.
