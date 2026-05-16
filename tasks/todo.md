@@ -2686,3 +2686,14 @@ Checklist:
 - Verification:
   - `bash Resources/scripts/quality/release_workflow_tests.sh`: failed before and passed after.
   - `bash -n scripts/release-waxmcp.sh Resources/scripts/release-waxmcp.sh`: passed.
+
+### F114 Review
+
+- Extended the release workflow regression to require a `Set release version` step before `Build binaries`.
+- Verified the regression failed before the fix because release metadata was only changed in the publish job after artifacts were already built.
+- Added a shared `Resources/scripts/sync-waxmcp-version.sh` helper that updates both npm package metadata and `WaxMCPServerMetadata.version`.
+- Updated the build job to run the shared helper before compiling platform artifacts and updated the publish job/canonical release script to use the same helper.
+- Verification:
+  - `bash Resources/scripts/quality/release_workflow_tests.sh`: failed before and passed after.
+  - `bash -n Resources/scripts/sync-waxmcp-version.sh Resources/scripts/release-waxmcp.sh scripts/release-waxmcp.sh`: passed.
+  - `Resources/scripts/sync-waxmcp-version.sh 0.1.21`: passed and left `Resources/npm/waxmcp/package.json` and `Sources/WaxMCPServer/main.swift` unchanged.
