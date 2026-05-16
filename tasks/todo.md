@@ -2632,3 +2632,11 @@ Checklist:
 - Added a `pull_request` path gate for `Resources/website/**` and the workflow file, while preserving GitHub Pages deployment only for non-PR events.
 - Verification:
   - `bash Resources/scripts/quality/website_workflow_tests.sh`: failed before and passed after.
+
+### F119 Review
+
+- Added a submodule contract regression proving every gitlink tracked by the root repo must have matching `.gitmodules` path and URL metadata.
+- Verified the regression failed before the fix because `Resources/npm/waxmcp/homebrew-wax` was a `160000` gitlink with no `.gitmodules` entry.
+- Added `.gitmodules` metadata pointing the Homebrew tap gitlink at `https://github.com/christopherkarani/homebrew-wax.git`.
+- Verification:
+  - `bash Resources/scripts/quality/submodule_contract_tests.sh`: failed before and passed after.
