@@ -3100,6 +3100,20 @@ Checklist:
   - Explorer confirmed the stale explicit-session write-before-validation failure and false-positive traps.
   - Scoped code-review subagent approved the F179 diff with no findings.
 
+### F180 Review
+
+- Broker and compatibility `memory_promote` now preserve durable provenance in `wax.promoted_from_session` while stripping raw working-memory `session_id` from promoted metadata before rendering or writing durable memory.
+- Added broker and compatibility regressions that promote session-sourced memory and assert `wax.promoted_from_session` is present while raw `session_id` is absent.
+- Verification:
+  - Broker red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerImplicitMemoryPromotePreservesResolvedSessionProvenance --disable-automatic-resolution` failed before the broker fix because promoted metadata still contained raw `session_id`.
+  - Compatibility red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter sessionSynthesizeAndPromoteFlowWorks --disable-automatic-resolution` failed before the compatibility fix for the same raw `session_id` leak.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'sessionSynthesizeAndPromoteFlowWorks|brokerImplicitMemoryPromotePreservesResolvedSessionProvenance|brokerMemoryPromoteRejectsStaleSessionBeforeDurableWrite|promotionMaxCandidatesAreBounded' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Sources/WaxMCPServer/WaxMCPTools.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer identified the same source-metadata leak in both broker and compatibility paths.
+  - Final scoped code-review subagent approved the combined F180 diff with no findings.
+
 ### F038 Review
 
 - Added red regressions proving the published MCP `recall`/`search` filter schema, MCP parser, and broker parser did not expose lifecycle and explicit-frame controls already supported by core `UnifiedSearch`.
