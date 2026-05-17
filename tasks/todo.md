@@ -2603,7 +2603,16 @@ Execution order:
 Checklist:
 - [x] F063: review and commit existing duplicate vector frame-id restore work.
 - [ ] F-tier: F156, F154, F159, F160, F125, F118, F120, F119, F113, F112, F122, F114, F109, F115, F116, F117, F124, F127, F155, F158.
-- [ ] D-tier: F072.
+- [ ] D-tier: F072 pending commit.
+
+### F072 Review
+
+- Added MiniLM pre-tokenized input regressions proving batch size is inferred from the first input dimension and mismatched input/mask rows fail closed.
+- Verified the regression failed before the fix because there was no batch-size inference path and `generateEmbeddings(inputIds:attentionMask:)` always decoded with batch size `1`.
+- Changed pre-tokenized generation to return all decoded embeddings and pass the inferred batch size into prediction/decode instead of hard-coding `1`.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter 'miniLMPreTokenizedBatchSizeUsesInputRows|miniLMPreTokenizedBatchSizeRejectsMismatchedInputRows'`: failed before and passed after.
+  - `swift test --disable-automatic-resolution --filter 'MiniLMFloat16DecodingTests|MLMultiArrayBatchBuilderTests|MiniLMBatchBuilderTests'`: passed.
 
 ### F071 Review
 

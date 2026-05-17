@@ -25,7 +25,7 @@ Current count:
 - Remaining not fully completed: 99
 
 Current resume point:
-- `F071` MiniLM quality test public path coverage is reviewed and ready to commit.
+- `F072` MiniLM pre-tokenized batch-size inference is reviewed and ready to commit; source/test review found no code blockers.
 - The active request is to fix all remaining F-through-A tier findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
@@ -65,6 +65,7 @@ Known existing verification blockers from earlier runs:
 | F069 | `a1fd4fe4` | Reject non-finite MiniLM embedder outputs. |
 | F070 | `f5d09368` | Propagate MiniLM CoreML prediction errors. |
 | F071 | `0a565d2d` | Exercise public MiniLM embedder in quality tests. |
+| F072 | `pending` | Infer MiniLM pre-tokenized batch size from input rows. |
 | F073 | `50554c87` | Treat tokenizer newlines as whitespace. |
 | F074 | `37e4565b` | Keep first SEP and padding token type IDs in segment zero. |
 | F075 | `434912b0` | Reject unsupported MiniLM CoreML output data types. |
