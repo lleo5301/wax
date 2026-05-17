@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 135
+- Fully completed and committed: 136
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 65
+- Remaining not fully completed: 64
 
 Current resume point:
 - F-through-C tiers are complete; next remaining tier is B.
@@ -129,6 +129,7 @@ Known existing verification blockers from earlier runs:
 | F168 | `f1e872d05` | Count PhotoRAG degraded results from local-availability metadata. |
 | F169 | `0d31a7d30` | Avoid PhotoRAG region crop return/trap paths before superseding old roots. |
 | F170 | `5e741acaa` | Persist PhotoRAG sync-state checkpoint frames after successful library sync. |
+| F171 | `3c6541b08` | Clarify PhotoRAG tags are metadata keywords or caption fallback terms, not classifier labels. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -333,7 +334,7 @@ Support commit not counted as a finding fix:
 - [x] F168 Photo diagnostics: degraded flag inferred from missing OCR/caption, not locality.
 - [x] F169 Photo ingest: failed region crops return before superseding old root.
 - [x] F170 Photo sync: `syncState` frame kind is never written.
-- [ ] F171 Photo tags: tags overpromise classifier labels.
+- [x] F171 Photo tags: tags overpromise classifier labels.
 - [ ] F172 Video thumbnails: Photos video local URL discarded, thumbnails fail.
 - [x] F173 Broker validation: direct broker ignores unknown args.
 - [ ] F174 Session start: manifest saved before `.started` event.

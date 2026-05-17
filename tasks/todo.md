@@ -2840,6 +2840,7 @@ Checklist:
 - Progress snapshot after F168: 133 completed and committed, 67 remaining.
 - Progress snapshot after F169: 134 completed and committed, 66 remaining.
 - Progress snapshot after F170: 135 completed and committed, 65 remaining.
+- Progress snapshot after F171: 136 completed and committed, 64 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -2990,6 +2991,19 @@ Checklist:
 - Review:
   - Explorer confirmed F170 was a real baseline gap: the frame kind and docs existed, but `syncLibrary` returned after ingest with no checkpoint write.
   - Code review approved the fix and flagged a low test gap around metadata assertions; the regression now checks pipeline version and a parseable completion timestamp.
+
+### F171 Review
+
+- PhotoRAG docs now describe `photo.tags` as metadata keywords, or caption-derived search terms only when no metadata keywords are present, instead of detected classifier tags or labels.
+- Added a docs regression tied to the implementation evidence: `buildPhotoTags` reads `metadata.exif.keywords` first and only falls back to caption tokens when tags are empty.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter photoRAGDocsDoNotAdvertiseClassifierTags --disable-automatic-resolution` failed before the wording fix on both DocC and website docs.
+  - Green: the same focused regression passed after narrowing the docs.
+  - `swift test --build-path .build-codex/f106-red --filter PhotoRAGDocsTests --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check` on the scoped docs/test files: passed.
+- Review:
+  - First review caught wording that still implied metadata and caption tags were combined. The final wording now states the caption-derived path is fallback-only, and re-review passed.
 
 ### F038 Review
 
