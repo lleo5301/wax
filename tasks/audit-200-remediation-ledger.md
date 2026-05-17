@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 129
+- Fully completed and committed: 130
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 71
+- Remaining not fully completed: 70
 
 Current resume point:
 - F-through-C tiers are complete; next remaining tier is B.
@@ -123,6 +123,7 @@ Known existing verification blockers from earlier runs:
 | F162 | `bef91caa` | Persist PDF extraction limit and truncation metadata. |
 | F163 | `48c1e8e7` | Preserve PDF page provenance through page-scoped ingest metadata. |
 | F164 | `d72709505` | Add local image file ingest support to PhotoRAG. |
+| F165 | `642f160a3` | Filter full-library PhotoRAG sync to image PHAssets only. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -321,7 +322,7 @@ Support commit not counted as a finding fix:
 - [x] F162 PDF ingest: extraction hard-limits 500 pages with no metadata.
 - [x] F163 PDF provenance: page provenance is lost after join.
 - [x] F164 Photo ingest: docs claim local image ingest but code lacks local file API.
-- [ ] F165 Photo sync: fetches all PHAssets, not images only.
+- [x] F165 Photo sync: fetches all PHAssets, not images only.
 - [ ] F166 Photo filters: `PhotoFilters` is empty/no-op.
 - [ ] F167 Photo location: radius uses coarse bins without final distance check.
 - [ ] F168 Photo diagnostics: degraded flag inferred from missing OCR/caption, not locality.

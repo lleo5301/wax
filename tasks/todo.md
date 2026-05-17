@@ -2837,7 +2837,7 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F164: 129 completed and committed, 71 remaining.
+- Progress snapshot after F165: 130 completed and committed, 70 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -2901,6 +2901,19 @@ Checklist:
   - `git diff --check` on the scoped PhotoRAG paths: passed.
 - Review:
   - First review found missing degraded local pixel handling and missing region frames. Re-review approved the scoped F164 diff after both were fixed.
+
+### F165 Review
+
+- Changed full-library PhotoRAG sync to use the typed Photos image fetch overload, so `.fullLibrary` only enumerates image `PHAsset`s before passing local identifiers into ingest.
+- Added a regression that scopes its source check to the `.fullLibrary` branch and fails on the old untyped `PHAsset.fetchAssets(with: opts)` call.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter photoRAGFullLibrarySyncFetchesImagesOnly --disable-automatic-resolution` failed before the fix because the full-library branch used the untyped Photos fetch.
+  - Green: the same focused regression passed after switching to `PHAsset.fetchAssets(with: .image, options: opts)`.
+  - `swift test --build-path .build-codex/f106-red --filter PhotoRAGDocsTests --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check` on the scoped PhotoRAG files: passed.
+- Review:
+  - First review rejected the original loose source-text regression. The test was tightened to prove the `.fullLibrary` branch uses the typed image fetch overload, and re-review approved the scoped diff.
 
 ### F038 Review
 
