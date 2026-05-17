@@ -2844,6 +2844,7 @@ Checklist:
 - Progress snapshot after F172: 137 completed and committed, 63 remaining.
 - Progress snapshot after F182: 145 completed and committed, 55 remaining.
 - Progress snapshot after F183: 146 completed and committed, 54 remaining.
+- Progress snapshot after F184: 147 completed and committed, 53 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -3142,6 +3143,21 @@ Checklist:
 - Review:
   - Explorer confirmed the unmatched-delete root cause and recommended marker-derived memory IDs for a stable repro.
   - Scoped code-review subagent approved the F183 diff with no findings.
+
+### F184 Review
+
+- `markdown_sync` dry-runs now build the same normalized managed-document metadata as real sync and run `validateDurableWriteContent` before reporting create/update counts.
+- Checked DREAMS approvals also validate approved promotion metadata before the dry-run branch, while still keeping actual writes and session events behind `!dryRun`.
+- Added regressions for dry-run `MEMORY.md` durable imports and dry-run checked DREAMS approvals that contain secret-like content.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownSyncDryRunRejectsSecretLikeDurableMemoryImports --disable-automatic-resolution` failed before the managed-import fix with `response.ok == true`.
+  - DREAMS red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownSyncDryRunRejectsSecretLikeDurableMemoryImports|brokerMarkdownSyncDryRunRejectsSecretLikeDreamApprovals' --disable-automatic-resolution` failed before the DREAMS fix with the DREAMS dry-run returning success.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownSyncDryRunRejectsSecretLikeDurableMemoryImports|brokerMarkdownSyncDryRunRejectsSecretLikeDreamApprovals|brokerMarkdownSyncRejectsSecretLikeDurableMemoryImports|brokerMarkdownSyncDoesNotDeleteLockedMemoryWhenLineRemoved|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService+Markdown.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer identified the same validation timing gap in checked DREAMS dry-runs.
+  - Scoped code-review subagent approved the F184 diff with no findings.
 
 ### F038 Review
 
