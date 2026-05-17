@@ -2849,6 +2849,7 @@ Checklist:
 - Progress snapshot after F186: 149 completed and committed, 51 remaining.
 - Progress snapshot after F187: 150 completed and committed, 50 remaining.
 - Progress snapshot after F188: 151 completed and committed, 49 remaining.
+- Progress snapshot after F189: 152 completed and committed, 48 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -3221,6 +3222,20 @@ Checklist:
 - Review:
   - Explorer confirmed the unstructured close could leave file locks live after export returned and recommended the immediate-reopen behavioral proof.
   - Scoped code-review subagent approved the final F188 diff with no findings.
+
+### F189 Review
+
+- `dreamProjectionLines` now includes ended sessions and current-broker active sessions only; active manifests not present in this broker's `activeSessions` are skipped so export does not open stores owned by another broker process.
+- `markdown_export` now rejects an explicit `session_id` when the manifest is still active but not owned by this broker process, preventing a scoped export from silently producing only partial/unscoped Markdown.
+- Added a two-broker regression where broker A owns an active session and broker B shares the session root: unscoped export succeeds without leaking broker A's DREAMS proposal, scoped export of broker A's active session is rejected, and broker A remains able to search its active session afterward.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownExportSkipsActiveSessionsOwnedByOtherBrokers --disable-automatic-resolution` failed before the fix because broker B's export attempted to open broker A's locked active store and returned `ok == false`.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownExportSkipsActiveSessionsOwnedByOtherBrokers|brokerMarkdownExportIncludesEndedSessionDreams|brokerDreamProjectionAwaitsOpenedSessionStoreClose|brokerMarkdownExportRejectsUnknownExplicitSessionID|brokerBackedMarkdownExportProjectsCompatibilityFiles|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Sources/Wax/Broker/AgentBrokerService+Markdown.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the active-manifest scan ignored broker ownership and recommended explicit-session rejection as the stronger user-facing behavior.
+  - Scoped code-review subagent approved the final F189 diff with no findings.
 
 ### F038 Review
 

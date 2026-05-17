@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 151
+- Fully completed and committed: 152
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 49
+- Remaining not fully completed: 48
 
 Current resume point:
 - F-through-C tiers are complete; next remaining tier is B.
@@ -145,6 +145,7 @@ Known existing verification blockers from earlier runs:
 | F186 | `83a492ae9` | Deduplicate checked DREAMS approvals within one Markdown sync. |
 | F187 | `9aef7c8e9` | Export and approve DREAMS proposals from ended sessions. |
 | F188 | `62a78c1fe` | Await session-store closes during DREAMS projection. |
+| F189 | `583b4ff38` | Skip foreign active sessions during Markdown export. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -367,7 +368,7 @@ Support commit not counted as a finding fix:
 - [x] F186 DREAMS: duplicate checked lines create duplicate durable memories.
 - [x] F187 DREAMS: export excludes ended sessions.
 - [x] F188 DREAMS: projection closes session stores in unawaited task.
-- [ ] F189 Markdown export: opens active sessions owned by other brokers.
+- [x] F189 Markdown export: opens active sessions owned by other brokers.
 - [ ] F190 Markdown export: leaves stale generated files.
 - [x] F191 Markdown export: `wax.source_date` path traversal in daily filename.
 - [x] F192 Markdown marker: marker JSON is not escaped for `-->`.
