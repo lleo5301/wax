@@ -2837,9 +2837,9 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F152: 118 completed and committed, 82 remaining.
+- Progress snapshot after F064: 119 completed and committed, 81 remaining.
 - [x] C-tier complete.
-- [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
+- [ ] B-tier: F065, F066, F067, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 
 ### F038 Review
@@ -3187,3 +3187,19 @@ Checklist:
   - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
   - Code-review subagent initially requested post-canonicalization dedupe; after that change, re-review reported no findings.
   - Note: a process-harness attempt using the warm build path first exposed the known subprocess fragility (`SIGPIPE`/trait-build mismatch), so the accepted F152 coverage uses direct `AgentBrokerService` tests to exercise production broker logic without compatibility-only shortcuts.
+
+### F064 Review
+
+- Removed the USearch package/product dependency, deleted the `USearchVectorEngine` and `USearchSendable` implementation, and eliminated the Objective-C private `nativeIndex` ivar serialization path.
+- Kept legacy vector encoding detection for explicit migration errors, but changed decode and `LoadedVectorSearchEngine.currentEncoding` to reject legacy USearch vector segments with the rebuild-required `invalidToc` reason.
+- Reworked the vector dependency/benchmark/doc tests to use the remaining flat-vector/Accelerate path instead of importing or instantiating USearch.
+- Review:
+  - Initial review blocked the staged diff because the staged index still had leftover USearch references and the engine-selection path could classify `.uSearch` before decode.
+  - Added the missing staged files and a red regression for `currentEncoding` rejecting legacy USearch bytes, then fixed the selection path.
+  - Re-review approved the staged remediation and verified a staged-index build plus focused staged tests.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --filter loadedVectorSearchEngineCurrentEncodingRejectsLegacyUSearchVectorIndexes --disable-automatic-resolution` failed before the `currentEncoding` fix because legacy USearch encoding was returned instead of rejected.
+  - `swift test --build-path .build-codex/f106-red --filter 'loadedVectorSearchEngineCurrentEncodingRejectsLegacyUSearchVectorIndexes|loadedVectorSearchEngineRejectsLegacyUSearchVectorIndexes|legacyUSearchVectorSegmentRequiresRebuild|packageManifestDoesNotDependOnRemovedVectorDependency|vectorEngineSerializeDeserializeRoundtripPreservesSearch|accelerateVectorEngineAddBatchDuplicateIdsDoNotOvercount' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `rg -n "USearch|usearch|nativeIndex|class_getInstanceVariable|USearchVectorEngine|USearchIndex|\\.uSearch" Package.swift Sources Tests -g '*.swift'`: only legacy-format rejection constants/tests remain.
+  - Code-review subagent approved the staged F064 diff after the selection-path fix.

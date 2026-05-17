@@ -20,12 +20,12 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 116
+- Fully completed and committed: 119
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 84
+- Remaining not fully completed: 81
 
 Current resume point:
-- F-through-D tiers are complete; next remaining tier is C.
+- F-through-C tiers are complete; next remaining tier is B.
 - The active request is to fix all remaining F-through-A tier findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
@@ -65,6 +65,7 @@ Known existing verification blockers from earlier runs:
 | F061 | `9540c6a5` | Surface Metal command-buffer failures. |
 | F062 | `3e8335e7` | Check projected vector counts and overflow. |
 | F063 | `pending` | Reject duplicate vector frame IDs during restore/staging. |
+| F064 | `a79c5f63` | Remove fragile USearch private-ivar serialization path. |
 | F068 | `e11607b3` | Normalize MiniLM embedder outputs before returning them. |
 | F069 | `a1fd4fe4` | Reject non-finite MiniLM embedder outputs. |
 | F070 | `f5d09368` | Propagate MiniLM CoreML prediction errors. |
@@ -209,7 +210,7 @@ Support commit not counted as a finding fix:
 - [x] F061 Metal errors: command-buffer error ignored.
 - [x] F062 Manifest: `vectorCount` unchecked cast.
 - [x] F063 Vector restore: duplicate frame IDs deserialize inconsistently.
-- [ ] F064 Serialization: private Objective-C ivar serialization is fragile.
+- [x] F064 Serialization: private Objective-C ivar serialization is fragile.
 - [ ] F065 MiniLM: batch size 2/4 fails.
 - [ ] F066 MiniLM: default batch 256 exceeds asset shape 64.
 - [ ] F067 Arctic: default batch 256 exceeds asset shape 64.
