@@ -3017,6 +3017,34 @@ Checklist:
 - Source/test commit: `fc93b63b6`.
 - Progress snapshot after F021: 173 completed and committed, 27 remaining.
 
+### Active Plan - F019 Distinguishable Fact Spans
+
+- [x] Add a red structured facts regression proving duplicate open spans for the same fact row produce indistinguishable `StructuredFactHit` values.
+- [x] Surface span identity and valid/system ranges on `StructuredFactHit` and populate them from the structured facts query.
+- [x] Thread span identity/time metadata through broker, MCP, and CLI JSON/text results so serialized query hits are distinguishable.
+- [x] Verify focused structured-memory CRUD tests plus the default package build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F019 Review
+
+- Fixed structured fact query hits so duplicate open spans for the same fact row are no longer value-identical: hits now include `spanId`, `valid`, and `system` ranges in addition to the stable `factId`.
+- Populated span identity and both bitemporal ranges from `sm_fact_span`, and keyed evidence lookup by non-optional `span_id`.
+- Threaded the new fields through broker JSON, MCP compatibility JSON, CLI JSON, and CLI text output; CLI text now renders `[fact_id:span_id] ... valid=[from..to/open] system=[from..to/open]`.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter factsDuplicateOpenSpansForSameFactAreDistinguishable --disable-automatic-resolution` failed before the fix because duplicate open span hits compared equal.
+  - Red: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter directFactsQueryTextRendersSpanTemporalBounds --disable-automatic-resolution` failed before the CLI text fix because text output omitted valid/system bounds.
+  - Green: `swift test --build-path .build-codex/f106-red --filter factsDuplicateOpenSpansForSameFactAreDistinguishable --disable-automatic-resolution`: passed.
+  - Green: `swift test --traits default,MCPServer --filter directFactsQueryTextRendersSpanTemporalBounds --disable-automatic-resolution`: passed.
+  - Green: `swift test --traits default,MCPServer --filter factsQueryRendersSpanIdentityAndTemporalBounds --disable-automatic-resolution`: passed.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/StructuredMemory/StructuredFacts.swift Sources/WaxTextSearch/FTS5SearchEngine.swift Sources/Wax/Broker/AgentBrokerService.swift Sources/WaxMCPServer/WaxMCPTools.swift Sources/WaxCLI/FactsCommand.swift Tests/WaxIntegrationTests/StructuredMemoryCRUDTests.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift Tests/WaxCLITests/WaxCLIMemoryTests.swift`: passed.
+- Review:
+  - Read-only explorer confirmed duplicate spans for the same fact were possible and indistinguishable without span identity/ranges.
+  - First code review flagged missing temporal bounds in CLI text output; the shared text formatter and regression test were added.
+  - Final code review approved the scoped F019 patch with no findings.
+- Source/test commit: `fb28c8278`.
+- Progress snapshot after F019: 174 completed and committed, 26 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.
