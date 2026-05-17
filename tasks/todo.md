@@ -2850,6 +2850,7 @@ Checklist:
 - Progress snapshot after F187: 150 completed and committed, 50 remaining.
 - Progress snapshot after F188: 151 completed and committed, 49 remaining.
 - Progress snapshot after F189: 152 completed and committed, 48 remaining.
+- Progress snapshot after F190: 153 completed and committed, 47 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -3236,6 +3237,23 @@ Checklist:
 - Review:
   - Explorer confirmed the active-manifest scan ignored broker ownership and recommended explicit-session rejection as the stronger user-facing behavior.
   - Scoped code-review subagent approved the final F189 diff with no findings.
+
+### F190 Review
+
+- `markdown_export` now removes stale generated `DREAMS.md`, `HANDOFFS.md`, and generated daily-note files when a later export to the same output directory no longer has those projections.
+- Deletion is marker/hash gated, preserves checked DREAMS approvals, preserves mixed user prose, and limits daily-note cleanup to generated `yyyy-MM-dd.md` names so arbitrary user Markdown files under `memory/` are not deleted.
+- Added regressions for stale generated-file removal, checked DREAMS preservation, user prose preservation, and a copied `project-notes.md` file that must survive cleanup.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownExportRemovesStaleGeneratedFiles --disable-automatic-resolution` failed before the fix because stale DREAMS, HANDOFFS, and daily-note files remained on disk.
+  - Review red phase: `brokerMarkdownExportPreservesStaleDreamsWithUserProse` failed before the raw-line guard because a stale DREAMS file with appended prose was deleted.
+  - Review finding follow-up: daily-note cleanup was narrowed to `yyyy-MM-dd.md` filenames and `brokerMarkdownExportRemovesStaleGeneratedFiles` now also proves `project-notes.md` survives even when it contains copied generated daily-note lines.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownExportRemovesStaleGeneratedFiles|brokerMarkdownExportPreservesCheckedStaleDreams|brokerMarkdownExportPreservesStaleDreamsWithUserProse' --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownExportRemovesStaleGeneratedFiles|brokerMarkdownExportPreservesCheckedStaleDreams|brokerMarkdownExportPreservesStaleDreamsWithUserProse|brokerMarkdownExportIncludesEndedSessionDreams|brokerMarkdownExportSkipsActiveSessionsOwnedByOtherBrokers|brokerBackedMarkdownExportProjectsCompatibilityFiles|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - First scoped code-review subagent blocked the diff because user-authored prose and arbitrary `.md` filenames could be removed by cleanup.
+  - Final scoped code-review subagent approved the corrected F190 diff with no findings.
 
 ### F038 Review
 
