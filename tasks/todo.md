@@ -3060,6 +3060,19 @@ Checklist:
   - Explorer confirmed missing parent directory deterministically covers the ignored `createFile` return.
   - Scoped code-review subagent approved the F176 diff with no findings.
 
+### F177 Review
+
+- `BrokerSessionPersistence.loadEvents` now salvages valid event-log lines and skips malformed JSONL records, while preserving file read errors because only per-line decode failures are tolerated.
+- Added a regression that writes a valid event, injects one malformed line, appends another valid event through the production append path, and verifies load order remains `[.started, .resumed]`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerSessionLoadEventsSkipsMalformedJSONLLines --disable-automatic-resolution` failed before the fix with a JSON decoding error.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerSessionLoadEventsSkipsMalformedJSONLLines|brokerSessionAppendEventThrowsWhenFirstEventFileCannotBeCreated' --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerSessionLoadEventsSkipsMalformedJSONLLines|brokerRetrievalEventsPersistQueryHashWithoutRawQuery' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/BrokerSessionPersistence.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Scoped code-review subagent approved the F177 diff with no findings and additionally ran `swift test --traits default,MCPServer --filter brokerSession --disable-automatic-resolution`.
+
 ### F038 Review
 
 - Added red regressions proving the published MCP `recall`/`search` filter schema, MCP parser, and broker parser did not expose lifecycle and explicit-frame controls already supported by core `UnifiedSearch`.
