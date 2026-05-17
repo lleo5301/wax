@@ -2794,9 +2794,24 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- [ ] C-tier: F038, F029, F033, F096, F102, F106, F107, F108, F152, F153, F157.
+- Progress snapshot after F038: 107 completed and committed, 93 remaining.
+- [ ] C-tier: F029, F033, F096, F102, F106, F107, F108, F152, F153, F157.
 - [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
+
+### F038 Review
+
+- Added red regressions proving the published MCP `recall`/`search` filter schema, MCP parser, and broker parser did not expose lifecycle and explicit-frame controls already supported by core `UnifiedSearch`.
+- Extended broker and MCP search-filter parsing for `filters.include_deleted`, `filters.include_superseded`, and `filters.frame_ids`, including applied-filter echo fields so callers can verify what was honored.
+- Kept the fix scoped to the API surface; core `FrameFilter` and `UnifiedSearch` already applied deleted/superseded/frame-ID predicates.
+- Review:
+  - Initial review found a commit-blocking broker crash risk: `frame_ids` parsing used the permissive `AgentBrokerValue.intValue`, which could trap on oversized JSON doubles.
+  - Tightened broker `frame_ids` parsing to accept only explicit non-negative `.int` values and added a broker regression for oversized numeric input.
+- Verification:
+  - Red phase: focused tests failed before implementation because schema fields were absent and MCP rejected `filters.include_deleted`/`filters.include_superseded`/`filters.frame_ids`.
+  - `swift test --build-path .build-codex/f038-red --traits default,MCPServer --disable-automatic-resolution --filter 'brokerSearchRejectsInvalidFrameIDFilters|searchAndRecallSchemasExposeLifecycleAndFrameIDFilters|searchAcceptsLifecycleAndFrameIDFilters|brokerSearchAppliesLifecycleAndFrameIDFilters|searchRejectsInvalidLifecycleAndFrameIDFilters|recallAndSearchSupportMetadataExactFilters|searchRejectsUnknownFilterKeys'`: passed.
+  - `swift build --build-path .build-codex/f038-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f038-red --traits default,MCPServer --disable-automatic-resolution --filter WaxMCPServerTests`: all F038 and adjacent tests passed, but the full filtered suite still failed one unrelated real-CoreML process test: `waxMCPProcessRememberWithRealCoreMLEmbedder` reported `Tool payload is not a JSON object`.
 
 ### F156 Review
 
