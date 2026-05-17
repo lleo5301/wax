@@ -2864,7 +2864,7 @@ Checklist:
 - [x] Run focused PDF tests, default build, post-fix review, update the ledger/checklist, and commit each issue or tightly-coupled issue cluster with verification notes.
 - [x] C-tier complete.
 - [x] B-tier PDF ingest cluster complete.
-- [ ] A-tier: F030, F031, F032, F037, F025, F026, F034.
+- [ ] A-tier: F031, F032, F037, F025, F026, F034.
 
 ### Active Plan - F027 Unified Search As-Of Semantics
 
@@ -3785,3 +3785,25 @@ Checklist:
   - First review also requested a frame-time assertion; the test now proves out-of-range structured evidence remains filtered.
   - Final code-review subagent approved the scoped F027 diff with no findings.
 - Progress snapshot after F027: 162 completed and committed, 38 remaining.
+
+### Active Plan - F030 Metadata Filter Candidate Starvation
+
+- [x] Add a red unified-search regression where high-scoring unfiltered text hits occupy the small candidate window and a lower-scoring metadata-matching hit is omitted.
+- [x] Expand the internal candidate window only when caller-provided post-filters require overfetching, preserving the existing small window for unfiltered searches.
+- [x] Verify the focused regression, the wider unified-search slice, and the MCP product build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F030 Review
+
+- Added text and vector regressions proving metadata filters overfetch past the initial `topK * 3` lane window instead of starving on high-scoring non-matching candidates.
+- Added a large-`topK` regression after review found the first overfetch cap could shrink filtered candidate windows below the caller's requested result count.
+- Fixed unified search to use the existing small candidate window for unfiltered searches, while widening only caller post-filter cases (`frameIds` or non-empty metadata filters) to `max(baseLimit, min(1000, max(topK * 5, topK + 200)))`.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter metadataFilterOverfetchesPastInitialTextCandidateWindow --disable-automatic-resolution` failed before the fix with an empty result.
+  - `swift test --build-path .build-codex/f106-red --filter 'metadataFilterOverfetchesPastInitialTextCandidateWindow|metadataFilterOverfetchesPastInitialVectorCandidateWindow|metadataFilterCandidateLimitNeverDropsBelowRequestedTopK' --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter UnifiedSearchTests --disable-automatic-resolution`: passed; 30 tests.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+- Review:
+  - First review found a high-severity large-`topK` cap regression; the final fix preserves `baseLimit` even when the overfetch budget is capped.
+  - Final code-review subagent reported no source/test findings; it only requested this task/ledger update.
+- Progress snapshot after F030: 163 completed and committed, 37 remaining.
