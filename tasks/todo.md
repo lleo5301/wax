@@ -2803,6 +2803,18 @@ Checklist:
   - `swift build --build-path .build-codex/f029-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
   - Code-review subagent approved after the nested-key validation fix.
 
+### F033 Review
+
+- Added a red regression proving compatibility `memory_search` applied public `topK` before horizon/session filtering, so a filtered durable hit could hide an eligible working hit.
+- Review caught the first implementation still used an internal candidate cap equal to the public max; added a many-filtered-hits regression that failed with the smaller overfetch budget.
+- `memory_search` now retrieves a bounded internal candidate window before filtering and stops only after post-filtered results reach the requested public `topK`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f033-red --traits default,MCPServer --disable-automatic-resolution --filter memorySearchOverfetchesBeforeHorizonFiltering`: failed before implementation and passed after.
+  - Review red phase: `swift test --build-path .build-codex/f033-red --traits default,MCPServer --disable-automatic-resolution --filter memorySearchOverfetchesAcrossManyFilteredHits`: failed with the first small overfetch budget and passed after the internal ceiling fix.
+  - `swift test --build-path .build-codex/f033-red --traits default,MCPServer --disable-automatic-resolution --filter 'memorySearchOverfetchesBeforeHorizonFiltering|memorySearchOverfetchesAcrossManyFilteredHits|toolsRememberRecallSearchFlushStatsHappyPath|brokerBackedMemorySearchDoesNotLeakAcrossSessions'`: passed.
+  - `swift build --build-path .build-codex/f033-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Code-review subagent approved after the larger internal candidate budget and boundary regression.
+
 ### F080/F081 Review
 
 - Added SQLite-backed regressions proving serialized FTS blobs pin the `frames_fts` tokenizer and that a fake ordinary table named `frames_fts` is rejected even if its SQL text contains `fts5`.
@@ -2814,8 +2826,8 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F012/F029: 109 completed and committed, 91 remaining.
-- [ ] C-tier: F033, F096, F102, F106, F107, F108, F152, F153, F157.
+- Progress snapshot after F033: 110 completed and committed, 90 remaining.
+- [ ] C-tier: F096, F102, F106, F107, F108, F152, F153, F157.
 - [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 

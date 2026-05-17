@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 109
+- Fully completed and committed: 110
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 91
+- Remaining not fully completed: 90
 
 Current resume point:
 - F-through-D tiers are complete; next remaining tier is C.
@@ -45,6 +45,7 @@ Known existing verification blockers from earlier runs:
 |---|---:|---|
 | F012 | `fd399c92` | Return stored structured fact evidence from facts queries. |
 | F029 | `5fe1386b` | Accept and return fact evidence through MCP and broker APIs. |
+| F033 | `acc41d3e` | Overfetch MCP compatibility memory search before horizon filtering. |
 | F038 | `57eb2f1e` | Expose broker lifecycle search filters. |
 | F022 | `c1aa8e44` | Reject invalid structured-memory key values. |
 | F041 | `d50b7b4b` | Cover and enforce MCP labels filter validation. |
@@ -176,7 +177,7 @@ Support commit not counted as a finding fix:
 - [ ] F030 Unified search: metadata filters can starve candidate results.
 - [ ] F031 Pending search: pending metadata can match while previews are committed-only.
 - [ ] F032 Corpus export: superseded active docs can be exported.
-- [ ] F033 MCP search: `memory_search topK` caps before post-filtering.
+- [x] F033 MCP search: `memory_search topK` caps before post-filtering.
 - [ ] F034 Sessions: multiple active sessions can silently ignore working memory.
 - [x] F035 MCP schema: vector search mode/options are hidden.
 - [x] F036 MCP tools: flush handler exists but is undiscoverable/rejected inconsistently.
