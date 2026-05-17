@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 105
+- Fully completed and committed: 106
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 95
+- Remaining not fully completed: 94
 
 Current resume point:
 - F-through-D tiers are complete; next remaining tier is C.
@@ -78,6 +78,7 @@ Known existing verification blockers from earlier runs:
 | F085 | `f8ffb6e7` | Redact CLI license key output. |
 | F086 | `858b83b6` | Enforce require-vector for direct stats/flush. |
 | F087 | `2495c05d` | Reject invalid embedder runtime flags. |
+| F088 | `pending` | Add broker/MCP parity commands to `wax-cli`. |
 | F089 | `112dcefa` | Run `wax-repo search <query>` as a one-shot command. |
 | F090 | `405a6248` | Rebuild WaxRepo full reindex into a fresh store before swapping. |
 | F092 | `36d5e36a` | Build WaxRepo search results from stored metadata instead of previews. |
@@ -227,7 +228,7 @@ Support commit not counted as a finding fix:
 - [x] F085 CLI secrets: license key leaks through dry-run/argv output.
 - [x] F086 CLI flags: direct `stats/flush` ignore `require-vector`.
 - [x] F087 CLI flags: invalid runtime flags are silently ignored.
-- [ ] F088 CLI surface: CLI lacks broker/MCP parity subcommands.
+- [x] F088 CLI surface: CLI lacks broker/MCP parity subcommands.
 - [x] F089 WaxRepo: `wax-repo search` still launches TUI.
 - [x] F090 WaxRepo: `--full` duplicates store content.
 - [ ] F091 WaxRepo: `max-commits` checkpoint can skip older history permanently.
