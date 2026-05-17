@@ -20,12 +20,12 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 101
+- Fully completed and committed: 102
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 99
+- Remaining not fully completed: 98
 
 Current resume point:
-- `F072` MiniLM pre-tokenized batch-size inference is reviewed and ready to commit; source/test review found no code blockers.
+- F-through-D tiers are complete; next remaining tier is C.
 - The active request is to fix all remaining F-through-A tier findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
@@ -65,7 +65,7 @@ Known existing verification blockers from earlier runs:
 | F069 | `a1fd4fe4` | Reject non-finite MiniLM embedder outputs. |
 | F070 | `f5d09368` | Propagate MiniLM CoreML prediction errors. |
 | F071 | `0a565d2d` | Exercise public MiniLM embedder in quality tests. |
-| F072 | `pending` | Infer MiniLM pre-tokenized batch size from input rows. |
+| F072 | `9684b5a5` | Infer MiniLM pre-tokenized batch size from input rows. |
 | F073 | `50554c87` | Treat tokenizer newlines as whitespace. |
 | F074 | `37e4565b` | Keep first SEP and padding token type IDs in segment zero. |
 | F075 | `434912b0` | Reject unsupported MiniLM CoreML output data types. |
@@ -208,7 +208,7 @@ Support commit not counted as a finding fix:
 - [x] F069 Embeddings: non-finite output is not rejected.
 - [x] F070 CoreML errors: `try?` hides CoreML failures.
 - [x] F071 MiniLM tests: quality test bypasses public batch embedder.
-- [ ] F072 Tokenizer batching: pre-tokenized embeddings always use batch size 1.
+- [x] F072 Tokenizer batching: pre-tokenized embeddings always use batch size 1.
 - [x] F073 Tokenizer: whitespace splitting excludes newlines.
 - [x] F074 Tokenizer: token type IDs mark SEP/padding as segment 1.
 - [x] F075 CoreML dtype: unsupported `MLMultiArray` dtype becomes zeros.
