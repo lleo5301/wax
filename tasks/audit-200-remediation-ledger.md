@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 102
+- Fully completed and committed: 103
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 98
+- Remaining not fully completed: 97
 
 Current resume point:
 - F-through-D tiers are complete; next remaining tier is C.
@@ -78,6 +78,7 @@ Known existing verification blockers from earlier runs:
 | F085 | `f8ffb6e7` | Redact CLI license key output. |
 | F086 | `858b83b6` | Enforce require-vector for direct stats/flush. |
 | F087 | `2495c05d` | Reject invalid embedder runtime flags. |
+| F089 | `pending` | Run `wax-repo search <query>` as a one-shot command. |
 | F093 | `89140c79` | Stabilize daemon socket path regression. |
 | F094 | `29f997c8` | Gate `knowledge_capture` by structured-memory flag. |
 | F095 | `f5c8d24b` | Honor broker access-stats feature flag. |
@@ -225,7 +226,7 @@ Support commit not counted as a finding fix:
 - [x] F086 CLI flags: direct `stats/flush` ignore `require-vector`.
 - [x] F087 CLI flags: invalid runtime flags are silently ignored.
 - [ ] F088 CLI surface: CLI lacks broker/MCP parity subcommands.
-- [ ] F089 WaxRepo: `wax-repo search` still launches TUI.
+- [x] F089 WaxRepo: `wax-repo search` still launches TUI.
 - [ ] F090 WaxRepo: `--full` duplicates store content.
 - [ ] F091 WaxRepo: `max-commits` checkpoint can skip older history permanently.
 - [ ] F092 WaxRepo: repo search parses preview instead of metadata.

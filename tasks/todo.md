@@ -2794,11 +2794,23 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- [ ] C-tier: F089, F090, F092, F088, F038, F029, F033, F096, F102, F106, F107, F108, F152, F153, F157.
+- [ ] C-tier: F090, F092, F088, F038, F029, F033, F096, F102, F106, F107, F108, F152, F153, F157.
 - [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 
 ### F156 Review
+
+### F089 Review
+
+- Added a red process-level regression for `wax-repo search <query>`: create a temp git repo, index it in text-only mode, then run `WaxRepo search needle --repo-path <repo> --text-only` with a short timeout.
+- Verified the first execution-level gate failed when run without the required `WaxRepo` trait, then reran with `--traits WaxRepo` to exercise the real executable.
+- Split `SearchCommand` into a one-shot query path and an omitted-query interactive path. Query mode calls `RepoStore.search`, prints bounded text output, closes the store on success or failure, returns, and exits with success instead of entering `SwiftTUI.Application.start()`.
+- Review:
+  - Initial review rejected the source-inspection-only test as too weak.
+  - Follow-up review approved the process-level regression and scoped implementation.
+- Verification:
+  - `swift test --traits WaxRepo --disable-automatic-resolution --filter waxRepoSearch`: passed.
+  - `swift build --product WaxRepo --traits WaxRepo --disable-automatic-resolution`: passed.
 
 - Proved F156 is a duplicate of the completed F126 skip-detector fix.
 - `Resources/scripts/quality/production_readiness_gates_tests.sh` already includes Swift Testing suite and test skip fixtures: `Suite FeatureFlaggedTests skipped: ...` and `Test testRequiresFixture() skipped: ...`.
