@@ -2848,6 +2848,7 @@ Checklist:
 - Progress snapshot after F185: 148 completed and committed, 52 remaining.
 - Progress snapshot after F186: 149 completed and committed, 51 remaining.
 - Progress snapshot after F187: 150 completed and committed, 50 remaining.
+- Progress snapshot after F188: 151 completed and committed, 49 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -3205,6 +3206,21 @@ Checklist:
   - Explorer confirmed active-only DREAMS projection and active-only event logging were the coupled root cause.
   - Initial code review caught a regression where unknown explicit export session IDs could be silently ignored; a red regression and validator fixed it.
   - Follow-up code-review subagent approved the final F187 diff with no findings.
+
+### F188 Review
+
+- `dreamProjectionLines` now closes session stores it opens with structured `try await sessionMemory.close()` before moving on or returning, instead of launching an unawaited detached close task from `defer`.
+- The error path still attempts cleanup for opened non-active session stores and rethrows the primary projection error; active session stores remain owned by `activeSessions` and are not closed by projection.
+- Extended the ended-session Markdown export regression to immediately reopen the ended session store after export, proving the export returned only after releasing the store lock.
+- Added a static regression rejecting the exact detached `Task { try? await sessionMemory.close() }` pattern inside `dreamProjectionLines`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerDreamProjectionAwaitsOpenedSessionStoreClose --disable-automatic-resolution` failed before the fix because the projection body still contained the detached close task and no awaited close.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerDreamProjectionAwaitsOpenedSessionStoreClose|brokerMarkdownExportIncludesEndedSessionDreams|brokerMarkdownExportRejectsUnknownExplicitSessionID|brokerBackedMarkdownExportProjectsCompatibilityFiles|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService+Markdown.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the unstructured close could leave file locks live after export returned and recommended the immediate-reopen behavioral proof.
+  - Scoped code-review subagent approved the final F188 diff with no findings.
 
 ### F038 Review
 

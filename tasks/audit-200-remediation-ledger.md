@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 150
+- Fully completed and committed: 151
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 50
+- Remaining not fully completed: 49
 
 Current resume point:
 - F-through-C tiers are complete; next remaining tier is B.
@@ -144,6 +144,7 @@ Known existing verification blockers from earlier runs:
 | F185 | `259982606` | Require explicit managed Markdown markers for sync imports. |
 | F186 | `83a492ae9` | Deduplicate checked DREAMS approvals within one Markdown sync. |
 | F187 | `9aef7c8e9` | Export and approve DREAMS proposals from ended sessions. |
+| F188 | `62a78c1fe` | Await session-store closes during DREAMS projection. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -365,7 +366,7 @@ Support commit not counted as a finding fix:
 - [x] F185 Markdown import: markerless bullets imported as managed.
 - [x] F186 DREAMS: duplicate checked lines create duplicate durable memories.
 - [x] F187 DREAMS: export excludes ended sessions.
-- [ ] F188 DREAMS: projection closes session stores in unawaited task.
+- [x] F188 DREAMS: projection closes session stores in unawaited task.
 - [ ] F189 Markdown export: opens active sessions owned by other brokers.
 - [ ] F190 Markdown export: leaves stale generated files.
 - [x] F191 Markdown export: `wax.source_date` path traversal in daily filename.
