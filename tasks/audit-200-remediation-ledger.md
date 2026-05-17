@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 133
+- Fully completed and committed: 134
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 67
+- Remaining not fully completed: 66
 
 Current resume point:
 - F-through-C tiers are complete; next remaining tier is B.
@@ -127,6 +127,7 @@ Known existing verification blockers from earlier runs:
 | F166 | `e35eaa0ca`, `0cb522723` | Apply metadata and asset allowlist filters during PhotoRAG recall. |
 | F167 | `1d536236a` | Apply exact distance checks after PhotoRAG coarse location bins. |
 | F168 | `f1e872d05` | Count PhotoRAG degraded results from local-availability metadata. |
+| F169 | `0d31a7d30` | Avoid PhotoRAG region crop return/trap paths before superseding old roots. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -329,7 +330,7 @@ Support commit not counted as a finding fix:
 - [x] F166 Photo filters: `PhotoFilters` is empty/no-op.
 - [x] F167 Photo location: radius uses coarse bins without final distance check.
 - [x] F168 Photo diagnostics: degraded flag inferred from missing OCR/caption, not locality.
-- [ ] F169 Photo ingest: failed region crops return before superseding old root.
+- [x] F169 Photo ingest: failed region crops return before superseding old root.
 - [ ] F170 Photo sync: `syncState` frame kind is never written.
 - [ ] F171 Photo tags: tags overpromise classifier labels.
 - [ ] F172 Video thumbnails: Photos video local URL discarded, thumbnails fail.

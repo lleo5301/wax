@@ -2838,6 +2838,7 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
 - Progress snapshot after F168: 133 completed and committed, 67 remaining.
+- Progress snapshot after F169: 134 completed and committed, 66 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -2958,6 +2959,21 @@ Checklist:
   - `git diff --check` on the scoped PhotoRAG files: passed.
 - Review:
   - Scoped code review approved the metadata-based degradation count; a local follow-up tightened the helper to count missing root mappings as degraded.
+
+### F169 Review
+
+- PhotoRAG Photos-backed region ingestion no longer returns before superseding a previous root when all proposed region crops fail.
+- Region crop result ordering now stores compact crop-array indices after a crop succeeds in both Photos-backed and local-file paths, avoiding an out-of-bounds trap when some earlier crops fail and later crops succeed.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter photoRAGPhotosRegionCropFailureDoesNotReturnBeforeSupersede --disable-automatic-resolution` failed before the fix because the Photos-backed ingest path still contained `guard !crops.isEmpty else { return }`.
+  - Review red: `swift test --build-path .build-codex/f106-red --filter photoRAGRegionCropResultsUseCompactCropIndices --disable-automatic-resolution` failed before the compact-index follow-up because both region embedding paths stored sparse proposed-region indices.
+  - Green: both focused regressions passed after the fix.
+  - `swift test --build-path .build-codex/f106-red --filter PhotoRAGDocsTests --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'PhotoRAGDocsTests|PhotoRAGFileIngestTests' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check` on the scoped PhotoRAG files: passed.
+- Review:
+  - First scoped review found the sparse crop-index trap could still abort before supersede when invalid and valid crops were mixed. The compact-index follow-up fixed both Photos-backed and local-file paths, and re-review approved the final diff.
 
 ### F038 Review
 
