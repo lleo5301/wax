@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 169
+- Fully completed and committed: 170
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 31
+- Remaining not fully completed: 30
 
 Current resume point:
 - F-through-C tiers are complete; remaining active work is A-tier and deeper durability/structured-memory findings.
@@ -163,6 +163,7 @@ Known existing verification blockers from earlier runs:
 | F032 | `dcab98fd7` | Exclude superseded active documents from corpus export. |
 | F037 | `456e7b388` | Dedupe duplicate remember calls against pending WAL frames. |
 | F034 | `40236e8df` | Require explicit session IDs for ambiguous current working-memory retrieval. |
+| F010 | `0d9aebfa6` | Preserve entity and predicate key case in structured fact hashes. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -206,7 +207,7 @@ Support commit not counted as a finding fix:
 - [ ] F007 Verify/open: footer selection differs between verification and open.
 - [ ] F008 Repair: truncate repair lacks durable fsync.
 - [ ] F009 WAL ordering: invalid delete/supersede WAL can be appended before validation.
-- [ ] F010 Structured facts: fact hash normalizes entity/predicate case.
+- [x] F010 Structured facts: fact hash normalizes entity/predicate case.
 - [ ] F011 Structured facts: string value hash lowercases object values.
 - [x] F012 Evidence: `facts` query drops stored evidence.
 - [ ] F013 Bitemporal: updating a fact closes all subject/predicate spans.

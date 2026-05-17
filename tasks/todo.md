@@ -2916,6 +2916,34 @@ Checklist:
 - Source/test commit: `40236e8df`.
 - Progress snapshot after F034: 169 completed and committed, 31 remaining.
 
+### Active Plan - F010 Fact Hash Key Case
+
+- [x] Add a red structured-memory regression proving subject and predicate key case changes create distinct fact identities instead of returning the same fact row.
+- [x] Change fact hashing so entity and predicate keys are length-delimited but not case-folded, while leaving alias lookup normalization untouched.
+- [x] Verify focused structured-memory hashing/CRUD tests and a relevant package build/test gate.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F010 Review
+
+- Fixed structured fact identity hashing so subject entity keys, predicate keys, and entity-valued object keys are hashed as raw length-delimited key bytes instead of alias-normalized strings.
+- Left `.string` object hashing on the existing normalized string path so F011 remains a separate open issue.
+- Added direct hash coverage for subject, predicate, and entity-object case differences plus an integration regression proving `person:Alice`, `person:alice`, and `Status` facts no longer collapse into the same `fact_id`.
+- Added FTS schema version 5 migration coverage for direct v4 structured stores and chained v2 structured stores, proving persisted legacy hashes are recomputed before repeated assertions can create duplicate fact rows.
+- Tightened migration ordering after review found that intermediate v2/v3 paths could stamp version 5 before F010 hash recomputation; intermediate tokenizer migrations now stamp only version 4 and final version 5 is written after `migrateV4ToV5`.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter assertFactPreservesSubjectAndPredicateCaseInIdentity --disable-automatic-resolution` failed before the fix because differently cased keys returned the same `FactRowID`.
+  - Red migration review repro: `deserializeV4RecomputesStructuredFactHashes` failed before the migration because a repeated fact after deserializing a v4 store inserted `FactRowID(2)` instead of reusing `FactRowID(1)`.
+  - Green: `swift test --build-path .build-codex/f106-red --filter 'migrationUpgradesPreVersionRelationBlobAndSupportsUpdates|deserializeV4RecomputesStructuredFactHashes|StructuredMemorySchemaTests|StructuredMemoryHashingTests|StructuredMemoryCRUDTests|VersionRelationTests|serializedBlobHasSchemaIdentityPragmas|deserializeUpgradesLegacyBlobSchemaIdentity' --disable-automatic-resolution`: passed; 28 tests.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/StructuredMemory/StructuredMemoryHashing.swift Sources/WaxTextSearch/FTS5Schema.swift Tests/WaxCoreTests/StructuredMemoryHashingTests.swift Tests/WaxIntegrationTests/StructuredMemoryCRUDTests.swift Tests/WaxIntegrationTests/StructuredMemorySchemaTests.swift Tests/WaxIntegrationTests/VersionRelationTests.swift Tests/WaxIntegrationTests/TextSearchEngineTests.swift`: passed.
+- Review:
+  - Read-only explorer confirmed the F010 root cause in `StructuredMemoryHasher.hashFact` and `.entity` object hashing while distinguishing F011 string-object normalization.
+  - First code review flagged the schema migration compatibility gap for persisted v4 stores; direct v4 migration coverage and implementation were added.
+  - Second code review flagged premature version 5 stamping on chained v2/v3 upgrades; migration ordering was fixed and chained v2 coverage was added.
+  - Final re-review approved the F010 source/test patch with no findings.
+- Source/test commit: `0d9aebfa6`.
+- Progress snapshot after F010: 170 completed and committed, 30 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.
