@@ -3752,3 +3752,14 @@ Checklist:
   - `swift test --build-path .build-codex/f106-red --filter 'EnrichmentPipelineTests|KeywordExtractorTests' --disable-automatic-resolution`: passed.
   - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
   - Code-review subagent approved the scoped F199 diff with no findings.
+
+### F200 Review
+
+- Added keyword regressions proving technical identifiers keep original spelling across hyphen, underscore, version, lowercase tool, and mixed/acronym-case forms.
+- Tightened `KeywordExtractor` tokenization so technical identifiers are preserved but ordinary hyphenated prose, including sentence-case `State-of-the-art`, still splits into normal lowercase prose terms.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --filter preservesTechnicalIdentifiers --disable-automatic-resolution` failed with fragments like `atlas`, `qwen2`, `minilm`, `wax`, and `mcp`.
+  - Review red phase: `swift test --build-path .build-codex/f106-red --filter doesNotPreserveOrdinaryHyphenatedProse --disable-automatic-resolution` failed before the final follow-up because `State-of-the-art` was preserved.
+  - `swift test --build-path .build-codex/f106-red --filter 'KeywordExtractorTests|EnrichmentPipelineTests' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Code-review subagent approved the final scoped F200 diff with no findings.
