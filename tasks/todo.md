@@ -3730,3 +3730,14 @@ Checklist:
   - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerCorpusSearchRebuildsWhenCorpusManifestIsCorrupt|corpusSearchBuilderRebuildsWhenCorpusManifestIsCorrupt|corpusSearchBuildReusesExistingCorpusWhenSourcesUnchanged|brokerCorpusSearchRebuildsWhenSourceFingerprintChanges|corpusSearchBuildsAcrossSessionStoresAndReturnsProvenance|brokerCorpusSearchBuildSkipsLockedSessionStore' --disable-automatic-resolution`: passed.
   - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
   - Code-review subagent approved the scoped F197 diff with no findings.
+
+### F198 Review
+
+- Added a regression proving `enableAsyncEnrichment` persists computed keyword results after close/reopen instead of only updating enrichment stats.
+- Changed `EnrichmentPipeline.start` to pass handler output to an optional async result sink, and wired `MemoryOrchestrator` to persist non-empty enrichment results as system sidecar frames linked to the source chunk.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --filter memoryOrchestratorPersistsEnrichmentResults --disable-automatic-resolution` failed because no `kind == "enrichment"` system frame existed.
+  - `swift test --build-path .build-codex/f106-red --filter memoryOrchestratorPersistsEnrichmentResults --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'EnrichmentPipelineTests|KeywordExtractorTests' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Code-review subagent approved the scoped F198 diff with no findings.
