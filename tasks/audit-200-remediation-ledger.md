@@ -80,7 +80,7 @@ Known existing verification blockers from earlier runs:
 | F087 | `2495c05d` | Reject invalid embedder runtime flags. |
 | F089 | `112dcefa` | Run `wax-repo search <query>` as a one-shot command. |
 | F090 | `405a6248` | Rebuild WaxRepo full reindex into a fresh store before swapping. |
-| F092 | `pending` | Build WaxRepo search results from stored metadata instead of previews. |
+| F092 | `36d5e36a` | Build WaxRepo search results from stored metadata instead of previews. |
 | F093 | `89140c79` | Stabilize daemon socket path regression. |
 | F094 | `29f997c8` | Gate `knowledge_capture` by structured-memory flag. |
 | F095 | `f5c8d24b` | Honor broker access-stats feature flag. |
