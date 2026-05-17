@@ -2837,7 +2837,7 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F167: 132 completed and committed, 68 remaining.
+- Progress snapshot after F168: 133 completed and committed, 67 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -2946,6 +2946,18 @@ Checklist:
   - `git diff --check` on the scoped PhotoRAG files: passed.
 - Review:
   - Review highlighted antimeridian and polar bin risks. The final diff normalized longitude ranges and retained the existing zero-radius no-filter behavior; scoped review approved.
+
+### F168 Review
+
+- PhotoRAG degraded diagnostics now count non-local or missing-root results from `photo.availability.local` metadata instead of inferring degradation from absent OCR/caption derived frames.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter photoRAGDegradedDiagnosticsUseLocalAvailabilityMetadata --disable-automatic-resolution` failed before the fix with `degradedResultCount == 2` for one local/no-derived root and one non-local root.
+  - Green: the same focused regression passed after switching diagnostics to local-availability metadata.
+  - `swift test --build-path .build-codex/f106-red --filter PhotoRAGConstraintQueriesTests --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check` on the scoped PhotoRAG files: passed.
+- Review:
+  - Scoped code review approved the metadata-based degradation count; a local follow-up tightened the helper to count missing root mappings as degraded.
 
 ### F038 Review
 
