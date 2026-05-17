@@ -2889,6 +2889,28 @@ Checklist:
   - Re-review approved the optimized pending-first streaming scan and the capped `UInt64` to `Int` reserve-capacity conversion.
 - Progress snapshot after F037: 166 completed and committed, 34 remaining.
 
+### Active Plan - F025 Object-Side Structured Evidence
+
+- [x] Add a red unified-search regression where the query resolves to an entity used only as a structured fact object and must still return the fact evidence frame.
+- [x] Extend structured evidence frame lookup to match candidate entity keys on either fact subject or entity-valued fact object.
+- [x] Verify the focused regression, the wider structured/unified-search slice, and the MCP product build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F025 Review
+
+- Fixed structured evidence lookup so candidate entities match facts where the entity is either the subject or an entity-valued object.
+- Used a candidate-entity CTE plus `UNION` of subject/object fact IDs so the object-side path can use the structured-memory object index and remains constrained to `object_kind = 7`.
+- Added a unified-search regression where the query resolves only the object entity alias and the evidence text omits that alias, proving the result comes from structured memory rather than text search.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter structuredSearchFindsEvidenceWhenEntityCandidateIsFactObject --disable-automatic-resolution` failed before the fix with an empty result.
+  - Green: `swift test --build-path .build-codex/f106-red --filter structuredSearchFindsEvidenceWhenEntityCandidateIsFactObject --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'structuredSearchFindsEvidenceWhenEntityCandidateIsFactObject|structuredSearchTimeRangeBeforeDoesNotOverrideExplicitAsOf|StructuredMemoryCRUDTests|UnifiedSearchTests' --disable-automatic-resolution`: passed; 40 tests.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+- Review:
+  - Read-only explorer confirmed the subject-only `evidenceFrameIds` path, identified the first shared-token test shape as a false positive, and recommended the CTE/UNION fix.
+  - Code-review subagent reported no findings; it verified SQL placeholder ordering, object-kind filtering, and that the regression is not a text-search false positive.
+- Progress snapshot after F025: 167 completed and committed, 33 remaining.
+
 ### Active Plan - F027 Unified Search As-Of Semantics
 
 - [x] Add a red unified-search regression proving `timeRange.before` filters frame timestamps but does not override explicit structured-memory `asOfMs`.
