@@ -12,7 +12,7 @@ Commit policy:
 
 ## Stop-Point Status
 
-Updated: 2026-05-17
+Updated: 2026-05-18
 
 Checklist legend:
 - `[x]` means the issue has a committed fix on `bug-hunt` with focused verification recorded.
@@ -20,12 +20,12 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 181
+- Fully completed and committed: 183
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 19
+- Remaining not fully completed: 17
 
 Current resume point:
-- F-through-C tiers are complete; remaining active work is A-tier and deeper durability/structured-memory findings.
+- F047 and F048 are now fixed; remaining active work is the still-unchecked portability, WaxRepo, broker/session, corpus, multimodal MCP, test-gate, and deeper durability/structured-memory findings.
 - The active request is to fix all remaining findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
@@ -54,6 +54,8 @@ Known existing verification blockers from earlier runs:
 | F044 | `e5b11dd2` | Skip embeddings for blank recall queries. |
 | F045 | `be54a0c6` | Add `MiniLMEmbeddings` trait define for `wax-mcp`. |
 | F046 | `8b295f3e` | Add `MiniLMEmbeddings` trait define for `WaxRepo`. |
+| F047 | `38207fcdc` | Guard MCP multimodal CoreGraphics/ImageIO imports for Linux builds. |
+| F048 | `c82cd3e76` | Replace Darwin-qualified MCP server exits with a portable helper. |
 | F051 | `b057acdf` | Reject malformed staged vector index bytes. |
 | F052 | `aed403bc` | Reject non-finite vector inputs. |
 | F053 | `resolved-by-F064` | USearch `add` atomicity gap eliminated with USearch engine removal. |
@@ -255,8 +257,8 @@ Support commit not counted as a finding fix:
 - [x] F044 Recall: whitespace-only recall can embed/search unrelated content.
 - [x] F045 Traits: `wax-mcp` missing `MiniLMEmbeddings` define.
 - [x] F046 Traits: `WaxRepo` missing `MiniLMEmbeddings` define.
-- [ ] F047 Linux: MCP Linux path imports Darwin/CoreGraphics-only APIs.
-- [ ] F048 Linux: `Darwin.exit` used unconditionally.
+- [x] F047 Linux: MCP Linux path imports Darwin/CoreGraphics-only APIs.
+- [x] F048 Linux: `Darwin.exit` used unconditionally.
 - [ ] F049 Linux tests: excludes miss Darwin benchmark files.
 - [ ] F050 Dependencies: top-level dependency leakage pulls SwiftTUI into non-CLI builds.
 - [x] F051 Vector WAL: malformed vector staged/verify accepted.
