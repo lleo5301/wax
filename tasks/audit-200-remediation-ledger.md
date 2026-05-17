@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 127
+- Fully completed and committed: 128
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 73
+- Remaining not fully completed: 72
 
 Current resume point:
 - F-through-C tiers are complete; next remaining tier is B.
@@ -121,6 +121,7 @@ Known existing verification blockers from earlier runs:
 | F160 | `4bf2c825` | Assert exact MiniLM missing-resource errors. |
 | F161 | `e9a296f8` | Keep PDF ingest API available on non-PDFKit platforms with an explicit unsupported-platform error. |
 | F162 | `bef91caa` | Persist PDF extraction limit and truncation metadata. |
+| F163 | `48c1e8e7` | Preserve PDF page provenance through page-scoped ingest metadata. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -317,7 +318,7 @@ Support commit not counted as a finding fix:
 - [x] F160 MiniLM tests: missing-resource tests catch any error.
 - [x] F161 PDF API: PDF API has no non-PDFKit fallback.
 - [x] F162 PDF ingest: extraction hard-limits 500 pages with no metadata.
-- [ ] F163 PDF provenance: page provenance is lost after join.
+- [x] F163 PDF provenance: page provenance is lost after join.
 - [ ] F164 Photo ingest: docs claim local image ingest but code lacks local file API.
 - [ ] F165 Photo sync: fetches all PHAssets, not images only.
 - [ ] F166 Photo filters: `PhotoFilters` is empty/no-op.

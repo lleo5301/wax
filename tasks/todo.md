@@ -2837,16 +2837,16 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F162: 127 completed and committed, 73 remaining.
+- Progress snapshot after F163: 128 completed and committed, 72 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
 - [x] F161: add a red portability regression proving `MemoryOrchestrator.remember(pdfAt:)` has a non-PDFKit fallback surface, then implement a clear unsupported-platform error path without hiding the API behind `#if canImport(PDFKit)`.
 - [x] F162: add a red regression proving truncated PDF extraction records total pages, extracted pages, and truncation state, then carry that metadata through PDF ingest.
-- [ ] F163: add a red regression proving PDF page provenance survives ingest, then preserve page-level metadata instead of only joining all pages into one anonymous text payload.
-- [ ] Run focused PDF tests, default build, post-fix review, update the ledger/checklist, and commit each issue or tightly-coupled issue cluster with verification notes.
+- [x] F163: add a red regression proving PDF page provenance survives ingest, then preserve page-level metadata instead of only joining all pages into one anonymous text payload.
+- [x] Run focused PDF tests, default build, post-fix review, update the ledger/checklist, and commit each issue or tightly-coupled issue cluster with verification notes.
 - [x] C-tier complete.
-- [ ] B-tier: F163.
+- [x] B-tier PDF ingest cluster complete.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 
 ### F161 Review
