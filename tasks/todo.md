@@ -3100,6 +3100,29 @@ Checklist:
 - Source/test commit: `c2f3bfe38`.
 - Progress snapshot after F014: 176 completed and committed, 24 remaining.
 
+### Active Plan - F015 Retraction Assertions
+
+- [x] Add a red regression proving `assertFact(... relation: .retracts)` closes the matching open span without returning a current fact.
+- [x] Special-case `.retracts` in structured assertion flush so it closes overlapping spans and does not insert an open replacement span.
+- [x] Verify focused version-relation/structured-memory tests plus the default package build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F015 Review
+
+- Fixed `assertFact(... relation: .retracts)` so it uses the existing same-fact, overlapping-valid-window close logic and then skips insertion of a new current span.
+- Added a regression that first proves the original fact is historically visible, then asserts `.retracts`, verifies no current hit remains, and checks the serialized store still contains only the original `.sets` span relation.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter retractsRelationClosesPriorFactWithoutCreatingCurrentFact --disable-automatic-resolution` failed before the fix because `facts` returned an open `.retracts` span.
+  - Green: same focused command passed after the storage change.
+  - Green: `swift test --build-path .build-codex/f106-red --filter 'retractsRelationClosesPriorFactWithoutCreatingCurrentFact|VersionRelationTests|StructuredMemoryCRUDTests' --disable-automatic-resolution`: passed; 24 tests.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxTextSearch/FTS5SearchEngine.swift Tests/WaxIntegrationTests/VersionRelationTests.swift tasks/todo.md`: passed.
+- Review:
+  - Read-only explorer confirmed the broken path was `fact_assert` with relation `retracts`, not direct `fact_retract`.
+  - Code-review subagent approved the scoped F015 patch and confirmed `.updates`, direct `retractFact`, and same-timestamp close behavior were not regressed.
+- Source/test commit: `2df14d250`.
+- Progress snapshot after F015: 177 completed and committed, 23 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.
