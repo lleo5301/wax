@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 180
+- Fully completed and committed: 181
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 20
+- Remaining not fully completed: 19
 
 Current resume point:
 - F-through-C tiers are complete; remaining active work is A-tier and deeper durability/structured-memory findings.
@@ -173,6 +173,7 @@ Known existing verification blockers from earlier runs:
 | F018 | `942027bb4` | Close same-millisecond structured fact retractions at the next system tick. |
 | F020 | `997b87853` | Report structured facts truncation only when an extra row exists. |
 | F021 | `fc93b63b6` | Update existing entity kind when callers supply a corrected non-empty kind. |
+| F024 | `bb693369d` | Wire structured-memory edge traversal through the package session/facade stack. |
 | F019 | `fb28c8278` | Expose structured fact span identity and temporal bounds. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
@@ -231,7 +232,7 @@ Support commit not counted as a finding fix:
 - [x] F021 Entities: entity kind cannot be corrected.
 - [x] F022 Validation: key types accept empty, whitespace, or unbounded values.
 - [x] F023 Evidence: invalid spans/confidence are accepted.
-- [ ] F024 Graph API: edge traversal API is unwired/dead.
+- [x] F024 Graph API: edge traversal API is unwired/dead.
 - [x] F025 Structured search: object-side entity facts are not used in `evidenceFrameIds`.
 - [x] F026 Bitemporal MCP: orchestrator/MCP collapses bitemporal `asOf`.
 - [x] F027 Unified search: `timeRange.before` is treated as system as-of.

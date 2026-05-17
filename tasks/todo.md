@@ -3203,6 +3203,31 @@ Checklist:
 - Source/test commit: `942027bb4`.
 - Progress snapshot after F018: 180 completed and committed, 20 remaining.
 
+### Active Plan - F024 Structured Edge Traversal
+
+- [x] Add a red engine-level regression that calls the missing structured edge traversal API over entity-valued facts.
+- [x] Implement inbound/outbound edge traversal for `FactValue.entity` facts with optional predicate filtering and bitemporal as-of filters.
+- [x] Forward the edge API through `WaxStructuredMemorySession`, `WaxSession`, and `MemoryOrchestrator`.
+- [x] Add a higher-level `MemoryOrchestrator` regression proving the graph API is reachable from the structured-memory facade.
+- [x] Verify focused and wider structured-memory gates, locally review the diff, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F024 Review
+
+- Fixed the dead structured edge API by adding `FTS5SearchEngine.edges(...)` and forwarding it through the package structured-memory session stack.
+- The edge query only returns entity-valued facts, supports inbound/outbound direction, optional predicate filtering, bitemporal system/valid as-of windows, deterministic ordering, and overfetch-by-one truncation.
+- Added regressions for direct engine traversal and `MemoryOrchestrator` facade access.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f024-red --filter structuredEdgesTraverseEntityValuedFactsByDirectionAndPredicate --disable-automatic-resolution` failed before the fix because `FTS5SearchEngine` had no `edges` member.
+  - Green: `swift test --build-path .build-codex/f024-red --filter 'structuredEdgesTraverseEntityValuedFactsByDirectionAndPredicate|memoryOrchestratorExposesStructuredEdgeTraversal' --disable-automatic-resolution`: passed; 2 tests.
+  - Green: `swift test --build-path .build-codex/f024-red --filter 'structuredEdgesTraverseEntityValuedFactsByDirectionAndPredicate|memoryOrchestratorExposesStructuredEdgeTraversal|StructuredMemoryCRUDTests|VersionRelationTests|StructuredMemorySchemaTests' --disable-automatic-resolution`: passed; 42 tests.
+  - `swift build --build-path .build-codex/f024-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxTextSearch/FTS5SearchEngine.swift Sources/Wax/StructuredMemorySession.swift Sources/Wax/WaxSession.swift Sources/Wax/Orchestrator/MemoryOrchestrator.swift Tests/WaxIntegrationTests/StructuredMemoryCRUDTests.swift`: passed.
+- Review:
+  - The planned explorer subagent hit the account usage limit before returning results.
+  - Local blocking review checked that the query filters to entity-valued facts, applies temporal predicates, preserves direction and predicate, and excludes the unrelated raw FTS search helper from staging.
+- Source/test commit: `bb693369d`.
+- Progress snapshot after F024: 181 completed and committed, 19 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.
