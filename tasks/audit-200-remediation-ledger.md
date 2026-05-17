@@ -20,12 +20,12 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 99
+- Fully completed and committed: 100
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 101
+- Remaining not fully completed: 100
 
 Current resume point:
-- `F069` MiniLM non-finite output rejection is reviewed and ready to commit.
+- `F070` MiniLM prediction error propagation is reviewed and ready to commit.
 - The active request is to fix all remaining F-through-A tier findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
@@ -63,6 +63,7 @@ Known existing verification blockers from earlier runs:
 | F063 | `pending` | Reject duplicate vector frame IDs during restore/staging. |
 | F068 | `e11607b3` | Normalize MiniLM embedder outputs before returning them. |
 | F069 | `a1fd4fe4` | Reject non-finite MiniLM embedder outputs. |
+| F070 | `pending` | Propagate MiniLM CoreML prediction errors. |
 | F073 | `50554c87` | Treat tokenizer newlines as whitespace. |
 | F074 | `37e4565b` | Keep first SEP and padding token type IDs in segment zero. |
 | F075 | `434912b0` | Reject unsupported MiniLM CoreML output data types. |
@@ -203,7 +204,7 @@ Support commit not counted as a finding fix:
 - [ ] F067 Arctic: default batch 256 exceeds asset shape 64.
 - [x] F068 Embeddings: direct output not normalized as docs/identity imply.
 - [x] F069 Embeddings: non-finite output is not rejected.
-- [ ] F070 CoreML errors: `try?` hides CoreML failures.
+- [x] F070 CoreML errors: `try?` hides CoreML failures.
 - [ ] F071 MiniLM tests: quality test bypasses public batch embedder.
 - [ ] F072 Tokenizer batching: pre-tokenized embeddings always use batch size 1.
 - [x] F073 Tokenizer: whitespace splitting excludes newlines.

@@ -2603,7 +2603,21 @@ Execution order:
 Checklist:
 - [x] F063: review and commit existing duplicate vector frame-id restore work.
 - [ ] F-tier: F156, F154, F159, F160, F125, F118, F120, F119, F113, F112, F122, F114, F109, F115, F116, F117, F124, F127, F155, F158.
-- [ ] D-tier: F070, F071, F072.
+- [ ] D-tier: F071, F072.
+
+### F070 Review
+
+- Added a stub-backed MiniLM embedder regression proving model prediction errors propagate to callers instead of being converted to nil.
+- Verified the regression initially failed at compile time because the MiniLM model protocol did not allow throwing errors, matching the hidden-error implementation gap.
+- Replaced the `try? localModel.prediction(...)` path with a throwing continuation and made MiniLM encode APIs throw through to `MiniLMEmbedder`.
+- Fixed the surfaced batch-shape blocker by planning MiniLM CoreML predictions as supported single-item model calls; the real gated batch-size tests now pass instead of hitting `MultiArray Shape (2 x 32)` / `(4 x 32)` errors.
+- False-positive check: `rg` no longer finds `try? localModel.prediction`; real MiniLM inference tests remain explicitly skipped unless `WAX_TEST_MINILM=1`.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter miniLMEmbedderPropagatesModelPredictionErrors`: failed before and passed after.
+  - `swift test --disable-automatic-resolution --filter 'miniLMEmbedderPropagatesModelPredictionErrors|MiniLMEmbedderTests|MiniLMEmbeddingQualityTests'`: passed.
+  - `swift test --disable-automatic-resolution --filter miniLMEmbedderBatchPlanningUsesOnlySupportedCoreMLBatchShapes`: failed before and passed after.
+  - `WAX_TEST_MINILM=1 swift test --disable-automatic-resolution --filter MiniLMEmbedderTests`: passed after the batch-shape fix.
+  - `WAX_TEST_MINILM=1 swift test --disable-automatic-resolution --filter MiniLMEmbeddingQualityTests`: passed.
 
 ### F069 Review
 
