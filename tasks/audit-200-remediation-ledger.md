@@ -62,7 +62,7 @@ Known existing verification blockers from earlier runs:
 | F062 | `3e8335e7` | Check projected vector counts and overflow. |
 | F063 | `pending` | Reject duplicate vector frame IDs during restore/staging. |
 | F073 | `50554c87` | Treat tokenizer newlines as whitespace. |
-| F074 | `pending` | Keep first SEP and padding token type IDs in segment zero. |
+| F074 | `37e4565b` | Keep first SEP and padding token type IDs in segment zero. |
 | F076 | `5e1025be` | Escape FTS5 MATCH queries. |
 | F078 | `b9335725` | Normalize FTS BM25 scores for bounded `minScore` filtering. |
 | F079 | `8b513214` | Reject non-positive FTS `topK`. |
