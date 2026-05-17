@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 165
+- Fully completed and committed: 166
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 35
+- Remaining not fully completed: 34
 
 Current resume point:
 - F-through-C tiers are complete; remaining active work is A-tier and deeper durability/structured-memory findings.
@@ -159,6 +159,7 @@ Known existing verification blockers from earlier runs:
 | F030 | `e5167ac23` | Overfetch unified-search candidates when caller filters are applied after lane ranking. |
 | F031 | `0692b1d5b` | Render previews for pending unified-search results that pass pending metadata filters. |
 | F032 | `dcab98fd7` | Exclude superseded active documents from corpus export. |
+| F037 | `456e7b388` | Dedupe duplicate remember calls against pending WAL frames. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -229,7 +230,7 @@ Support commit not counted as a finding fix:
 - [ ] F034 Sessions: multiple active sessions can silently ignore working memory.
 - [x] F035 MCP schema: vector search mode/options are hidden.
 - [x] F036 MCP tools: flush handler exists but is undiscoverable/rejected inconsistently.
-- [ ] F037 Pending memory: pending duplicate dedupe gap.
+- [x] F037 Pending memory: pending duplicate dedupe gap.
 - [x] F038 Diagnostics: broker filters lack includeDeleted/superseded/frame IDs.
 - [x] F039 MCP schema: `fact_assert` omits relation/version relation.
 - [x] F040 MCP schema: generic `type/value` fact schema is rejected by broker.

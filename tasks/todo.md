@@ -2866,6 +2866,29 @@ Checklist:
 - [x] B-tier PDF ingest cluster complete.
 - [ ] A-tier: F032, F037, F025, F026, F034.
 
+### Active Plan - F037 Pending Duplicate Dedupe
+
+- [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.
+- [x] Teach the remember dedupe probe to inspect committed frames plus pending WAL frame metadata, respecting pending delete/supersede liveness.
+- [x] Verify the focused dedupe regression, the wider dedupe/memory-orchestrator slice, and the MCP product build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F037 Review
+
+- Fixed `Wax.rememberDedupProbe(...)` to consider pending WAL frame metadata before committed frames, so duplicate `MemoryOrchestrator.remember(...)` calls made before flush short-circuit against the pending document/chunk set.
+- Preserved the hot-path committed-frame streaming behavior after review rejected a first full-store materialize/sort approach; pending puts are scanned newest-first and committed frames remain streamed newest-first with pending delete/supersede overlays.
+- Added a regression proving two identical pre-flush remembers commit only one complete document/chunk set.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter rememberIdenticalContentTwiceBeforeFlushIsIdempotent --disable-automatic-resolution` failed before the fix with `frameCount == 4` instead of `2`.
+  - Green: `swift test --build-path .build-codex/f106-red --filter rememberIdenticalContentTwiceBeforeFlushIsIdempotent --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'DeduplicationTests|MemoryOrchestrator' --disable-automatic-resolution`: passed; 33 Swift Testing tests plus 3 skipped benchmark XCTests.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+- Review:
+  - Read-only explorer independently confirmed the committed-only dedupe probe root cause and the pending-aware scan strategy.
+  - First code review flagged a performance risk from full-store sort/materialization on the remember hot path.
+  - Re-review approved the optimized pending-first streaming scan and the capped `UInt64` to `Int` reserve-capacity conversion.
+- Progress snapshot after F037: 166 completed and committed, 34 remaining.
+
 ### Active Plan - F027 Unified Search As-Of Semantics
 
 - [x] Add a red unified-search regression proving `timeRange.before` filters frame timestamps but does not override explicit structured-memory `asOfMs`.
