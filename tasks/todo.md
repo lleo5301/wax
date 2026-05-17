@@ -2843,6 +2843,7 @@ Checklist:
 - Progress snapshot after F171: 136 completed and committed, 64 remaining.
 - Progress snapshot after F172: 137 completed and committed, 63 remaining.
 - Progress snapshot after F182: 145 completed and committed, 55 remaining.
+- Progress snapshot after F183: 146 completed and committed, 54 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -3128,6 +3129,19 @@ Checklist:
 - Review:
   - Explorer confirmed the root cause and warned not to compare the marker hash to edited Markdown text.
   - Scoped code-review subagent approved the F182 diff with no findings.
+
+### F183 Review
+
+- `markdown_sync` now preserves locked memories in the unmatched-existing reconciliation path; removing a locked line from `MEMORY.md` no longer calls `deleteDocumentTree`.
+- Added a regression that writes a locked memory, exports and syncs it so it is markdown-managed, removes the line, syncs again, and verifies the sync reports zero deletions and `memory_get` still returns the locked record.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownSyncDoesNotDeleteLockedMemoryWhenLineRemoved --disable-automatic-resolution` failed before the fix with one deletion and `memory_get` returning `ok == false`.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownSyncDoesNotDeleteLockedMemoryWhenLineRemoved|brokerMarkdownSyncDoesNotTrustFrameIDWithMismatchedMarkerHash|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService+Markdown.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the unmatched-delete root cause and recommended marker-derived memory IDs for a stable repro.
+  - Scoped code-review subagent approved the F183 diff with no findings.
 
 ### F038 Review
 
