@@ -3828,3 +3828,25 @@ Checklist:
   - Read-only explorer independently confirmed the committed-only preview path as the root cause and the pending-aware preview plan as the minimal fix.
   - Code-review subagent reported no source/test findings; it only requested this task/ledger update.
 - Progress snapshot after F031: 164 completed and committed, 36 remaining.
+
+### Active Plan - F032 Corpus Export Liveness
+
+- [x] Add a red corpus-source regression proving active documents with `supersededBy != nil` are excluded from corpus export while the replacement document remains exported.
+- [x] Filter `MemoryOrchestrator.corpusSourceDocuments()` on live document liveness, not only active document status.
+- [x] Verify the focused regression, a relevant memory-orchestrator slice, and the MCP product build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F032 Review
+
+- Fixed `MemoryOrchestrator.corpusSourceDocuments()` to require `supersededBy == nil` in addition to active document status before exporting source documents for corpus indexing.
+- Added a regression proving a superseded active document is omitted while the replacement document remains exported.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter corpusSourceDocumentsExcludesSupersededActiveDocuments --disable-automatic-resolution` failed before the fix with the old superseded frame still exported by ID and text.
+  - Green: `swift test --build-path .build-codex/f106-red --filter corpusSourceDocumentsExcludesSupersededActiveDocuments --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter MemoryOrchestrator --disable-automatic-resolution`: passed; 26 Swift Testing tests plus 3 skipped benchmark XCTests.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'corpusSearchBuildsAcrossSessionStoresAndReturnsProvenance|brokerCorpusSearchRebuildsWhenSourceFingerprintChanges|corpusSearchBuildReusesExistingCorpusWhenSourcesUnchanged' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+- Review:
+  - Read-only explorer independently confirmed the missing `supersededBy == nil` filter in corpus export and the downstream broker/MCP corpus-builder impact.
+  - Code-review subagent reported no source correctness findings; it only warned to stage the new regression test explicitly, which was done in the source/test commit.
+- Progress snapshot after F032: 165 completed and committed, 35 remaining.
