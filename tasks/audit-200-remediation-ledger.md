@@ -63,7 +63,7 @@ Known existing verification blockers from earlier runs:
 | F063 | `pending` | Reject duplicate vector frame IDs during restore/staging. |
 | F073 | `50554c87` | Treat tokenizer newlines as whitespace. |
 | F074 | `37e4565b` | Keep first SEP and padding token type IDs in segment zero. |
-| F075 | `pending` | Reject unsupported MiniLM CoreML output data types. |
+| F075 | `434912b0` | Reject unsupported MiniLM CoreML output data types. |
 | F076 | `5e1025be` | Escape FTS5 MATCH queries. |
 | F078 | `b9335725` | Normalize FTS BM25 scores for bounded `minScore` filtering. |
 | F079 | `8b513214` | Reject non-positive FTS `topK`. |
