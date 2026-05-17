@@ -2837,9 +2837,9 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F065/F066 verification: 122 completed and committed, 78 remaining.
+- Progress snapshot after F053/F054 verification: 124 completed and committed, 76 remaining.
 - [x] C-tier complete.
-- [ ] B-tier: F053, F054, F077, F161, F162, F163.
+- [ ] B-tier: F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 
 ### F038 Review
@@ -3224,3 +3224,11 @@ Checklist:
 - Verification:
   - `swift test --build-path .build-codex/f106-red --filter MiniLMEmbedderBatchPlanningTests --disable-automatic-resolution`: passed.
   - Independent explorer review confirmed F065/F066 do not require source changes and mapped the proof to `MiniLMEmbedder.swift` batch planning plus `MiniLMEmbedderBatchPlanningTests`.
+
+### F053/F054 Verification
+
+- F053 and F054 were USearch-engine implementation defects. The current branch removed the USearch engine in F064, so the non-atomic `add` and unchecked concurrent mutable-index reads no longer have a live implementation path.
+- Verification:
+  - `git grep -n "USearchVectorEngine\\|USearchIndex\\|@preconcurrency import USearch\\|toUSearchMetric\\|case usearch\\|\\.usearch" HEAD -- 'Package.swift' 'Sources/**/*.swift' 'Tests/**/*.swift'`: no active source hits; only stale comments remain.
+  - `swift test --build-path .build-codex/f106-red --filter 'packageManifestDoesNotDependOnRemovedVectorDependency|loadedVectorSearchEngineRejectsLegacyUSearchVectorIndexes|loadedVectorSearchEngineCurrentEncodingRejectsLegacyUSearchVectorIndexes' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.

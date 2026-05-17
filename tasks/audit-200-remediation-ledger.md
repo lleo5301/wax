@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 122
+- Fully completed and committed: 124
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 78
+- Remaining not fully completed: 76
 
 Current resume point:
 - F-through-C tiers are complete; next remaining tier is B.
@@ -56,6 +56,8 @@ Known existing verification blockers from earlier runs:
 | F046 | `8b295f3e` | Add `MiniLMEmbeddings` trait define for `WaxRepo`. |
 | F051 | `b057acdf` | Reject malformed staged vector index bytes. |
 | F052 | `aed403bc` | Reject non-finite vector inputs. |
+| F053 | `resolved-by-F064` | USearch `add` atomicity gap eliminated with USearch engine removal. |
+| F054 | `resolved-by-F064` | USearch mutable-index read concurrency gap eliminated with USearch engine removal. |
 | F055 | `4db66e30` | Load staged USearch vector indexes. |
 | F056 | `0da5001e` | Deduplicate USearch batch vector IDs. |
 | F057 | `ffd36bcb` | Check vector decode byte-count overflow. |
@@ -202,8 +204,8 @@ Support commit not counted as a finding fix:
 - [ ] F050 Dependencies: top-level dependency leakage pulls SwiftTUI into non-CLI builds.
 - [x] F051 Vector WAL: malformed vector staged/verify accepted.
 - [x] F052 Embeddings: NaN/Inf embeddings accepted.
-- [ ] F053 USearch: `add` is not atomic.
-- [ ] F054 USearch: concurrent reads are unchecked around mutable index.
+- [x] F053 USearch: `add` is not atomic.
+- [x] F054 USearch: concurrent reads are unchecked around mutable index.
 - [x] F055 Pending vectors: USearch ignores staged vector bytes.
 - [x] F056 Batch vectors: duplicate IDs in batch overcount vector count.
 - [x] F057 Serialization: unchecked `Int` overflow in vector decode.
