@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 172
+- Fully completed and committed: 173
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 28
+- Remaining not fully completed: 27
 
 Current resume point:
 - F-through-C tiers are complete; remaining active work is A-tier and deeper durability/structured-memory findings.
@@ -166,6 +166,7 @@ Known existing verification blockers from earlier runs:
 | F010 | `0d9aebfa6` | Preserve entity and predicate key case in structured fact hashes. |
 | F011 | `8514f07c6` | Preserve literal string object values in structured fact hashes. |
 | F020 | `997b87853` | Report structured facts truncation only when an extra row exists. |
+| F021 | `fc93b63b6` | Update existing entity kind when callers supply a corrected non-empty kind. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -220,7 +221,7 @@ Support commit not counted as a finding fix:
 - [ ] F018 Retractions: same-millisecond retract can fail to close target.
 - [ ] F019 Query results: duplicate identical fact hits are indistinguishable.
 - [x] F020 Query metadata: `wasTruncated` can be false-positive.
-- [ ] F021 Entities: entity kind cannot be corrected.
+- [x] F021 Entities: entity kind cannot be corrected.
 - [x] F022 Validation: key types accept empty, whitespace, or unbounded values.
 - [x] F023 Evidence: invalid spans/confidence are accepted.
 - [ ] F024 Graph API: edge traversal API is unwired/dead.

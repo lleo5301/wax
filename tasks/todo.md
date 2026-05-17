@@ -2993,6 +2993,30 @@ Checklist:
 - Source/test commit: `997b87853`.
 - Progress snapshot after F020: 172 completed and committed, 28 remaining.
 
+### Active Plan - F021 Entity Kind Correction
+
+- [x] Add a red structured-memory regression proving a repeated `upsertEntity` with a non-empty corrected kind updates the stored entity kind returned by alias resolution.
+- [x] Update entity upsert handling to replace stale non-empty kinds when the caller supplies a non-empty different kind, while preserving empty-kind calls from fact assertion.
+- [x] Verify focused structured-memory CRUD tests plus the default package build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F021 Review
+
+- Fixed entity upsert handling so an existing entity kind is updated when the caller supplies a different non-empty kind.
+- Preserved implicit fact assertion behavior by keeping the non-empty guard, so `assertFact` paths that ensure entities with `kind: ""` cannot clear a real kind.
+- Added a regression that upserts `agent:alice` as `person`, upserts the same entity as `agent`, then resolves by alias and expects the corrected `agent` kind.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter upsertEntityCorrectsExistingNonEmptyKind --disable-automatic-resolution` failed before the fix because the resolver still returned `person`.
+  - Green: same focused command passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'upsertEntityCorrectsExistingNonEmptyKind|StructuredMemoryCRUDTests' --disable-automatic-resolution`: passed; 12 tests.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxTextSearch/FTS5SearchEngine.swift Tests/WaxIntegrationTests/StructuredMemoryCRUDTests.swift`: passed.
+- Review:
+  - Read-only explorer confirmed the storage path, public CLI/MCP/broker impact, and that no migration can safely infer historical corrected kinds.
+  - Code-review subagent approved the source/test patch with no findings.
+- Source/test commit: `fc93b63b6`.
+- Progress snapshot after F021: 173 completed and committed, 27 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.
