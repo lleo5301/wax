@@ -2839,6 +2839,7 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
 - Progress snapshot after F168: 133 completed and committed, 67 remaining.
 - Progress snapshot after F169: 134 completed and committed, 66 remaining.
+- Progress snapshot after F170: 135 completed and committed, 65 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -2974,6 +2975,21 @@ Checklist:
   - `git diff --check` on the scoped PhotoRAG files: passed.
 - Review:
   - First scoped review found the sparse crop-index trap could still abort before supersede when invalid and valid crops were mixed. The compact-index follow-up fixed both Photos-backed and local-file paths, and re-review approved the final diff.
+
+### F170 Review
+
+- PhotoRAG sync now writes a persisted `system.photos.sync_state` checkpoint after successful `syncLibrary`, including sync scope, asset count, completion timestamp, and pipeline version metadata.
+- The regression uses `.assetIDs([])` so it exercises `syncLibrary` without depending on real Photos library contents, then closes and reopens the store before asserting the checkpoint frame.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter photoRAGSyncLibraryWritesSyncStateCheckpoint --disable-automatic-resolution` failed before the fix with `syncState.count == 0`.
+  - Green: the same focused regression passed after adding the checkpoint writer.
+  - `swift test --build-path .build-codex/f106-red --filter PhotoRAGOrchestratorTests --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'PhotoRAGOrchestratorTests|PhotoRAGFileIngestTests|PhotoRAGDocsTests' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check` on the scoped PhotoRAG files: passed.
+- Review:
+  - Explorer confirmed F170 was a real baseline gap: the frame kind and docs existed, but `syncLibrary` returned after ingest with no checkpoint write.
+  - Code review approved the fix and flagged a low test gap around metadata assertions; the regression now checks pipeline version and a parseable completion timestamp.
 
 ### F038 Review
 
