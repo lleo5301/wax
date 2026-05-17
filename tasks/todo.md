@@ -2851,6 +2851,7 @@ Checklist:
 - Progress snapshot after F188: 151 completed and committed, 49 remaining.
 - Progress snapshot after F189: 152 completed and committed, 48 remaining.
 - Progress snapshot after F190: 153 completed and committed, 47 remaining.
+- Progress snapshot after F193: 154 completed and committed, 46 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -3254,6 +3255,20 @@ Checklist:
 - Review:
   - First scoped code-review subagent blocked the diff because user-authored prose and arbitrary `.md` filenames could be removed by cleanup.
   - Final scoped code-review subagent approved the corrected F190 diff with no findings.
+
+### F193 Review
+
+- `MEMORY.md` export now groups durable and locked memories by their stored `wax.memory_type` metadata instead of re-running text classification during rendering.
+- Added a regression where content beginning with `Decision:` is explicitly stored as durable `task_state`; export must place it under `## task_state` and not `## decision`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownExportUsesStoredMemoryTypeForSections --disable-automatic-resolution` failed before the fix because the entry was rendered under `## decision`.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownExportUsesStoredMemoryTypeForSections --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownExportUsesStoredMemoryTypeForSections|brokerMarkdownExportRemovesStaleGeneratedFiles|brokerBackedMarkdownExportProjectsCompatibilityFiles|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the marker metadata was already correct and the only bug was section grouping through `MemorySemantics.classifyCandidate`.
+  - Scoped code-review subagent approved the F193 diff with no findings.
 
 ### F038 Review
 
