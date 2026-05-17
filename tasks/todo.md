@@ -2837,9 +2837,9 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F064: 119 completed and committed, 81 remaining.
+- Progress snapshot after F067: 120 completed and committed, 80 remaining.
 - [x] C-tier complete.
-- [ ] B-tier: F065, F066, F067, F053, F054, F077, F161, F162, F163.
+- [ ] B-tier: F065, F066, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 
 ### F038 Review
@@ -3203,3 +3203,15 @@ Checklist:
   - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
   - `rg -n "USearch|usearch|nativeIndex|class_getInstanceVariable|USearchVectorEngine|USearchIndex|\\.uSearch" Package.swift Sources Tests -g '*.swift'`: only legacy-format rejection constants/tests remain.
   - Code-review subagent approved the staged F064 diff after the selection-path fix.
+
+### F067 Review
+
+- Added an Arctic batch-planning regression proving the default-sized planner must clamp to the model-supported CoreML batch cap rather than emitting a 256-sized prediction batch.
+- Initial implementation overclamped Arctic batches to `1`; review rejected that as a throughput regression because the Arctic asset supports batch shapes up to `64`.
+- Corrected the regression to expect `totalCount: 129, maxBatchSize: 256` to plan `[64, 64, 1]`, then capped Arctic effective CoreML prediction batches at `64`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --filter arcticEmbedderBatchPlanningUsesOnlySupportedCoreMLBatchShapes --disable-automatic-resolution` failed before the final cap fix with the planner returning one-item chunks instead of `[64, 64, 1]`.
+  - `swift test --build-path .build-codex/f106-red --filter arcticEmbedderBatchPlanningUsesOnlySupportedCoreMLBatchShapes --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'MiniLMEmbedderBatchPlanningTests|arcticEmbedderBatchPlanningUsesOnlySupportedCoreMLBatchShapes' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - Code-review subagent approved the corrected scoped F067 diff.

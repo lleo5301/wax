@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 119
+- Fully completed and committed: 120
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 81
+- Remaining not fully completed: 80
 
 Current resume point:
 - F-through-C tiers are complete; next remaining tier is B.
@@ -66,6 +66,7 @@ Known existing verification blockers from earlier runs:
 | F062 | `3e8335e7` | Check projected vector counts and overflow. |
 | F063 | `pending` | Reject duplicate vector frame IDs during restore/staging. |
 | F064 | `a79c5f63` | Remove fragile USearch private-ivar serialization path. |
+| F067 | `170d278e` | Clamp Arctic CoreML batch planning to supported shapes. |
 | F068 | `e11607b3` | Normalize MiniLM embedder outputs before returning them. |
 | F069 | `a1fd4fe4` | Reject non-finite MiniLM embedder outputs. |
 | F070 | `f5d09368` | Propagate MiniLM CoreML prediction errors. |
@@ -213,7 +214,7 @@ Support commit not counted as a finding fix:
 - [x] F064 Serialization: private Objective-C ivar serialization is fragile.
 - [ ] F065 MiniLM: batch size 2/4 fails.
 - [ ] F066 MiniLM: default batch 256 exceeds asset shape 64.
-- [ ] F067 Arctic: default batch 256 exceeds asset shape 64.
+- [x] F067 Arctic: default batch 256 exceeds asset shape 64.
 - [x] F068 Embeddings: direct output not normalized as docs/identity imply.
 - [x] F069 Embeddings: non-finite output is not rejected.
 - [x] F070 CoreML errors: `try?` hides CoreML failures.
