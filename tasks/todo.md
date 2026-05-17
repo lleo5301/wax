@@ -2846,6 +2846,7 @@ Checklist:
 - Progress snapshot after F183: 146 completed and committed, 54 remaining.
 - Progress snapshot after F184: 147 completed and committed, 53 remaining.
 - Progress snapshot after F185: 148 completed and committed, 52 remaining.
+- Progress snapshot after F186: 149 completed and committed, 51 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -3173,6 +3174,19 @@ Checklist:
 - Review:
   - Explorer confirmed daily notes share the same markerless-import root cause.
   - Scoped code-review subagent approved the F185 diff with no findings.
+
+### F186 Review
+
+- `syncDreamsMarkdown` now tracks approved DREAMS fingerprints during a sync pass, seeded from existing durable documents, so duplicate checked lines in one file are rejected before proposal/write.
+- Added a regression with two checked DREAMS lines containing identical text but different `sourceFrameID` marker metadata; sync approves one, rejects one, and leaves one durable document.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownSyncDeduplicatesCheckedDreamApprovals --disable-automatic-resolution` failed before the fix because `approved_dreams` was `2`.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownSync --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService+Markdown.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the stale durable snapshot / batch-local duplicate root cause.
+  - Scoped code-review subagent approved the F186 diff with no findings.
 
 ### F038 Review
 
