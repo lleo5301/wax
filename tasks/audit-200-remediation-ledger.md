@@ -20,12 +20,12 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 97
+- Fully completed and committed: 98
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 103
+- Remaining not fully completed: 102
 
 Current resume point:
-- `F075` unsupported CoreML dtype rejection is reviewed and ready to commit.
+- `F068` MiniLM output normalization is reviewed and ready to commit.
 - The active request is to fix all remaining F-through-A tier findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
@@ -61,6 +61,7 @@ Known existing verification blockers from earlier runs:
 | F061 | `9540c6a5` | Surface Metal command-buffer failures. |
 | F062 | `3e8335e7` | Check projected vector counts and overflow. |
 | F063 | `pending` | Reject duplicate vector frame IDs during restore/staging. |
+| F068 | `pending` | Normalize MiniLM embedder outputs before returning them. |
 | F073 | `50554c87` | Treat tokenizer newlines as whitespace. |
 | F074 | `37e4565b` | Keep first SEP and padding token type IDs in segment zero. |
 | F075 | `434912b0` | Reject unsupported MiniLM CoreML output data types. |
@@ -199,7 +200,7 @@ Support commit not counted as a finding fix:
 - [ ] F065 MiniLM: batch size 2/4 fails.
 - [ ] F066 MiniLM: default batch 256 exceeds asset shape 64.
 - [ ] F067 Arctic: default batch 256 exceeds asset shape 64.
-- [ ] F068 Embeddings: direct output not normalized as docs/identity imply.
+- [x] F068 Embeddings: direct output not normalized as docs/identity imply.
 - [ ] F069 Embeddings: non-finite output is not rejected.
 - [ ] F070 CoreML errors: `try?` hides CoreML failures.
 - [ ] F071 MiniLM tests: quality test bypasses public batch embedder.

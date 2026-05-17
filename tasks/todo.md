@@ -2603,7 +2603,15 @@ Execution order:
 Checklist:
 - [x] F063: review and commit existing duplicate vector frame-id restore work.
 - [ ] F-tier: F156, F154, F159, F160, F125, F118, F120, F119, F113, F112, F122, F114, F109, F115, F116, F117, F124, F127, F155, F158.
-- [ ] D-tier: F068, F069, F070, F071, F072.
+- [ ] D-tier: F069, F070, F071, F072.
+
+### F068 Review
+
+- Added a fast MiniLM embedder regression with an injected model returning `[3, 4, 0...]`, proving `MiniLMEmbedder.embed` returns a unit-normalized vector that matches its identity metadata.
+- Verified the first test pass failed at compile time before the test seam existed; the production path only accepted concrete `MiniLMEmbeddings` and returned raw model vectors.
+- Added a package-level `MiniLMEmbeddingModel` seam so tests can exercise `MiniLMEmbedder` without loading CoreML, then normalized direct and batch outputs before returning them.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter miniLMEmbedderNormalizesDirectOutputs`: failed before and passed after.
 
 ### F075 Review
 
