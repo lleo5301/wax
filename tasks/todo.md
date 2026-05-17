@@ -2864,7 +2864,7 @@ Checklist:
 - [x] Run focused PDF tests, default build, post-fix review, update the ledger/checklist, and commit each issue or tightly-coupled issue cluster with verification notes.
 - [x] C-tier complete.
 - [x] B-tier PDF ingest cluster complete.
-- [ ] A-tier: F034.
+- [x] A-tier complete.
 
 ### Active Plan - F026 Bitemporal Facts Query
 
@@ -2890,6 +2890,31 @@ Checklist:
   - Re-review approved the final F026 source/test change with no blocking findings.
 - Source/test commit: `774ca2919`.
 - Progress snapshot after F026: 168 completed and committed, 32 remaining.
+
+### Active Plan - F034 Multiple Active Session Working Memory
+
+- [x] Add red broker and MCP compatibility regressions where multiple active sessions exist and an unscoped working-memory retrieval must fail instead of silently returning no working context or cross-session context.
+- [x] Tighten session resolution for commands that include current working memory so more than one active session requires an explicit `session_id`, while durable-only or explicit-session calls remain compatible.
+- [x] Verify focused session-search/compact-context tests plus the MCP product build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F034 Review
+
+- Fixed ambiguous multi-session working-memory retrieval by making broker `memory_search` require `session_id` when `include_working` is true and more than one session is active.
+- Fixed broker `compact_context` to require an explicit `session_id` when multiple sessions are active, preventing silent omission of the current working-memory layer and checkpoint recording.
+- Fixed the MCP direct compatibility path for `memory_search` and `compact_context` with the same ambiguity rule; explicit sessions and single-session convenience still work.
+- Preserved durable-only unscoped `memory_search` behavior by allowing omitted `session_id` when `include_working` is false.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMemorySearchRequiresSessionIDWhenMultipleActiveSessionsIncludeWorking|brokerCompactContextRequiresSessionIDWhenMultipleSessionsAreActive|compatMemorySearchRequiresSessionIDWhenMultipleActiveSessionsIncludeWorking|compatCompactContextRequiresSessionIDWhenMultipleSessionsAreActive' --disable-automatic-resolution` failed before the fix with ambiguous calls succeeding or returning cross-session working hits.
+  - Green: same focused command passed; 4 tests.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMemorySearchRequiresSessionIDWhenMultipleActiveSessionsIncludeWorking|brokerCompactContextRequiresSessionIDWhenMultipleSessionsAreActive|compatMemorySearchRequiresSessionIDWhenMultipleActiveSessionsIncludeWorking|compatCompactContextRequiresSessionIDWhenMultipleSessionsAreActive|sessionStartEndAndScopedRecallSearchWork|compatCompactContextScopesToRequestedSession|brokerCompactContextScopesToRequestedSession|brokerBackedF152|brokerSessionEndRequiresIDWhenMultipleSessionsAreActive|sessionEndRequiresIDWhenMultipleSessionsAreActive' --disable-automatic-resolution`: passed; 8 matched tests.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Broader nearby run including `brokerSearchAppliesLifecycleAndFrameIDFilters` still has an unrelated lifecycle filter failure where filtered deleted/superseded IDs are empty; it does not exercise the F034 resolver path and remains outside this issue.
+- Review:
+  - Read-only explorer confirmed the F034 root cause in broker and compatibility `memory_search`/`compact_context`, and recommended keeping `recall`/`search` out of the narrow working-memory ambiguity fix.
+  - Code-review subagent approved the final F034 change, confirming durable-only unscoped search compatibility and the decision to leave `recall`/`search` unchanged.
+- Source/test commit: `40236e8df`.
+- Progress snapshot after F034: 169 completed and committed, 31 remaining.
 
 ### Active Plan - F037 Pending Duplicate Dedupe
 

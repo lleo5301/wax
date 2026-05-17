@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 168
+- Fully completed and committed: 169
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 32
+- Remaining not fully completed: 31
 
 Current resume point:
 - F-through-C tiers are complete; remaining active work is A-tier and deeper durability/structured-memory findings.
@@ -162,6 +162,7 @@ Known existing verification blockers from earlier runs:
 | F031 | `0692b1d5b` | Render previews for pending unified-search results that pass pending metadata filters. |
 | F032 | `dcab98fd7` | Exclude superseded active documents from corpus export. |
 | F037 | `456e7b388` | Dedupe duplicate remember calls against pending WAL frames. |
+| F034 | `40236e8df` | Require explicit session IDs for ambiguous current working-memory retrieval. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -229,7 +230,7 @@ Support commit not counted as a finding fix:
 - [x] F031 Pending search: pending metadata can match while previews are committed-only.
 - [x] F032 Corpus export: superseded active docs can be exported.
 - [x] F033 MCP search: `memory_search topK` caps before post-filtering.
-- [ ] F034 Sessions: multiple active sessions can silently ignore working memory.
+- [x] F034 Sessions: multiple active sessions can silently ignore working memory.
 - [x] F035 MCP schema: vector search mode/options are hidden.
 - [x] F036 MCP tools: flush handler exists but is undiscoverable/rejected inconsistently.
 - [x] F037 Pending memory: pending duplicate dedupe gap.
