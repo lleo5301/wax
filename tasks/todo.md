@@ -2603,7 +2603,20 @@ Execution order:
 Checklist:
 - [x] F063: review and commit existing duplicate vector frame-id restore work.
 - [ ] F-tier: F156, F154, F159, F160, F125, F118, F120, F119, F113, F112, F122, F114, F109, F115, F116, F117, F124, F127, F155, F158.
-- [ ] D-tier: F078, F074, F075, F068, F069, F070, F071, F072.
+- [ ] D-tier: F074, F075, F068, F069, F070, F071, F072.
+
+### F078 Review
+
+- Added regressions proving FTS results expose bounded `0...1` scores and unified text-only `minScore` filters against those normalized values.
+- Verified the new regressions failed before the fix: raw SQLite BM25 values were around `1.4e-06`, so a relevant result failed a `0.9` threshold and unified text-only search returned no results.
+- Replaced raw FTS BM25 ranks with a deterministic bounded transform that does not depend on the returned result window.
+- Code review caught an earlier window-relative normalization attempt; added regressions for weak single matches and topK/result-window score stability before replacing that approach.
+- False-positive check: a full `UnifiedSearchTests` run still exposes existing natural-language fallback failures around FTS OR-query construction; the focused F078 change is isolated to score scaling and the new `minScore` regression passes.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter 'textSearchScoresAreNormalizedForThresholds|textOnlyMinScoreUsesNormalizedTextScores|searchScoresAreOrderedAndNonConstant|searchTieBreaksOnFrameIdForDeterminism'`: failed before and passed after.
+  - `swift test --disable-automatic-resolution --filter 'textSearchSingleWeakMatchDoesNotBecomePerfectScore|textSearchScoresDoNotDependOnReturnedWindow'`: failed against the first window-relative implementation and passed after the direct transform.
+  - `swift test --disable-automatic-resolution --filter 'textSearchScoresAreNormalizedForThresholds|textSearchSingleWeakMatchDoesNotBecomePerfectScore|textSearchScoresDoNotDependOnReturnedWindow|textOnlyMinScoreUsesNormalizedTextScores|searchScoresAreOrderedAndNonConstant|searchTieBreaksOnFrameIdForDeterminism'`: passed.
+  - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|textOnlyMinScoreUsesNormalizedTextScores'`: passed.
 
 ### F023 Review
 

@@ -20,12 +20,12 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 61
+- Fully completed and committed: 95
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 139
+- Remaining not fully completed: 105
 
 Current resume point:
-- `F063` duplicate vector frame-id restore/staging validation is reviewed and ready to commit.
+- `F078` text-score normalization is reviewed and ready to commit.
 - The active request is to fix all remaining F-through-A tier findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
@@ -63,6 +63,7 @@ Known existing verification blockers from earlier runs:
 | F063 | `pending` | Reject duplicate vector frame IDs during restore/staging. |
 | F073 | `50554c87` | Treat tokenizer newlines as whitespace. |
 | F076 | `5e1025be` | Escape FTS5 MATCH queries. |
+| F078 | `fbc57d8a` | Normalize FTS BM25 scores for bounded `minScore` filtering. |
 | F079 | `8b513214` | Reject non-positive FTS `topK`. |
 | F082 | `bd2a6582` | Preserve non-socket daemon paths. |
 | F083 | `9a650260` | Harden broker socket roots. |
@@ -206,7 +207,7 @@ Support commit not counted as a finding fix:
 - [ ] F075 CoreML dtype: unsupported `MLMultiArray` dtype becomes zeros.
 - [x] F076 FTS5: raw MATCH query is not escaped.
 - [ ] F077 FTS index: delete/supersede do not update FTS index consistently.
-- [ ] F078 Ranking: BM25 score is not normalized versus `minScore`.
+- [x] F078 Ranking: BM25 score is not normalized versus `minScore`.
 - [x] F079 Validation: `topK <= 0` clamps to 1.
 - [x] F080 Schema: FTS schema validation is weak.
 - [x] F081 Tokenizer: default FTS tokenizer/version is unpinned.
