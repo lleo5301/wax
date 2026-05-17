@@ -3268,6 +3268,30 @@ Checklist:
 - Source/test commit: `bb693369d`.
 - Progress snapshot after F024: 181 completed and committed, 19 remaining.
 
+### Active Plan - F047 MCP Multimodal Linux Import Guard
+
+- [x] Add a red static portability regression proving the MCP multimodal adapter cannot import CoreGraphics under only the `MCPServer` trait.
+- [x] Guard the adapter behind the same Apple image-framework availability required by `MultimodalEmbeddingProvider`.
+- [x] Verify the focused regression and a trait-enabled `wax-mcp` product build.
+- [x] Run local review after the review subagent hit the account usage limit, then commit source/test and ledger updates separately.
+
+### F047 Review
+
+- Fixed the MCP multimodal adapter's Linux compile gap by changing the file guard from plain `#if MCPServer` to `#if MCPServer && canImport(CoreGraphics) && canImport(ImageIO)`.
+- Matched the guard to the public `MultimodalEmbeddingProvider` boundary, which is defined only when ImageIO/CoreGraphics-backed image types are available.
+- Added a static regression that fails if the adapter regresses to an unconditional CoreGraphics import under the MCP trait.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f047-red --filter waxMCPMultimodalAdapterGuardsCoreGraphicsImport --disable-automatic-resolution` failed before the guard because the source still contained `#if MCPServer` followed by `import CoreGraphics`.
+  - Green: `swift test --build-path .build-codex/f047-red --filter waxMCPMultimodalAdapterGuardsCoreGraphicsImport --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f047-mcp-build --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: blocked by the known contextual `Package.resolved` edge because the local lockfile does not contain the MCP SDK dependency.
+  - `swift build --build-path .build-codex/f047-mcp-build --product wax-mcp --traits default,MCPServer`: passed.
+  - `git diff --check -- Sources/WaxMCPServer/MultimodalAdapter.swift Tests/WaxTests/PackageTraitManifestTests.swift`: passed.
+- Review:
+  - Code-review subagent hit the account usage limit before returning results.
+  - Local review checked that macOS behavior remains compiled, Linux excludes the CoreGraphics-dependent adapter, and no package lockfile changes were staged after the fallback build.
+- Source/test commit: `38207fcdc`.
+- Progress snapshot after F047: 182 completed and committed, 18 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.
