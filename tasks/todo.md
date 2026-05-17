@@ -2837,8 +2837,8 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F096: 111 completed and committed, 89 remaining.
-- [ ] C-tier: F102, F106, F107, F108, F152, F153, F157.
+- Progress snapshot after F102: 112 completed and committed, 88 remaining.
+- [ ] C-tier: F106, F107, F108, F152, F153, F157.
 - [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 
@@ -3079,3 +3079,21 @@ Checklist:
 - Verification:
   - `bash Resources/scripts/quality/package_artifact_tests.sh`: failed before and passed after.
   - `npm pack --dry-run` in `Resources/openclaw/wax-memory-plugin`: passed.
+
+### Active Plan - F102 HTTP MCP Body Limit
+
+- [x] Add a red regression proving oversized HTTP bodies are rejected immediately when the request head advertises an over-limit `Content-Length`, before any body or end frame is read.
+- [x] Implement the smallest HTTP handler change that emits `413 Payload Too Large` at the first detected overflow and stops accepting the oversized request body.
+- [x] Run focused MCP HTTP tests and the `wax-mcp` trait build.
+- [x] Run a post-fix review subagent, address any findings, update the remediation ledger and checklist, then commit the code and docs separately.
+
+### F102 Review
+
+- Added embedded-channel regressions proving MCP HTTP now emits `413 Payload Too Large` immediately on an over-limit `Content-Length` request head and on the first streaming body chunk that exceeds the configured limit, without waiting for request end or creating an MCP server.
+- Changed `HTTPHandler` to reject both overflow paths directly from the NIO event-loop read path, clear request state, and write the existing JSON-RPC error response immediately.
+- Added `NIOEmbedded` and `NIOHTTP1` only to the MCP test target so the handler behavior is covered without starting a socket server.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f102-red --traits default,MCPServer --disable-automatic-resolution --filter httpHandlerRejectsOversizedContentLengthBeforeReadingBody` failed before implementation because no response was written after the oversized request head.
+  - `swift test --build-path .build-codex/f102-red --traits default,MCPServer --disable-automatic-resolution --filter 'httpHandlerRejectsOversizedContentLengthBeforeReadingBody|httpHandlerRejectsStreamingOverflowBeforeRequestEnd|httpRequestBodyLimitRejectsContentLengthAndStreamingOverflow|httpApplicationRejectsUnauthorizedOffLoopbackRequests'`: passed.
+  - `swift build --build-path .build-codex/f102-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Code-review subagent approved the scoped F102 diff.

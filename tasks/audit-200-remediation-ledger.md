@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 111
+- Fully completed and committed: 112
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 89
+- Remaining not fully completed: 88
 
 Current resume point:
 - F-through-D tiers are complete; next remaining tier is C.
@@ -247,7 +247,7 @@ Support commit not counted as a finding fix:
 - [ ] F099 Knowledge capture: graph write before memory write can half-commit.
 - [x] F100 MCP content: content strings are trimmed.
 - [x] F101 Session resume: `session_resume` can pick ended manifest.
-- [ ] F102 HTTP MCP: body limit is enforced after full read.
+- [x] F102 HTTP MCP: body limit is enforced after full read.
 - [ ] F103 Corpus: corpus rebuild is non-atomic.
 - [x] F104 MCP config: invalid embedder choice falls back to MiniLM.
 - [ ] F105 Multimodal MCP: multimodal is advertised but not wired.
