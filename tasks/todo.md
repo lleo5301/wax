@@ -3314,6 +3314,27 @@ Checklist:
 - Source/test commit: `c82cd3e76`.
 - Progress snapshot after F048: 183 completed and committed, 17 remaining.
 
+### Active Plan - F049 Darwin Benchmark Linux Excludes
+
+- [x] Add a red manifest regression proving Darwin-only integration benchmark files are listed in the Linux test excludes.
+- [x] Add the missing Darwin-importing benchmark sources to `waxIntegrationLinuxExcludes`.
+- [x] Verify the focused regression, SwiftPM manifest parsing, and the narrow diff.
+- [x] Commit source/test and ledger updates separately.
+
+### F049 Review
+
+- Fixed the Linux integration-test manifest excludes by adding the six benchmark files that import `Darwin` behind only `#if canImport(XCTest)`.
+- Added coverage for `AccessStatsBootstrapBenchmarks.swift`, `HandoffLookupBenchmarks.swift`, `PayloadLivenessBenchmarks.swift`, `RememberDedupBenchmarks.swift`, `SessionRuntimeStatsBenchmarks.swift`, and `SurrogateSourceBenchmarks.swift`.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f049-red --filter waxIntegrationLinuxExcludesDarwinOnlyBenchmarks --disable-automatic-resolution` failed before the manifest update with six missing excludes.
+  - Green: `swift test --build-path .build-codex/f049-red --filter waxIntegrationLinuxExcludesDarwinOnlyBenchmarks --disable-automatic-resolution`: passed.
+  - `swift package --disable-automatic-resolution describe --type json`: passed.
+  - `git diff --check -- Package.swift Tests/WaxTests/PackageTraitManifestTests.swift`: passed.
+- Review:
+  - Local review confirmed the change is manifest-only plus a static regression and does not alter macOS test inclusion.
+- Source/test commit: `f15d39e31`.
+- Progress snapshot after F049: 184 completed and committed, 16 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.
