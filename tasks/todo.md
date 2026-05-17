@@ -2837,10 +2837,29 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F077: 125 completed and committed, 75 remaining.
+- Progress snapshot after F161: 126 completed and committed, 74 remaining.
+
+### Active Plan - F161/F162/F163 PDF Ingest Cluster
+
+- [x] F161: add a red portability regression proving `MemoryOrchestrator.remember(pdfAt:)` has a non-PDFKit fallback surface, then implement a clear unsupported-platform error path without hiding the API behind `#if canImport(PDFKit)`.
+- [ ] F162: add a red regression proving truncated PDF extraction records total pages, extracted pages, and truncation state, then carry that metadata through PDF ingest.
+- [ ] F163: add a red regression proving PDF page provenance survives ingest, then preserve page-level metadata instead of only joining all pages into one anonymous text payload.
+- [ ] Run focused PDF tests, default build, post-fix review, update the ledger/checklist, and commit each issue or tightly-coupled issue cluster with verification notes.
 - [x] C-tier complete.
-- [ ] B-tier: F161, F162, F163.
+- [ ] B-tier: F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
+
+### F161 Review
+
+- Added an explicit non-PDFKit fallback for `MemoryOrchestrator.remember(pdfAt:)`; on platforms without PDFKit the API remains available and throws `PDFIngestError.unsupportedPlatform` instead of disappearing at compile time.
+- Added a portability guard test plus a Linux-only behavioral test that calls the API under `#if !canImport(PDFKit)` and expects the unsupported-platform error.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter pdfIngestAPIHasNonPDFKitFallback --disable-automatic-resolution` failed before the fix because the orchestrator source had no `#else` fallback and the error enum lacked `unsupportedPlatform`.
+  - Green: `swift test --build-path .build-codex/f106-red --filter pdfIngestAPIHasNonPDFKitFallback --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'PDFPlatformFallbackTests|PDFIngestTests|pdfIngestError' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+- Review:
+  - Code-review subagent approved the implementation and flagged the static portability test as weak on its own; the follow-up added the non-PDFKit behavioral test while retaining the static guard for macOS coverage.
 
 ### F038 Review
 
