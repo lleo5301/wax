@@ -3045,6 +3045,31 @@ Checklist:
 - Source/test commit: `fb28c8278`.
 - Progress snapshot after F019: 174 completed and committed, 26 remaining.
 
+### Active Plan - F013 Narrow Fact Updates
+
+- [x] Add a red structured facts regression proving `.updates` for one object does not close another open object with the same subject/predicate.
+- [x] Narrow superseding span closure to the updated fact identity rather than every open subject/predicate span.
+- [x] Verify focused structured-memory CRUD/version relation tests plus the default package build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F013 Review
+
+- Fixed `.updates` / superseding structured fact assertions so closure happens after resolving the asserted fact identity and only touches open spans for that same `fact_id`.
+- Added half-open valid-time overlap checks to preserve non-overlapping historical valid intervals for the same fact.
+- Updated version-relation regressions so same-fact updates still close the prior overlapping span, distinct objects with the same subject/predicate remain current, and older valid intervals stay queryable at later system times.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter updateFactPreservesDistinctObjectsForSameSubjectPredicate --disable-automatic-resolution` failed before the fact-id fix because the distinct `Rust` fact was closed.
+  - Red: `swift test --build-path .build-codex/f106-red --filter updateFactOnlyClosesOverlappingValidIntervals --disable-automatic-resolution` failed before the valid-overlap fix because the older valid interval became unqueryable at a later system time.
+  - Green: `swift test --build-path .build-codex/f106-red --filter 'updateFactPreservesDistinctObjectsForSameSubjectPredicate|updateFactOnlyClosesOverlappingValidIntervalsForSameFact|updateFactRetractsPriorSpanForSameFact|VersionRelationTests' --disable-automatic-resolution`: passed; 5 tests.
+  - Green: `swift test --build-path .build-codex/f106-red --filter 'VersionRelationTests|StructuredMemoryCRUDTests' --disable-automatic-resolution`: passed; 18 tests.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxTextSearch/FTS5SearchEngine.swift Tests/WaxIntegrationTests/VersionRelationTests.swift tasks/todo.md`: passed.
+- Review:
+  - Read-only explorer confirmed the broad subject/predicate close root cause and recommended computing/fetching `factId` before superseding closure.
+  - Code-review subagent approved the F013 source/test patch with no findings.
+- Source/test commit: `b0c27154d`.
+- Progress snapshot after F013: 175 completed and committed, 25 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.
