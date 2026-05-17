@@ -1,3 +1,43 @@
+- [x] Remove USearch from Wax entirely.
+  - [x] Add regression coverage proving legacy USearch vector payloads fail with a rebuild-oriented error and CPU vector search uses Accelerate.
+  - [x] Remove USearch from package dependencies and vector engine runtime selection.
+  - [x] Remove USearch-specific serializer and engine code while preserving flat vector persistence.
+  - [x] Update docs/tests/benchmarks that still describe or instantiate USearch.
+  - [x] Run targeted vector/unified/session tests plus package resolution/build checks.
+
+## USearch Removal 2026-05-17
+
+- Scope:
+  - Remove `USearch` from Wax to avoid downstream `USearch -> NumKong -> CNumKong` package/linkage failures.
+  - Keep `AccelerateVectorEngine` as the CPU fallback and `MetalANNSVectorEngine` as the Apple GPU path.
+  - Treat legacy USearch-serialized vector indexes as unsupported and require rebuilding the vector index.
+- Verification plan:
+  - Start with focused failing tests for legacy payload rejection and Accelerate engine selection.
+  - Then remove the dependency, engine implementation, serializer coupling, and stale docs/tests.
+  - Finish with package resolution, targeted tests, build, and a reference sweep for live USearch dependency names.
+- Results:
+  - Removed the `USearch` package dependency, `USearchVectorEngine`, and `USearchSendable`.
+  - `LoadedVectorSearchEngine` now routes CPU fallback to `AccelerateVectorEngine`; MetalANNS remains the preferred GPU path.
+  - `VectorSerializer` keeps encoding `1` only as a legacy marker and rejects it with a rebuild-vector-index error.
+  - Docs, benchmarks, release scripts, and dependency smoke tests now describe Accelerate/MetalANNS instead of USearch.
+- Verification:
+  - `swift package resolve`: passed; ignored local `Package.resolved` no longer contains the removed dependency.
+  - `swift package describe --type json`: no removed vector dependency references.
+  - `swift build`: passed.
+  - `swift test --filter 'VectorSerializerTests|VectorSearchEngineTests|DependencyTests'`: passed; 41 tests.
+  - `swift test --filter VectorSearchDocsTests`: passed; 5 tests.
+  - `swift test --filter waxVecIndexPersistsAndReopens`: passed after the final test cleanup.
+  - `swift test --filter UnifiedSearchTests --no-parallel`: passed after routing normalized/OR-expanded FTS queries through a raw match API.
+  - `swift test --filter 'VectorSerializerTests|VectorSearchEngineTests|UnifiedSearchTests|WaxSessionTests' --no-parallel`: passed; 70 tests.
+  - `swift package resolve --disable-automatic-resolution`: passed; ignored local `Package.resolved` contains no removed dependency and has the current NIO pin.
+  - `swift test --no-parallel`: passed; 938 tests.
+  - `swift test --traits default,MCPServer --filter brokerSearchAppliesLifecycleAndFrameIDFilters --no-parallel --disable-automatic-resolution`: passed.
+  - `swift test --traits default,WaxRepo --filter 'waxRepoFullReindexReplacesExistingStore|waxRepoSearchQueryRunsOneShotAndExits|waxRepoSearchUsesStoredMetadataWhenPreviewOmitsHeader' --no-parallel --disable-automatic-resolution`: passed.
+  - `git diff --check`: passed.
+- Review:
+  - Code-review subagent flagged a potentially stale ignored `Package.resolved`; locked resolution passed locally and the removed dependency is absent.
+  - It flagged an async cleanup race in a trait-gated broker test; the test now awaits `AgentBrokerService.close()` before temp cleanup.
+
 - [x] Sweep GitHub issues in `christopherkarani/Wax`.
   - [x] Confirm open issue inventory.
   - [x] Inspect all current GitHub issues and recent closure evidence.
