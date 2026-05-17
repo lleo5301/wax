@@ -64,7 +64,7 @@ Known existing verification blockers from earlier runs:
 | F068 | `e11607b3` | Normalize MiniLM embedder outputs before returning them. |
 | F069 | `a1fd4fe4` | Reject non-finite MiniLM embedder outputs. |
 | F070 | `f5d09368` | Propagate MiniLM CoreML prediction errors. |
-| F071 | `pending` | Exercise public MiniLM embedder in quality tests. |
+| F071 | `0a565d2d` | Exercise public MiniLM embedder in quality tests. |
 | F073 | `50554c87` | Treat tokenizer newlines as whitespace. |
 | F074 | `37e4565b` | Keep first SEP and padding token type IDs in segment zero. |
 | F075 | `434912b0` | Reject unsupported MiniLM CoreML output data types. |
