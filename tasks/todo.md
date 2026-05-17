@@ -2864,7 +2864,32 @@ Checklist:
 - [x] Run focused PDF tests, default build, post-fix review, update the ledger/checklist, and commit each issue or tightly-coupled issue cluster with verification notes.
 - [x] C-tier complete.
 - [x] B-tier PDF ingest cluster complete.
-- [ ] A-tier: F032, F037, F025, F026, F034.
+- [ ] A-tier: F034.
+
+### Active Plan - F026 Bitemporal Facts Query
+
+- [x] Add a red MCP facts-query regression where `valid_as_of` is inside a fact's valid interval while `system_as_of` is latest, proving a single collapsed `as_of` hides the fact.
+- [x] Extend `MemoryOrchestrator.facts`, broker `facts_query`, and MCP `facts_query` to accept separate effective system and valid as-of timestamps while preserving `as_of` compatibility.
+- [x] Update tool schema/command-surface metadata and verify focused MCP facts tests plus the MCP product build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F026 Review
+
+- Fixed facts query bitemporal collapse by threading `system_as_of` and `valid_as_of` through the broker command surface, MCP schema, MCP direct compatibility path, broker service path, and `MemoryOrchestrator.facts`.
+- Preserved legacy `as_of` behavior as shorthand for both system and valid time when the new fields are omitted.
+- Added broker and direct MCP regressions where a fact is valid at domain time `150` but only known at current system time; collapsed `as_of = 150` returns no hit, while `valid_as_of = 150` plus `system_as_of = Int64.max` returns the fact.
+- Tightened timestamp double coercion after review found a crash risk around rounded `Double(Int64.max)` values; broker and direct MCP now reject those values as out of range instead of trapping.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter temporalFactArgumentsAreHonoredByPublishedTools --disable-automatic-resolution` failed before the fix with `unsupported argument(s): system_as_of, valid_as_of`.
+  - Green: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerFactsQuerySupportsSeparateSystemAndValidTime|mcpFactsQuerySupportsSeparateSystemAndValidTime|brokerFactsQueryRejectsRoundedOutOfRangeTimestampDoubles|mcpFactsQueryRejectsRoundedOutOfRangeTimestampDoubles|temporalFactArgumentsAreHonoredByPublishedTools' --disable-automatic-resolution`: passed; 5 tests.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'temporalFactArgumentsAreHonoredByPublishedTools|brokerFactsQuerySupportsSeparateSystemAndValidTime|mcpFactsQuerySupportsSeparateSystemAndValidTime|brokerFactsQueryRejectsRoundedOutOfRangeTimestampDoubles|mcpFactsQueryRejectsRoundedOutOfRangeTimestampDoubles|brokerFactAssertIncludesEvidenceInFactsQuery|brokerFactAssertAcceptsEvidence|brokerFactRetractHonorsSystemTime|publishedToolSchemasExposeStructuredMemoryTools|compatRejectsFractionalIntegerArguments' --disable-automatic-resolution`: passed; 6 matched tests.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+- Review:
+  - Read-only subagent independently confirmed the F026 root cause across `StructuredMemoryAsOf`, orchestrator, broker, command surface, schema, and MCP compatibility path.
+  - First code review flagged the timestamp double conversion trap and a weak direct MCP regression; both were fixed.
+  - Re-review approved the final F026 source/test change with no blocking findings.
+- Source/test commit: `774ca2919`.
+- Progress snapshot after F026: 168 completed and committed, 32 remaining.
 
 ### Active Plan - F037 Pending Duplicate Dedupe
 

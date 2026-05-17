@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 167
+- Fully completed and committed: 168
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 33
+- Remaining not fully completed: 32
 
 Current resume point:
 - F-through-C tiers are complete; remaining active work is A-tier and deeper durability/structured-memory findings.
@@ -156,6 +156,7 @@ Known existing verification blockers from earlier runs:
 | F199 | `f23780084` | Extract deterministic async enrichment entity mentions. |
 | F200 | `e33afc13b` | Preserve technical keyword identifiers without over-preserving prose compounds. |
 | F025 | `0666ea1f7` | Include entity-valued fact objects in structured evidence search. |
+| F026 | `774ca2919` | Expose separate system and valid timestamps for facts queries. |
 | F027 | `7487b754d` | Keep unified-search frame time filters separate from structured-memory as-of queries. |
 | F030 | `e5167ac23` | Overfetch unified-search candidates when caller filters are applied after lane ranking. |
 | F031 | `0692b1d5b` | Render previews for pending unified-search results that pass pending metadata filters. |
@@ -220,7 +221,7 @@ Support commit not counted as a finding fix:
 - [x] F023 Evidence: invalid spans/confidence are accepted.
 - [ ] F024 Graph API: edge traversal API is unwired/dead.
 - [x] F025 Structured search: object-side entity facts are not used in `evidenceFrameIds`.
-- [ ] F026 Bitemporal MCP: orchestrator/MCP collapses bitemporal `asOf`.
+- [x] F026 Bitemporal MCP: orchestrator/MCP collapses bitemporal `asOf`.
 - [x] F027 Unified search: `timeRange.before` is treated as system as-of.
 - [x] F028 Alias resolution: alias matching is exact despite fuzzy docs.
 - [x] F029 MCP facts: `fact_assert` lacks evidence support.
