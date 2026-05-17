@@ -2887,6 +2887,21 @@ Checklist:
 - Review:
   - First review caught the `pdf_extracted_page_count` coverage regression; re-review caught an AppKit portability risk in the test helper. Both were fixed, and the final reviewer approved the scoped F163 diff.
 
+### F164 Review
+
+- Added package-scoped `PhotoFile` plus `PhotoRAGOrchestrator.ingest(files:)` so the PhotoRAG implementation matches its internal docs claim that local images can be ingested.
+- Local file ingest now decodes local bytes, stamps `photo.source=file` and `photo.file_url`, writes searchable caption/OCR/tag frames, supports missing-file and invalid-image typed errors, and writes region embeddings when enabled.
+- Local recall pixel loading now degrades to missing thumbnail/crop data if the source file is deleted or invalid instead of failing the whole recall.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter photoRAGIngestsLocalImageFilesAndRecallsCaptionMetadata --disable-automatic-resolution` failed before the fix because `PhotoFile` and `ingest(files:)` did not exist.
+  - Red review regressions: `swift test --build-path .build-codex/f106-red --filter 'photoRAGLocalFileRecallSurvivesMissingPixelSource|photoRAGLocalFileIngestWritesRegionEmbeddingsWhenEnabled' --disable-automatic-resolution` failed before the follow-up because recall threw when the file disappeared and local ingest created no region frames.
+  - Green: the same focused local-file tests passed after the follow-up.
+  - `swift test --build-path .build-codex/f106-red --filter 'PhotoRAGFileIngestTests|PhotoRAGOrchestratorTests|PhotoRAGIngestDedupeTests|PhotoRAGDocsTests|RAGConfigClampingTests' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check` on the scoped PhotoRAG paths: passed.
+- Review:
+  - First review found missing degraded local pixel handling and missing region frames. Re-review approved the scoped F164 diff after both were fixed.
+
 ### F038 Review
 
 - Added red regressions proving the published MCP `recall`/`search` filter schema, MCP parser, and broker parser did not expose lifecycle and explicit-frame controls already supported by core `UnifiedSearch`.
