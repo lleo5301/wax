@@ -3034,6 +3034,19 @@ Checklist:
 - Review:
   - Scoped code-review subagent approved the F174 diff with no findings.
 
+### F175 Review
+
+- Broker `session_resume` now appends the `.resumed` lifecycle event before saving the refreshed lease manifest, so a failed event append cannot leave durable state claiming a new broker owns the lease without the resume audit event.
+- Added a focused MCP-trait regression that scopes the source check to `sessionResume` and verifies `BrokerSessionPersistence.appendEvent` precedes `BrokerSessionPersistence.saveManifest(refreshed, to: manifestURL)`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerSessionResumeAppendsResumedEventBeforeSavingLease --disable-automatic-resolution` failed before the fix because the refreshed manifest save occurred first.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerSessionResumeAppendsResumedEventBeforeSavingLease|brokerSessionStartAppendsStartedEventBeforeSavingManifest' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the failure mode and warned not to conflate lease-expiry policy with F175.
+  - Scoped code-review subagent approved the F175 diff with no findings.
+
 ### F038 Review
 
 - Added red regressions proving the published MCP `recall`/`search` filter schema, MCP parser, and broker parser did not expose lifecycle and explicit-frame controls already supported by core `UnifiedSearch`.
