@@ -2841,6 +2841,7 @@ Checklist:
 - Progress snapshot after F169: 134 completed and committed, 66 remaining.
 - Progress snapshot after F170: 135 completed and committed, 65 remaining.
 - Progress snapshot after F171: 136 completed and committed, 64 remaining.
+- Progress snapshot after F172: 137 completed and committed, 63 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -3004,6 +3005,21 @@ Checklist:
   - `git diff --check` on the scoped docs/test files: passed.
 - Review:
   - First review caught wording that still implied metadata and caption tags were combined. The final wording now states the caption-derived path is fallback-only, and re-review passed.
+
+### F172 Review
+
+- VideoRAG Photos-backed ingestion now persists `record.localFileURL` into root metadata, so recall thumbnail extraction can reopen local Photos video bytes instead of treating the item as thumbnail-unavailable.
+- Added a source-level regression proving the Photos ingest path passes `fileURL: record.localFileURL`, plus an integration regression that seeds a Photos-backed local root with a real MP4 URL and verifies recall attaches a thumbnail and does not count the video as degraded.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter videoRAGPhotosIngestPersistsLocalFileURLForThumbnails --disable-automatic-resolution` failed before the fix because the Photos ingest path passed `fileURL: nil`.
+  - Green: the same source guard passed after preserving the local file URL.
+  - `swift test --build-path .build-codex/f106-red --filter videoRAGPhotosBackedLocalFileURLEnablesThumbnails --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter VideoRAGDocsTests --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'VideoRAGFileIngestIntegrationTests|VideoRAGDocsTests' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check` on the scoped VideoRAG files: passed.
+- Review:
+  - Scoped code review approved the diff and confirmed the existing non-local Photos degraded/no-thumbnail path remains covered.
 
 ### F038 Review
 
