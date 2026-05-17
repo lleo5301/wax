@@ -2837,7 +2837,7 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F166: 131 completed and committed, 69 remaining.
+- Progress snapshot after F167: 132 completed and committed, 68 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -2920,14 +2920,32 @@ Checklist:
 - Replaced the empty `PhotoFilters` shell with concrete metadata-backed filters for asset IDs, source (`.photos`/`.file`), and local availability.
 - PhotoRAG recall now translates asset ID and location constraints into one intersected `FrameFilter` allowlist, and translates source/local availability into a shared `MetadataFilter` so filtering happens inside unified search instead of after candidate truncation.
 - Filter-only queries now participate in timeline fallback.
+- Follow-up: filters-only recall now scans eligible PhotoRAG root metadata directly before applying `resultLimit`, so older matching roots are not lost behind a bounded recent timeline window.
 - Verification:
   - Red: `swift test --build-path .build-codex/f106-red --filter photoRAGRecallAppliesLocalAvailabilityFilter --disable-automatic-resolution` failed before the fix because `PhotoFilters(isLocal:)` did not exist.
   - Green: the same focused regression passed after adding filters and shared-search enforcement.
+  - Red review regression: `swift test --build-path .build-codex/f106-red --filter photoRAGFilterOnlyRecallScansPastFallbackWindow --disable-automatic-resolution` failed before the follow-up because filters-only recall missed an older matching root outside the fallback window.
+  - Green: the same review regression passed after switching filter-only queries to direct PhotoRAG root scanning.
   - `swift test --build-path .build-codex/f106-red --filter PhotoRAGConstraintQueriesTests --disable-automatic-resolution`: passed.
   - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
   - `git diff --check` on the scoped PhotoRAG files: passed.
 - Review:
-  - Explorer review rejected the initial root post-filter approach because it could starve results and miss derived-frame hits. The implementation was reworked to use `FrameFilter`/`MetadataFilter`, and code review approved the scoped diff.
+  - Explorer review rejected the initial root post-filter approach because it could starve results and miss derived-frame hits. The implementation was reworked to use `FrameFilter`/`MetadataFilter`.
+  - Code review then found filters-only recall could still miss older matches through bounded timeline fallback; the direct root scan follow-up fixed that blocker.
+
+### F167 Review
+
+- PhotoRAG location queries now use coarse location bins only as a candidate prefilter and then apply an exact haversine distance check before adding a frame to the allowlist.
+- Longitude bin range generation now handles antimeridian wraparound and all-longitude polar/large-radius cases without searching one side only.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter photoRAGLocationRadiusAppliesExactDistanceAfterCoarseBin --disable-automatic-resolution` failed before the fix because a same-bin photo outside the 30 m radius was returned.
+  - Green: the same focused regression passed after adding exact distance checks.
+  - Added antimeridian coverage with `photoRAGLocationRadiusHandlesAntimeridianBins`.
+  - `swift test --build-path .build-codex/f106-red --filter PhotoRAGConstraintQueriesTests --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check` on the scoped PhotoRAG files: passed.
+- Review:
+  - Review highlighted antimeridian and polar bin risks. The final diff normalized longitude ranges and retained the existing zero-radius no-filter behavior; scoped review approved.
 
 ### F038 Review
 

@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 131
+- Fully completed and committed: 132
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 69
+- Remaining not fully completed: 68
 
 Current resume point:
 - F-through-C tiers are complete; next remaining tier is B.
@@ -124,7 +124,8 @@ Known existing verification blockers from earlier runs:
 | F163 | `48c1e8e7` | Preserve PDF page provenance through page-scoped ingest metadata. |
 | F164 | `d72709505` | Add local image file ingest support to PhotoRAG. |
 | F165 | `642f160a3` | Filter full-library PhotoRAG sync to image PHAssets only. |
-| F166 | `e35eaa0ca` | Apply metadata and asset allowlist filters during PhotoRAG recall. |
+| F166 | `e35eaa0ca`, `0cb522723` | Apply metadata and asset allowlist filters during PhotoRAG recall. |
+| F167 | `1d536236a` | Apply exact distance checks after PhotoRAG coarse location bins. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -325,7 +326,7 @@ Support commit not counted as a finding fix:
 - [x] F164 Photo ingest: docs claim local image ingest but code lacks local file API.
 - [x] F165 Photo sync: fetches all PHAssets, not images only.
 - [x] F166 Photo filters: `PhotoFilters` is empty/no-op.
-- [ ] F167 Photo location: radius uses coarse bins without final distance check.
+- [x] F167 Photo location: radius uses coarse bins without final distance check.
 - [ ] F168 Photo diagnostics: degraded flag inferred from missing OCR/caption, not locality.
 - [ ] F169 Photo ingest: failed region crops return before superseding old root.
 - [ ] F170 Photo sync: `syncState` frame kind is never written.
