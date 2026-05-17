@@ -2837,16 +2837,16 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F161: 126 completed and committed, 74 remaining.
+- Progress snapshot after F162: 127 completed and committed, 73 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
 - [x] F161: add a red portability regression proving `MemoryOrchestrator.remember(pdfAt:)` has a non-PDFKit fallback surface, then implement a clear unsupported-platform error path without hiding the API behind `#if canImport(PDFKit)`.
-- [ ] F162: add a red regression proving truncated PDF extraction records total pages, extracted pages, and truncation state, then carry that metadata through PDF ingest.
+- [x] F162: add a red regression proving truncated PDF extraction records total pages, extracted pages, and truncation state, then carry that metadata through PDF ingest.
 - [ ] F163: add a red regression proving PDF page provenance survives ingest, then preserve page-level metadata instead of only joining all pages into one anonymous text payload.
 - [ ] Run focused PDF tests, default build, post-fix review, update the ledger/checklist, and commit each issue or tightly-coupled issue cluster with verification notes.
 - [x] C-tier complete.
-- [ ] B-tier: F162, F163.
+- [ ] B-tier: F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 
 ### F161 Review
@@ -2860,6 +2860,18 @@ Checklist:
   - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
 - Review:
   - Code-review subagent approved the implementation and flagged the static portability test as weak on its own; the follow-up added the non-PDFKit behavioral test while retaining the static guard for macOS coverage.
+
+### F162 Review
+
+- Added `maxPages` to PDF ingest while preserving existing `remember(pdfAt:metadata:)` call sites through a defaulted parameter.
+- `PDFTextExtractor` now returns extraction metadata for total pages, extracted page count, configured max page limit, and truncation state; PDF ingest persists those values into document and chunk metadata.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter pdfIngestTruncationMetadataRecordsExtractedPageCoverage --disable-automatic-resolution` failed before the fix because `remember(pdfAt:maxPages:metadata:)` did not exist.
+  - Green: same focused test passed after the extractor/orchestrator change.
+  - `swift test --build-path .build-codex/f106-red --filter 'PDFIngestTests|PDFPlatformFallbackTests|pdfIngestError' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+- Review:
+  - Code-review subagent approved the scoped F162 diff with no blockers.
 
 ### F038 Review
 
