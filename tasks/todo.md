@@ -3150,6 +3150,36 @@ Checklist:
 - Source/test commit: `401a23204`.
 - Progress snapshot after F016: 178 completed and committed, 22 remaining.
 
+### Active Plan - F017 Structured Fact System Time
+
+- [x] Add red structured-memory regressions for earlier-than-open superseding system time, `Int64.max` system starts, same-time close overflow, and legacy migration constraint installation.
+- [x] Make high-level structured fact timestamps monotonic within `MemoryOrchestrator` and reject unclosable `system_from_ms` values.
+- [x] Guard superseding close timestamps against backwards time and `Int64.max` promotion.
+- [x] Bump the FTS schema to v9 and rebuild legacy `sm_fact_span` tables with the `system_from_ms < Int64.max` check while preserving evidence rows.
+- [x] Verify focused structured-memory gates, run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F017 Review
+
+- Fixed structured fact system time so actor-level assertions allocate monotonic timestamps instead of reusing a backwards wall clock.
+- Rejected unclosable `system_from_ms == Int64.max` writes and same-time superseding closes that would promote the replacement span to the sentinel.
+- Bumped the FTS schema to v9; v7/v8 migrations now reject existing unclosable spans and rebuild legacy `sm_fact_span` with the new check constraint.
+- Added migration coverage for legacy span-table constraint installation and evidence preservation during the rebuild.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter supersedingFactRejectsEarlierSystemTimeThanOpenSpan --disable-automatic-resolution` failed before the backwards-time guard.
+  - Red: `swift test --build-path .build-codex/f106-red --filter assertFactRejectsUnclosableSystemFromMax --disable-automatic-resolution` failed before the `Int64.max` guard.
+  - Red: `swift test --build-path .build-codex/f106-red --filter structuredSchemaRejectsUnclosableSystemFromMax --disable-automatic-resolution` failed before the schema check.
+  - Red-after-review: `swift test --build-path .build-codex/f017-review-red --filter supersedingFactRejectsCloseTimestampAtInt64MaxBeforeInsert --disable-automatic-resolution` failed before the same-time close overflow guard.
+  - Red-after-review: `swift test --build-path .build-codex/f017-review-red2 --filter migrationInstallsSystemFromSentinelCheckOnLegacySpanTable --disable-automatic-resolution` failed before the v9 table rebuild.
+  - Green: `swift test --build-path .build-codex/f017-review-red --filter 'supersedingFactRejectsEarlierSystemTimeThanOpenSpan|supersedingFactRejectsMonotonicCloseOverflowAtInt64Max|supersedingFactRejectsCloseTimestampAtInt64MaxBeforeInsert|migrationInstallsSystemFromSentinelCheckOnLegacySpanTable|migrationRebuildsLegacySpanTableWithoutDroppingEvidence|VersionRelationTests|StructuredMemoryCRUDTests|StructuredMemorySchemaTests|TextSearchEngineTests|MemoryOrchestratorSessionGraphAndStatsTests' --disable-automatic-resolution`: passed; 66 tests.
+  - `swift build --build-path .build-codex/f017-review-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Orchestrator/MemoryOrchestrator.swift Sources/WaxTextSearch/FTS5Schema.swift Sources/WaxTextSearch/FTS5SearchEngine.swift Sources/WaxTextSearch/StructuredMemorySchema.swift Tests/WaxIntegrationTests/VersionRelationTests.swift Tests/WaxIntegrationTests/StructuredMemorySchemaTests.swift Tests/WaxIntegrationTests/TextSearchEngineTests.swift tasks/todo.md`: passed.
+- Review:
+  - Explorer confirmed the root cause and recommended the actor-local monotonic timestamp allocator plus schema backstop.
+  - First code review found two blockers: same-time close could still reach `Int64.max`, and legacy v8/v7 tables were marked v9 without installing the new check.
+  - Re-review approved the runtime guard and v9 rebuild; the unrelated raw FTS search helper remained unstaged for F017.
+- Source/test commit: `c189c9dbf`.
+- Progress snapshot after F017: 179 completed and committed, 21 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.
