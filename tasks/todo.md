@@ -2603,7 +2603,16 @@ Execution order:
 Checklist:
 - [x] F063: review and commit existing duplicate vector frame-id restore work.
 - [ ] F-tier: F156, F154, F159, F160, F125, F118, F120, F119, F113, F112, F122, F114, F109, F115, F116, F117, F124, F127, F155, F158.
-- [ ] D-tier: F069, F070, F071, F072.
+- [ ] D-tier: F070, F071, F072.
+
+### F069 Review
+
+- Added MiniLM embedder regressions proving direct NaN outputs and batched Infinity outputs are rejected before callers receive vectors.
+- Verified `miniLMEmbedderRejectsNonFiniteBatchOutputs` failed before the explicit guard because Infinity normalized into a vector containing non-finite values without throwing.
+- Added explicit finite-value and finite-magnitude checks before L2 normalization.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter 'miniLMEmbedderRejectsNonFiniteDirectOutputs|miniLMEmbedderRejectsNonFiniteBatchOutputs'`: failed before and passed after.
+  - `swift test --disable-automatic-resolution --filter 'miniLMEmbedderRejectsNonFiniteDirectOutputs|miniLMEmbedderRejectsNonFiniteBatchOutputs|miniLMEmbedderNormalizesDirectOutputs|miniLMEmbedderRejectsZeroMagnitudeOutputs|MiniLMEmbedderTests'`: passed.
 
 ### F068 Review
 
