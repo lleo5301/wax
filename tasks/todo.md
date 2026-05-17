@@ -2837,8 +2837,8 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F157: 117 completed and committed, 83 remaining.
-- [ ] C-tier: F152.
+- Progress snapshot after F152: 118 completed and committed, 82 remaining.
+- [x] C-tier complete.
 - [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 
@@ -3165,3 +3165,25 @@ Checklist:
   - `WAX_REPLAY_ITERATIONS=80 WAX_STABILITY_SEARCH_MODE=vector WAX_STABILITY_OUTPUT=/tmp/wax-f157-vector-stability.json swift test --build-path .build-codex/f106-red --enable-xctest --disable-swift-testing --filter ProductionReadinessStabilityTests.testSoakSmokeStability --disable-automatic-resolution`: passed and reported `vector_hits=153`.
   - `git diff --cached --check`: passed before the source/test commit.
   - Code-review subagent approved the focused F157 diff with no findings.
+
+### Active Plan - F152 Broker-Backed Coverage
+
+- [x] Add broker-backed regressions for `search` and `recall` metadata filters so compatibility-only filter coverage cannot drift from production broker behavior.
+- [x] Add broker-backed regression for `compact_context` session scoping and `memory_get` roundtrip so session A compaction cannot leak session B memory and returned IDs stay readable.
+- [x] Run focused MCPServer tests on the warm build path and update the ledger with the runtime fix discovered by the red test.
+- [x] Request code review, commit the test/runtime change, then record verification and update the remaining-count checklist.
+
+### F152 Review
+
+- Added direct broker regressions for `search` and `recall` metadata exact filters, proving the `AgentBrokerService` path honors the same filter shape as the compatibility handler.
+- Added a broker compact-context regression covering session A/session B isolation, durable long-context separation, unique compact memory IDs, and `memory_get` roundtrips for both working and durable IDs.
+- Verified the compact-context regression failed before the fix because returned `working:<session>:<frame>` IDs could point at chunk frames that `memory_get` cannot resolve as corpus source documents.
+- Canonicalized compact-context working, durable, and episodic memory references back to document frame IDs before emitting stable `memory_id` values, then deduped each horizon by reference so multiple chunks from one document do not waste compact-context slots.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerBackedF152 --disable-automatic-resolution` failed before the fix with `memory_get` returning `ok == false` for a compact-context working memory ID.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerBackedF152 --disable-automatic-resolution`: passed after canonicalization.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerBackedF152|brokerRememberPreservesContentWhitespace|brokerSearchAppliesLifecycleAndFrameIDFilters' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+  - Code-review subagent initially requested post-canonicalization dedupe; after that change, re-review reported no findings.
+  - Note: a process-harness attempt using the warm build path first exposed the known subprocess fragility (`SIGPIPE`/trait-build mismatch), so the accepted F152 coverage uses direct `AgentBrokerService` tests to exercise production broker logic without compatibility-only shortcuts.
