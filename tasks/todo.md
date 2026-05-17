@@ -3047,6 +3047,19 @@ Checklist:
   - Explorer confirmed the failure mode and warned not to conflate lease-expiry policy with F175.
   - Scoped code-review subagent approved the F175 diff with no findings.
 
+### F176 Review
+
+- `BrokerSessionPersistence.appendEvent` now uses a throwing first-write path for new event logs, so an uncreatable first event file cannot be silently reported as success.
+- Added a deterministic missing-parent regression proving first event append throws instead of dropping the event when the log file cannot be created.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerSessionAppendEventThrowsWhenFirstEventFileCannotBeCreated --disable-automatic-resolution` failed before the fix because no error was thrown.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerSessionAppendEventThrowsWhenFirstEventFileCannotBeCreated|brokerSessionStartAppendsStartedEventBeforeSavingManifest|brokerSessionResumeAppendsResumedEventBeforeSavingLease' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/BrokerSessionPersistence.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed missing parent directory deterministically covers the ignored `createFile` return.
+  - Scoped code-review subagent approved the F176 diff with no findings.
+
 ### F038 Review
 
 - Added red regressions proving the published MCP `recall`/`search` filter schema, MCP parser, and broker parser did not expose lifecycle and explicit-frame controls already supported by core `UnifiedSearch`.
