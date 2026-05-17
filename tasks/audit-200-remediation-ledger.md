@@ -20,12 +20,12 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 95
+- Fully completed and committed: 96
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 105
+- Remaining not fully completed: 104
 
 Current resume point:
-- `F078` text-score normalization is reviewed and ready to commit.
+- `F074` token type-id handling is reviewed and ready to commit.
 - The active request is to fix all remaining F-through-A tier findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
@@ -62,6 +62,7 @@ Known existing verification blockers from earlier runs:
 | F062 | `3e8335e7` | Check projected vector counts and overflow. |
 | F063 | `pending` | Reject duplicate vector frame IDs during restore/staging. |
 | F073 | `50554c87` | Treat tokenizer newlines as whitespace. |
+| F074 | `pending` | Keep first SEP and padding token type IDs in segment zero. |
 | F076 | `5e1025be` | Escape FTS5 MATCH queries. |
 | F078 | `b9335725` | Normalize FTS BM25 scores for bounded `minScore` filtering. |
 | F079 | `8b513214` | Reject non-positive FTS `topK`. |
@@ -203,7 +204,7 @@ Support commit not counted as a finding fix:
 - [ ] F071 MiniLM tests: quality test bypasses public batch embedder.
 - [ ] F072 Tokenizer batching: pre-tokenized embeddings always use batch size 1.
 - [x] F073 Tokenizer: whitespace splitting excludes newlines.
-- [ ] F074 Tokenizer: token type IDs mark SEP/padding as segment 1.
+- [x] F074 Tokenizer: token type IDs mark SEP/padding as segment 1.
 - [ ] F075 CoreML dtype: unsupported `MLMultiArray` dtype becomes zeros.
 - [x] F076 FTS5: raw MATCH query is not escaped.
 - [ ] F077 FTS index: delete/supersede do not update FTS index consistently.

@@ -2603,7 +2603,16 @@ Execution order:
 Checklist:
 - [x] F063: review and commit existing duplicate vector frame-id restore work.
 - [ ] F-tier: F156, F154, F159, F160, F125, F118, F120, F119, F113, F112, F122, F114, F109, F115, F116, F117, F124, F127, F155, F158.
-- [ ] D-tier: F074, F075, F068, F069, F070, F071, F072.
+- [ ] D-tier: F075, F068, F069, F070, F071, F072.
+
+### F074 Review
+
+- Added tokenizer regressions proving single-sentence token type IDs keep `[SEP]` and padding in segment 0, while pair-shaped input keeps only the second segment active.
+- Verified `bertTokenizerSingleSentenceTypeIdsKeepSepAndPaddingInSegmentZero` failed before the fix because the first `[SEP]` and padding tokens were emitted as segment `1`.
+- Updated `buildModelInputsWithTypeIds` so padding always returns type `0`, the first `[SEP]` remains type `0`, and non-padding tokens after the first separator are type `1`.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter bertTokenizerSingleSentenceTypeIdsKeepSepAndPaddingInSegmentZero`: failed before and passed after.
+  - `swift test --disable-automatic-resolution --filter 'bertTokenizerSingleSentenceTypeIdsKeepSepAndPaddingInSegmentZero|bertTokenizerPairTypeIdsKeepOnlySecondSegmentActive|BertTokenizerReuseTests|MiniLMBatchBuilderTests'`: passed.
 
 ### F078 Review
 
