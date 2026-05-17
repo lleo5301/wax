@@ -3180,6 +3180,29 @@ Checklist:
 - Source/test commit: `c189c9dbf`.
 - Progress snapshot after F017: 179 completed and committed, 21 remaining.
 
+### Active Plan - F018 Same-Time Direct Retraction
+
+- [x] Add a red direct `retractFact` regression where the retraction timestamp equals the open span's `system_from_ms`.
+- [x] Preserve visibility at the original system tick and close the span at the next millisecond.
+- [x] Keep earlier-than-open retractions rejected and existing idempotent retraction behavior intact.
+- [x] Verify focused and wider structured-memory gates, run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F018 Review
+
+- Fixed direct structured fact retractions so `atMs == system_from_ms` closes the open span at `system_from_ms + 1`, matching the same-timestamp superseding behavior.
+- Kept `atMs < system_from_ms` as an encoding error and preserved the existing no-op idempotency when a second retract finds no open span.
+- Added a regression proving a same-timestamp retract leaves the fact visible at the original tick and absent at the next tick.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f018-red --filter retractFactAtSameSystemTimestampClosesAtNextMillisecond --disable-automatic-resolution` failed before the fix with `retraction time must be after system_from_ms`.
+  - Green: `swift test --build-path .build-codex/f018-red --filter retractFactAtSameSystemTimestampClosesAtNextMillisecond --disable-automatic-resolution`: passed.
+  - Green: `swift test --build-path .build-codex/f018-red --filter 'retractFactAtSameSystemTimestampClosesAtNextMillisecond|retractFactClosesSystemTimeAndIsIdempotent|retractsRelationClosesPriorFactWithoutCreatingCurrentFact|StructuredMemoryCRUDTests|VersionRelationTests' --disable-automatic-resolution`: passed; 33 tests.
+  - `swift build --build-path .build-codex/f018-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxTextSearch/FTS5SearchEngine.swift Tests/WaxIntegrationTests/StructuredMemoryCRUDTests.swift`: passed.
+- Review:
+  - Code-review subagent approved the scoped F018 diff and confirmed the unrelated raw FTS search helper remained unstaged.
+- Source/test commit: `942027bb4`.
+- Progress snapshot after F018: 180 completed and committed, 20 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.

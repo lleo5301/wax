@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 179
+- Fully completed and committed: 180
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 21
+- Remaining not fully completed: 20
 
 Current resume point:
 - F-through-C tiers are complete; remaining active work is A-tier and deeper durability/structured-memory findings.
@@ -170,6 +170,7 @@ Known existing verification blockers from earlier runs:
 | F015 | `2df14d250` | Avoid current structured fact spans for retraction assertions. |
 | F016 | `401a23204` | Include valid/system range ends in structured fact span identity. |
 | F017 | `c189c9dbf` | Guard structured fact system-time monotonicity and sentinel overflow. |
+| F018 | `942027bb4` | Close same-millisecond structured fact retractions at the next system tick. |
 | F020 | `997b87853` | Report structured facts truncation only when an extra row exists. |
 | F021 | `fc93b63b6` | Update existing entity kind when callers supply a corrected non-empty kind. |
 | F019 | `fb28c8278` | Expose structured fact span identity and temporal bounds. |
@@ -224,7 +225,7 @@ Support commit not counted as a finding fix:
 - [x] F015 Retractions: retract can insert a current fact row.
 - [x] F016 Span hash: hash omits `system_to` and allows sentinel collision.
 - [x] F017 Time: non-monotonic system time and overflow are not guarded.
-- [ ] F018 Retractions: same-millisecond retract can fail to close target.
+- [x] F018 Retractions: same-millisecond retract can fail to close target.
 - [x] F019 Query results: duplicate identical fact hits are indistinguishable.
 - [x] F020 Query metadata: `wasTruncated` can be false-positive.
 - [x] F021 Entities: entity kind cannot be corrected.
