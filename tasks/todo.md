@@ -2837,8 +2837,8 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F108: 115 completed and committed, 85 remaining.
-- [ ] C-tier: F152, F153, F157.
+- Progress snapshot after F153: 116 completed and committed, 84 remaining.
+- [ ] C-tier: F152, F157.
 - [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 
@@ -3127,3 +3127,21 @@ Checklist:
   - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --disable-automatic-resolution --filter brokerBackedKnowledgeCaptureDefaultsToDurable`: passed.
   - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --disable-automatic-resolution --filter corpusSearchSkipsLockedBrokerManagedSessionStore`: passed.
   - F107 and F108 explorer subagents independently confirmed the likely test mappings, timeout signatures, and current passing focused gates.
+
+### Active Plan - F153 Compatibility Alias Parity
+
+- [x] Add a red regression proving the direct-memory MCP compatibility path rejects legacy `wax_*` tool names with the same renamed-tool error as the production broker path.
+- [x] Make the compatibility handler use the same renamed-tool rejection before validation or execution.
+- [x] Run focused MCP alias tests and the `wax-mcp` trait build.
+- [x] Run post-fix review, update ledger/checklist, and commit code/docs separately.
+
+### F153 Review
+
+- Added a direct-memory compatibility regression for `wax_remember` proving the compatibility path must return the same `tool_renamed` error as the production broker-backed MCP path instead of silently executing the renamed command.
+- Changed the compatibility handler to reject `migratedName(for:)` aliases before validation/execution and then dispatch only canonical tool names.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --disable-automatic-resolution --filter compatibilityPathRejectsRenamedToolAliases` failed because `wax_remember` executed as `remember`.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --disable-automatic-resolution --filter 'compatibilityPathRejectsRenamedToolAliases|legacyWaxFlushIsRejectedBecauseFlushIsNotPublished'`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Code-review subagent approved the scoped F153 diff.
+  - A first cold-build red attempt under `.build-codex/f153-red` hit a local code-signing failure while linking `wax-cli`; it did not reach the test. The temporary generated build directory was deleted to recover disk space, and the focused red/green runs used the warm MCP build path.

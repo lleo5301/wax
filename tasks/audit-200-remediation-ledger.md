@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 115
+- Fully completed and committed: 116
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 85
+- Remaining not fully completed: 84
 
 Current resume point:
 - F-through-D tiers are complete; next remaining tier is C.
@@ -298,7 +298,7 @@ Support commit not counted as a finding fix:
 - [x] F150 Video API: `VideoRAGOrchestrator` documented public but package-only.
 - [x] F151 Test coverage: default tests miss MCP trait suite.
 - [ ] F152 MCP tests: many tests use direct-memory compatibility path, not production broker path.
-- [ ] F153 MCP tests: compatibility aliases differ from production renamed-tool behavior.
+- [x] F153 MCP tests: compatibility aliases differ from production renamed-tool behavior.
 - [x] F154 HTTP smoke: HTTP verifier never calls a tool.
 - [x] F155 CI: Linux CI omits Wax/CLI/MCP product builds. Duplicate of F127; the Linux workflow now builds Wax, wax-cli, and wax-mcp products.
 - [x] F156 Gate script: skip detector misses Swift Testing skips. Duplicate of F126; focused gate tests cover Swift Testing suite/test skip output.
