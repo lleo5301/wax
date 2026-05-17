@@ -2783,6 +2783,26 @@ Checklist:
   - `swift test --traits default,MCPServer --filter 'factAssertAcceptsPublishedGenericTypedObjects|brokerFactAssertAcceptsPublishedGenericTypedObjects' --disable-automatic-resolution` failed before parser changes and passed after.
   - `swift test --traits default,MCPServer --filter 'toolSchemaRegression|factAssertRejectsMixedTypedObjectKeys|temporalFactArgumentsAreHonoredByPublishedTools|graphToolsRoundTripWorks' --disable-automatic-resolution`
 
+### F012 Review
+
+- Added a direct structured-memory regression proving `facts(...)` returns stored evidence for asserted facts instead of dropping it on readback.
+- Selected the fact span ID in the structured facts query, loaded matching `sm_evidence` rows, and hydrated `StructuredFactHit.evidence` from those rows in stable evidence ID order.
+- Verification:
+  - `swift test --build-path .build-codex/f029-red --disable-automatic-resolution --filter assertFactAndQueryAsOfReturnsCurrentFact`: passed after the evidence readback fix.
+
+### F029 Review
+
+- Added red regressions proving `fact_assert.evidence` was rejected or ignored by both MCP compatibility calls and direct broker commands.
+- Added the `evidence` argument to the broker allowlist and MCP schema, parsed structured evidence in both paths, returned `evidence_count`, and surfaced full evidence arrays through `facts_query`.
+- Review found a schema/runtime mismatch: evidence objects silently ignored unknown nested fields despite `additionalProperties: false`; added MCP and broker regressions and now reject unknown evidence fields in both parsers.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f029-red --traits default,MCPServer --disable-automatic-resolution --filter 'factAssertAcceptsEvidence|brokerFactAssertAcceptsEvidence'` failed before implementation.
+  - Review red phase: `swift test --build-path .build-codex/f029-red --traits default,MCPServer --disable-automatic-resolution --filter 'factAssertRejectsUnknownEvidenceFields|brokerFactAssertRejectsUnknownEvidenceFields'` failed before nested-key validation.
+  - `swift test --build-path .build-codex/f029-red --traits default,MCPServer --disable-automatic-resolution --filter 'factAssertSchemaExposesEvidence|factAssertAcceptsEvidence|factAssertRejectsUnknownEvidenceFields|brokerFactAssertAcceptsEvidence|brokerFactAssertRejectsUnknownEvidenceFields|factAssertAcceptsPublishedGenericTypedObjects|brokerFactAssertAcceptsPublishedGenericTypedObjects|temporalFactArgumentsAreHonoredByPublishedTools|graphToolsRoundTripWorks'`: passed.
+  - `swift test --build-path .build-codex/f029-red --disable-automatic-resolution --filter 'assertFactAndQueryAsOfReturnsCurrentFact|assertFactRejectsInvalidEvidence|StructuredMemoryCRUDTests|VersionRelationTests|StructuredMemoryWaxPersistenceTests'`: passed.
+  - `swift build --build-path .build-codex/f029-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Code-review subagent approved after the nested-key validation fix.
+
 ### F080/F081 Review
 
 - Added SQLite-backed regressions proving serialized FTS blobs pin the `frames_fts` tokenizer and that a fake ordinary table named `frames_fts` is rejected even if its SQL text contains `fts5`.
@@ -2794,8 +2814,8 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F038: 107 completed and committed, 93 remaining.
-- [ ] C-tier: F029, F033, F096, F102, F106, F107, F108, F152, F153, F157.
+- Progress snapshot after F012/F029: 109 completed and committed, 91 remaining.
+- [ ] C-tier: F033, F096, F102, F106, F107, F108, F152, F153, F157.
 - [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 

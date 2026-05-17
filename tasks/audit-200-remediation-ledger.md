@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 106
+- Fully completed and committed: 109
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 94
+- Remaining not fully completed: 91
 
 Current resume point:
 - F-through-D tiers are complete; next remaining tier is C.
@@ -43,6 +43,9 @@ Known existing verification blockers from earlier runs:
 
 | ID | Commit | Summary |
 |---|---:|---|
+| F012 | `fd399c92` | Return stored structured fact evidence from facts queries. |
+| F029 | `5fe1386b` | Accept and return fact evidence through MCP and broker APIs. |
+| F038 | `57eb2f1e` | Expose broker lifecycle search filters. |
 | F022 | `c1aa8e44` | Reject invalid structured-memory key values. |
 | F041 | `d50b7b4b` | Cover and enforce MCP labels filter validation. |
 | F042 | `77d7edf4` | Cover and enforce MCP time filter validation. |
@@ -152,7 +155,7 @@ Support commit not counted as a finding fix:
 - [ ] F009 WAL ordering: invalid delete/supersede WAL can be appended before validation.
 - [ ] F010 Structured facts: fact hash normalizes entity/predicate case.
 - [ ] F011 Structured facts: string value hash lowercases object values.
-- [ ] F012 Evidence: `facts` query drops stored evidence.
+- [x] F012 Evidence: `facts` query drops stored evidence.
 - [ ] F013 Bitemporal: updating a fact closes all subject/predicate spans.
 - [ ] F014 Relations: `version_relation` is overwritten on the fact row.
 - [ ] F015 Retractions: retract can insert a current fact row.
@@ -169,7 +172,7 @@ Support commit not counted as a finding fix:
 - [ ] F026 Bitemporal MCP: orchestrator/MCP collapses bitemporal `asOf`.
 - [ ] F027 Unified search: `timeRange.before` is treated as system as-of.
 - [x] F028 Alias resolution: alias matching is exact despite fuzzy docs.
-- [ ] F029 MCP facts: `fact_assert` lacks evidence support.
+- [x] F029 MCP facts: `fact_assert` lacks evidence support.
 - [ ] F030 Unified search: metadata filters can starve candidate results.
 - [ ] F031 Pending search: pending metadata can match while previews are committed-only.
 - [ ] F032 Corpus export: superseded active docs can be exported.
@@ -178,7 +181,7 @@ Support commit not counted as a finding fix:
 - [x] F035 MCP schema: vector search mode/options are hidden.
 - [x] F036 MCP tools: flush handler exists but is undiscoverable/rejected inconsistently.
 - [ ] F037 Pending memory: pending duplicate dedupe gap.
-- [ ] F038 Diagnostics: broker filters lack includeDeleted/superseded/frame IDs.
+- [x] F038 Diagnostics: broker filters lack includeDeleted/superseded/frame IDs.
 - [x] F039 MCP schema: `fact_assert` omits relation/version relation.
 - [x] F040 MCP schema: generic `type/value` fact schema is rejected by broker.
 - [x] F041 MCP filters: non-array `labels` filter is ignored.
