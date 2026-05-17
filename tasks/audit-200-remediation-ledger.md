@@ -62,7 +62,7 @@ Known existing verification blockers from earlier runs:
 | F062 | `3e8335e7` | Check projected vector counts and overflow. |
 | F063 | `pending` | Reject duplicate vector frame IDs during restore/staging. |
 | F068 | `e11607b3` | Normalize MiniLM embedder outputs before returning them. |
-| F069 | `pending` | Reject non-finite MiniLM embedder outputs. |
+| F069 | `a1fd4fe4` | Reject non-finite MiniLM embedder outputs. |
 | F073 | `50554c87` | Treat tokenizer newlines as whitespace. |
 | F074 | `37e4565b` | Keep first SEP and padding token type IDs in segment zero. |
 | F075 | `434912b0` | Reject unsupported MiniLM CoreML output data types. |
