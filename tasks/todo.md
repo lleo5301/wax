@@ -2969,6 +2969,30 @@ Checklist:
 - Source/test commit: `8514f07c6`.
 - Progress snapshot after F011: 171 completed and committed, 29 remaining.
 
+### Active Plan - F020 Structured Facts Truncation Flag
+
+- [x] Add a red structured facts regression proving `wasTruncated` is false when the result count exactly equals the caller limit and true only when an additional matching row exists.
+- [x] Change structured facts pagination to fetch one sentinel row beyond the visible limit and build hits only from the visible rows.
+- [x] Verify focused structured-memory CRUD tests plus the default package build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F020 Review
+
+- Fixed structured facts pagination by fetching one sentinel row beyond the requested visible limit and setting `wasTruncated` only when that extra row exists.
+- Built hits and loaded evidence only from visible rows, so sentinel rows are not exposed and do not trigger evidence fetches.
+- Preserved `limit: 0` behavior by keeping the SQL fetch limit at 0 when the clamped visible limit is 0.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter factsWasTruncatedRequiresExtraMatchingRowBeyondLimit --disable-automatic-resolution` failed before the fix because a single matching fact with `limit: 1` returned `wasTruncated == true`.
+  - Green: same focused command passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'factsWasTruncatedRequiresExtraMatchingRowBeyondLimit|StructuredMemoryCRUDTests|StructuredMemorySchemaTests|StructuredMemoryHashingTests' --disable-automatic-resolution`: passed; 28 tests.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxTextSearch/FTS5SearchEngine.swift Tests/WaxIntegrationTests/StructuredMemoryCRUDTests.swift`: passed.
+- Review:
+  - Read-only explorer confirmed the false-positive exact-limit root cause and no migration impact.
+  - Code-review subagent approved the patch with no findings, including `limit: 0`, sentinel evidence, ordering, and count behavior.
+- Source/test commit: `997b87853`.
+- Progress snapshot after F020: 172 completed and committed, 28 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.
