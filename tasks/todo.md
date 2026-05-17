@@ -2864,7 +2864,14 @@ Checklist:
 - [x] Run focused PDF tests, default build, post-fix review, update the ledger/checklist, and commit each issue or tightly-coupled issue cluster with verification notes.
 - [x] C-tier complete.
 - [x] B-tier PDF ingest cluster complete.
-- [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F200.
+- [ ] A-tier: F030, F031, F032, F037, F025, F026, F034.
+
+### Active Plan - F027 Unified Search As-Of Semantics
+
+- [x] Add a red unified-search regression proving `timeRange.before` filters frame timestamps but does not override explicit structured-memory `asOfMs`.
+- [x] Change the structured-memory lane to derive `StructuredMemoryAsOf` only from `SearchRequest.asOfMs`.
+- [x] Verify the focused regression, the wider unified-search slice, and the MCP product build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
 
 ### F161 Review
 
@@ -3763,3 +3770,18 @@ Checklist:
   - `swift test --build-path .build-codex/f106-red --filter 'KeywordExtractorTests|EnrichmentPipelineTests' --disable-automatic-resolution`: passed.
   - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
   - Code-review subagent approved the final scoped F200 diff with no findings.
+
+### F027 Review
+
+- Fixed unified search so `SearchRequest.timeRange.before` remains a frame timestamp filter and no longer overrides the structured-memory `SearchRequest.asOfMs` snapshot.
+- Added a regression where a structured fact asserted at system time `5_000` points to an evidence frame timestamped `100`; `timeRange.before: 200, asOfMs: .max` returns the evidence, `timeRange.before: 50` filters it out by frame time, and explicit `asOfMs: 200` hides the fact.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter structuredSearchTimeRangeBeforeDoesNotOverrideExplicitAsOf --disable-automatic-resolution` failed before the fix with an empty latest result.
+  - Green: `swift test --build-path .build-codex/f106-red --filter structuredSearchTimeRangeBeforeDoesNotOverrideExplicitAsOf --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter UnifiedSearchTests --disable-automatic-resolution`: passed; 27 tests.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+- Review:
+  - First review noted an unrelated dirty text-query fallback change in `UnifiedSearch.swift`; it was kept out of the F027 source commit.
+  - First review also requested a frame-time assertion; the test now proves out-of-range structured evidence remains filtered.
+  - Final code-review subagent approved the scoped F027 diff with no findings.
+- Progress snapshot after F027: 162 completed and committed, 38 remaining.

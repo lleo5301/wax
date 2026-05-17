@@ -20,13 +20,13 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 161
+- Fully completed and committed: 162
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 39
+- Remaining not fully completed: 38
 
 Current resume point:
-- F-through-C tiers are complete; next remaining tier is B.
-- The active request is to fix all remaining F-through-A tier findings.
+- F-through-C tiers are complete; remaining active work is A-tier and deeper durability/structured-memory findings.
+- The active request is to fix all remaining findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
 - `.build-codex/`
@@ -155,6 +155,7 @@ Known existing verification blockers from earlier runs:
 | F198 | `5f30dc68b` | Persist async enrichment results instead of discarding handler output. |
 | F199 | `f23780084` | Extract deterministic async enrichment entity mentions. |
 | F200 | `e33afc13b` | Preserve technical keyword identifiers without over-preserving prose compounds. |
+| F027 | `7487b754d` | Keep unified-search frame time filters separate from structured-memory as-of queries. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -215,7 +216,7 @@ Support commit not counted as a finding fix:
 - [ ] F024 Graph API: edge traversal API is unwired/dead.
 - [ ] F025 Structured search: object-side entity facts are not used in `evidenceFrameIds`.
 - [ ] F026 Bitemporal MCP: orchestrator/MCP collapses bitemporal `asOf`.
-- [ ] F027 Unified search: `timeRange.before` is treated as system as-of.
+- [x] F027 Unified search: `timeRange.before` is treated as system as-of.
 - [x] F028 Alias resolution: alias matching is exact despite fuzzy docs.
 - [x] F029 MCP facts: `fact_assert` lacks evidence support.
 - [ ] F030 Unified search: metadata filters can starve candidate results.
