@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 149
+- Fully completed and committed: 150
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 51
+- Remaining not fully completed: 50
 
 Current resume point:
 - F-through-C tiers are complete; next remaining tier is B.
@@ -143,6 +143,7 @@ Known existing verification blockers from earlier runs:
 | F184 | `8dff9e315` | Run durable-write validation during Markdown sync dry-runs. |
 | F185 | `259982606` | Require explicit managed Markdown markers for sync imports. |
 | F186 | `83a492ae9` | Deduplicate checked DREAMS approvals within one Markdown sync. |
+| F187 | `9aef7c8e9` | Export and approve DREAMS proposals from ended sessions. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -363,7 +364,7 @@ Support commit not counted as a finding fix:
 - [x] F184 Markdown sync: dry-run skips durable-write validation.
 - [x] F185 Markdown import: markerless bullets imported as managed.
 - [x] F186 DREAMS: duplicate checked lines create duplicate durable memories.
-- [ ] F187 DREAMS: export excludes ended sessions.
+- [x] F187 DREAMS: export excludes ended sessions.
 - [ ] F188 DREAMS: projection closes session stores in unawaited task.
 - [ ] F189 Markdown export: opens active sessions owned by other brokers.
 - [ ] F190 Markdown export: leaves stale generated files.

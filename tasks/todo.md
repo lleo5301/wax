@@ -2847,6 +2847,7 @@ Checklist:
 - Progress snapshot after F184: 147 completed and committed, 53 remaining.
 - Progress snapshot after F185: 148 completed and committed, 52 remaining.
 - Progress snapshot after F186: 149 completed and committed, 51 remaining.
+- Progress snapshot after F187: 150 completed and committed, 50 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -3187,6 +3188,23 @@ Checklist:
 - Review:
   - Explorer confirmed the stale durable snapshot / batch-local duplicate root cause.
   - Scoped code-review subagent approved the F186 diff with no findings.
+
+### F187 Review
+
+- `dreamProjectionLines` now includes ended session manifests as well as active manifests, so session-scoped and global Markdown exports can surface DREAMS proposals after `session_end`.
+- `markdown_export` validates explicit `session_id` values against persisted manifests before exporting; unknown UUIDs now fail with a stable broker validation error instead of silently producing only unscoped output.
+- Markdown export and DREAMS approval sync now skip session event logging when the source session has ended, while preserving the durable write path for checked DREAMS approvals.
+- Added regressions for exporting an ended session's DREAMS proposal, checking that exported line, syncing it into durable memory, and rejecting unknown explicit export session IDs.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownExportIncludesEndedSessionDreams --disable-automatic-resolution` first failed before the export fix because `markdown_export` returned `ok == false`; after the export fix, the extended approval-sync assertion failed before the sync logging guard.
+  - Red phase for review finding: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownExportRejectsUnknownExplicitSessionID --disable-automatic-resolution` failed before explicit-session validation because an unknown UUID exported successfully.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownExportIncludesEndedSessionDreams|brokerMarkdownExportRejectsUnknownExplicitSessionID|brokerMarkdownSyncDeduplicatesCheckedDreamApprovals|brokerMarkdownSyncDoesNotTrustFrameIDWithMismatchedMarkerHash|brokerBackedMarkdownExportProjectsCompatibilityFiles|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Sources/Wax/Broker/AgentBrokerService+Markdown.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed active-only DREAMS projection and active-only event logging were the coupled root cause.
+  - Initial code review caught a regression where unknown explicit export session IDs could be silently ignored; a red regression and validator fixed it.
+  - Follow-up code-review subagent approved the final F187 diff with no findings.
 
 ### F038 Review
 
