@@ -3123,6 +3123,33 @@ Checklist:
 - Source/test commit: `2df14d250`.
 - Progress snapshot after F015: 177 completed and committed, 23 remaining.
 
+### Active Plan - F016 Span Hash Identity
+
+- [x] Add red hash-level coverage proving open-ended valid ranges do not collide with explicit `-1` ends.
+- [x] Add red storage/query coverage proving spans with the same system start but different system end remain distinct.
+- [x] Encode optional valid/system end bounds without sentinels and include `system_to_ms` in span identity, including migration rehash.
+- [x] Verify focused WaxCore hashing, version-relation/schema tests, and the default package build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F016 Review
+
+- Fixed structured span identity so optional valid/system end bounds are encoded with explicit presence tags rather than a `-1` sentinel, and `system_to_ms` is part of the hash.
+- Bumped the FTS schema to v8 and rehashed v7 spans so existing stores move to the new identity contract.
+- Updated span close paths so retract/supersede writes update both `system_to_ms` and `span_key_hash`; a closed span no longer keeps its former open-ended hash.
+- Added regressions for nil-vs-`-1` valid bounds, different `system_to_ms` bounds, v7 migration rehashing, and close-then-reassert dedupe.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter 'hashSpanKeyDistinguishesOpenEndedValidRangeFromExplicitMinusOneEnd|spanIdentityDistinguishesSystemEndBounds' --disable-automatic-resolution` failed before the hash change.
+  - Red: `swift test --build-path .build-codex/f106-red --filter migrationRehashesOldV7BoundedSystemSpanIdentity --disable-automatic-resolution` failed before the v8 migration rehash.
+  - Red: `swift test --build-path .build-codex/f106-red --filter closingSpanRehashesBeforeSameSystemStartReassert --disable-automatic-resolution` failed before close paths rehashed closed spans.
+  - Green: `swift test --build-path .build-codex/f106-red --filter 'StructuredMemoryHashingTests|VersionRelationTests|StructuredMemorySchemaTests|TextSearchEngineTests|deserializeUpgradesLegacyBlobSchemaIdentity' --disable-automatic-resolution`: passed; 56 tests.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/StructuredMemory/StructuredMemoryHashing.swift Sources/WaxTextSearch/FTS5Schema.swift Sources/WaxTextSearch/FTS5SearchEngine.swift Tests/WaxCoreTests/StructuredMemoryHashingTests.swift Tests/WaxIntegrationTests/VersionRelationTests.swift Tests/WaxIntegrationTests/StructuredMemorySchemaTests.swift Tests/WaxIntegrationTests/TextSearchEngineTests.swift tasks/todo.md`: passed.
+- Review:
+  - Explorer confirmed the original bug and identified the extra close-path rehash invariant required once `system_to_ms` became part of identity.
+  - Code-review subagent approved the scoped F016 changes after excluding the unrelated raw FTS search API hunk from staging.
+- Source/test commit: `401a23204`.
+- Progress snapshot after F016: 178 completed and committed, 22 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.
