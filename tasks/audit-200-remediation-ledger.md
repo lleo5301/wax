@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 159
+- Fully completed and committed: 160
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 41
+- Remaining not fully completed: 40
 
 Current resume point:
 - F-through-C tiers are complete; next remaining tier is B.
@@ -153,6 +153,7 @@ Known existing verification blockers from earlier runs:
 | F196 | `ccf862964` | Rank ended sessions by relevance before compact-context cutoff. |
 | F197 | `f47d89bee` | Rebuild corpus caches when manifest JSON is corrupt. |
 | F198 | `5f30dc68b` | Persist async enrichment results instead of discarding handler output. |
+| F199 | `f23780084` | Extract deterministic async enrichment entity mentions. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -385,5 +386,5 @@ Support commit not counted as a finding fix:
 - [x] F196 Compact context: recency prefix filters sessions before relevance.
 - [x] F197 Corpus cache: corrupt corpus manifest aborts instead of rebuild.
 - [x] F198 Enrichment: handler result is discarded.
-- [ ] F199 Enrichment: structured extraction hardcodes empty entities.
+- [x] F199 Enrichment: structured extraction hardcodes empty entities.
 - [ ] F200 Keywords: technical identifiers are split/lowercased.

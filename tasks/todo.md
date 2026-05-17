@@ -3741,3 +3741,14 @@ Checklist:
   - `swift test --build-path .build-codex/f106-red --filter 'EnrichmentPipelineTests|KeywordExtractorTests' --disable-automatic-resolution`: passed.
   - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
   - Code-review subagent approved the scoped F198 diff with no findings.
+
+### F199 Review
+
+- Added a regression proving async enrichment persists entity mention records for both technical identifiers and title-cased names.
+- Added a deterministic offline `EntityExtractor` that emits mention-only entities with `mentioned_in/source_text`, then wired `MemoryOrchestrator` to include those entities in enrichment results.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --filter memoryOrchestratorPersistsEnrichmentEntities --disable-automatic-resolution` failed because `wax.enrichment.entities` was absent.
+  - `swift test --build-path .build-codex/f106-red --filter memoryOrchestratorPersistsEnrichmentEntities --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'EnrichmentPipelineTests|KeywordExtractorTests' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Code-review subagent approved the scoped F199 diff with no findings.
