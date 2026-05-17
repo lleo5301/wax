@@ -2603,7 +2603,16 @@ Execution order:
 Checklist:
 - [x] F063: review and commit existing duplicate vector frame-id restore work.
 - [ ] F-tier: F156, F154, F159, F160, F125, F118, F120, F119, F113, F112, F122, F114, F109, F115, F116, F117, F124, F127, F155, F158.
-- [ ] D-tier: F075, F068, F069, F070, F071, F072.
+- [ ] D-tier: F068, F069, F070, F071, F072.
+
+### F075 Review
+
+- Added a MiniLM decode regression proving an `.int32` `MLMultiArray` output is rejected instead of decoded as an all-zero embedding.
+- Verified `miniLMDecodingRejectsUnsupportedOutputDataTypes` failed before the fix with `[[0.0, 0.0, 0.0]]`.
+- Added an early dtype guard in `decodeEmbeddings` so only `.float16` and `.float32` CoreML output arrays are accepted.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter miniLMDecodingRejectsUnsupportedOutputDataTypes`: failed before and passed after.
+  - `swift test --disable-automatic-resolution --filter 'MiniLMFloat16DecodingTests|miniLMDecodingRejectsUnsupportedOutputDataTypes'`: passed.
 
 ### F074 Review
 
