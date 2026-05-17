@@ -2854,6 +2854,7 @@ Checklist:
 - Progress snapshot after F193: 154 completed and committed, 46 remaining.
 - Progress snapshot after F194: 155 completed and committed, 45 remaining.
 - Progress snapshot after F195: 156 completed and committed, 44 remaining.
+- Progress snapshot after F196: 157 completed and committed, 43 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -3299,6 +3300,20 @@ Checklist:
 - Review:
   - Explorer confirmed the raw-hit budgeting root cause and recommended budgeting rendered output plus a final query-only clamp.
   - Initial code review caught the long-query base-render edge; the final code-review subagent approved the corrected F195 diff with no findings.
+
+### F196 Review
+
+- `compact_context` no longer applies a recency-ordered `.prefix(4)` to ended session manifests before searching them; eligible ended sessions are searched first, then episodic hits are deduped and sorted by relevance score, timestamp, and reference before downstream selection.
+- Added a regression with one older relevant ended session hidden behind four newer irrelevant ended sessions, proving the older relevant session still appears in `medium_context`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerCompactContextSearchesOlderRelevantEndedSessionsBeforeRecencyCutoff --disable-automatic-resolution` failed before the fix because `medium_context` did not contain the older relevant anchor.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerCompactContextSearchesOlderRelevantEndedSessionsBeforeRecencyCutoff --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerCompactContextSearchesOlderRelevantEndedSessionsBeforeRecencyCutoff|brokerCompactContextBudgetsRenderedOutputTokens|brokerCompactContextBudgetsLongQueryOnlyRender|brokerCompactContextEmitsCanonicalDocumentMemoryIDsForChunkHits|brokerBackedF152CompactContextScopesToRequestedSession|brokerRecordRetrievalHitsCanonicalizesChunkFrameIDs' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed `BrokerSessionPersistence.listManifests` sorts by recency before the old cutoff, and recommended moving cutoff after relevance.
+  - Code-review subagent approved the implementation and requested deterministic timestamp separation in the test; the regression now sleeps after ending the older relevant session before creating newer sessions.
 
 ### F038 Review
 

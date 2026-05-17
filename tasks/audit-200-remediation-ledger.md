@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 156
+- Fully completed and committed: 157
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 44
+- Remaining not fully completed: 43
 
 Current resume point:
 - F-through-C tiers are complete; next remaining tier is B.
@@ -150,6 +150,7 @@ Known existing verification blockers from earlier runs:
 | F193 | `66a7f79b0` | Preserve stored memory types when grouping Markdown export sections. |
 | F194 | `20b239c58` | Guard compact context against emitting raw chunk frame IDs. |
 | F195 | `968b40a14` | Budget compact context against rendered output tokens. |
+| F196 | `ccf862964` | Rank ended sessions by relevance before compact-context cutoff. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -379,7 +380,7 @@ Support commit not counted as a finding fix:
 - [x] F193 Markdown export: reclassifies text instead of metadata type.
 - [x] F194 Compact context: references raw chunk frame IDs.
 - [x] F195 Compact context: token budget counts hit text, not rendered output.
-- [ ] F196 Compact context: recency prefix filters sessions before relevance.
+- [x] F196 Compact context: recency prefix filters sessions before relevance.
 - [ ] F197 Corpus cache: corrupt corpus manifest aborts instead of rebuild.
 - [ ] F198 Enrichment: handler result is discarded.
 - [ ] F199 Enrichment: structured extraction hardcodes empty entities.
