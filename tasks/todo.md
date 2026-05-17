@@ -2815,6 +2815,17 @@ Checklist:
   - `swift build --build-path .build-codex/f033-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
   - Code-review subagent approved after the larger internal candidate budget and boundary regression.
 
+### F096 Review
+
+- Added red regressions for the HTTP auth policy: loopback binds remain local-only/no-token, non-loopback binds require auth, bearer tokens must match exactly, and unauthorized non-loopback requests do not create sessions.
+- Added `--http-auth-token` plus `WAX_MCP_HTTP_AUTH_TOKEN` fallback, normalized empty tokens away, rejected off-loopback HTTP startup without a token, and enforced `Authorization: Bearer <token>` before session creation or lookup.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f096-red --traits default,MCPServer --disable-automatic-resolution --filter 'httpAuthPolicyRequiresTokenOffLoopbackOnly|httpAuthPolicyValidatesBearerToken'` failed before implementation.
+  - `swift test --build-path .build-codex/f096-red --traits default,MCPServer --disable-automatic-resolution --filter 'httpAuthPolicyRequiresTokenOffLoopbackOnly|httpAuthPolicyValidatesBearerToken|httpApplicationRejectsUnauthorizedOffLoopbackRequests|httpRequestBodyLimitRejectsContentLengthAndStreamingOverflow'`: passed.
+  - `swift build --build-path .build-codex/f096-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `scripts/verify-waxmcp-http.sh`: passed, proving loopback HTTP still works without a token.
+  - Code-review subagent approved. Its broader `WaxMCPServerTests` check still saw the known unrelated `waxMCPProcessRememberWithRealCoreMLEmbedder` payload-shape failure.
+
 ### F080/F081 Review
 
 - Added SQLite-backed regressions proving serialized FTS blobs pin the `frames_fts` tokenizer and that a fake ordinary table named `frames_fts` is rejected even if its SQL text contains `fts5`.
@@ -2826,8 +2837,8 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F033: 110 completed and committed, 90 remaining.
-- [ ] C-tier: F096, F102, F106, F107, F108, F152, F153, F157.
+- Progress snapshot after F096: 111 completed and committed, 89 remaining.
+- [ ] C-tier: F102, F106, F107, F108, F152, F153, F157.
 - [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 

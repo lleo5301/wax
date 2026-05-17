@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 110
+- Fully completed and committed: 111
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 90
+- Remaining not fully completed: 89
 
 Current resume point:
 - F-through-D tiers are complete; next remaining tier is C.
@@ -89,6 +89,7 @@ Known existing verification blockers from earlier runs:
 | F093 | `89140c79` | Stabilize daemon socket path regression. |
 | F094 | `29f997c8` | Gate `knowledge_capture` by structured-memory flag. |
 | F095 | `f5c8d24b` | Honor broker access-stats feature flag. |
+| F096 | `2acac690` | Require bearer auth for non-loopback HTTP MCP binds. |
 | F100 | `63ce6e52` | Preserve broker memory content whitespace. |
 | F101 | `ffa14be3` | Skip ended session manifests on resume. |
 | F109 | `f305c477` | Add waxmcp prepack validation for required dist artifacts. |
@@ -240,7 +241,7 @@ Support commit not counted as a finding fix:
 - [x] F093 CLI tests: daemon stable socket path expectation fails.
 - [x] F094 MCP structured: `knowledge_capture` bypasses structured-memory flag.
 - [x] F095 Broker config: access-stats env is parsed/logged but ignored.
-- [ ] F096 HTTP MCP: HTTP transport has no auth off-loopback.
+- [x] F096 HTTP MCP: HTTP transport has no auth off-loopback.
 - [ ] F097 Session end: active session removed before fallible persistence.
 - [ ] F098 Broker commit: `remember/handoff` commit before event failure.
 - [ ] F099 Knowledge capture: graph write before memory write can half-commit.
