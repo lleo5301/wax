@@ -2794,7 +2794,7 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- [ ] C-tier: F092, F088, F038, F029, F033, F096, F102, F106, F107, F108, F152, F153, F157.
+- [ ] C-tier: F088, F038, F029, F033, F096, F102, F106, F107, F108, F152, F153, F157.
 - [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 
@@ -2824,6 +2824,16 @@ Checklist:
   - Follow-up review approved the temporary-store swap implementation.
 - Verification:
   - `swift test --traits WaxRepo --disable-automatic-resolution --filter 'waxRepoFullReindex|waxRepoSearch'`: passed.
+  - `swift build --product WaxRepo --traits WaxRepo --disable-automatic-resolution`: passed.
+
+### F092 Review
+
+- Added a red process-level regression for `wax-repo search`: index a commit whose query term appears in content, then require the output to show the commit subject even when the preview snippet omits the synthetic `COMMIT:` header.
+- Switched `RepoStore.search` to build `CommitSearchResult` from `MemorySearchHit.metadata`, with the older preview header parser retained only as a fallback for legacy hits.
+- Review:
+  - Scoped review approved `RepoStore.swift` and `WaxRepoSearchCommandTests.swift`.
+- Verification:
+  - `swift test --traits WaxRepo --disable-automatic-resolution --filter 'waxRepoSearchUsesStoredMetadataWhenPreviewOmitsHeader|waxRepoSearch'`: passed.
   - `swift build --product WaxRepo --traits WaxRepo --disable-automatic-resolution`: passed.
 
 - Proved F156 is a duplicate of the completed F126 skip-detector fix.

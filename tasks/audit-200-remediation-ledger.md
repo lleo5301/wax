@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 104
+- Fully completed and committed: 105
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 96
+- Remaining not fully completed: 95
 
 Current resume point:
 - F-through-D tiers are complete; next remaining tier is C.
@@ -80,6 +80,7 @@ Known existing verification blockers from earlier runs:
 | F087 | `2495c05d` | Reject invalid embedder runtime flags. |
 | F089 | `112dcefa` | Run `wax-repo search <query>` as a one-shot command. |
 | F090 | `405a6248` | Rebuild WaxRepo full reindex into a fresh store before swapping. |
+| F092 | `pending` | Build WaxRepo search results from stored metadata instead of previews. |
 | F093 | `89140c79` | Stabilize daemon socket path regression. |
 | F094 | `29f997c8` | Gate `knowledge_capture` by structured-memory flag. |
 | F095 | `f5c8d24b` | Honor broker access-stats feature flag. |
@@ -230,7 +231,7 @@ Support commit not counted as a finding fix:
 - [x] F089 WaxRepo: `wax-repo search` still launches TUI.
 - [x] F090 WaxRepo: `--full` duplicates store content.
 - [ ] F091 WaxRepo: `max-commits` checkpoint can skip older history permanently.
-- [ ] F092 WaxRepo: repo search parses preview instead of metadata.
+- [x] F092 WaxRepo: repo search parses preview instead of metadata.
 - [x] F093 CLI tests: daemon stable socket path expectation fails.
 - [x] F094 MCP structured: `knowledge_capture` bypasses structured-memory flag.
 - [x] F095 Broker config: access-stats env is parsed/logged but ignored.
