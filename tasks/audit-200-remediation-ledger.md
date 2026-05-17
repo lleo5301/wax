@@ -63,7 +63,7 @@ Known existing verification blockers from earlier runs:
 | F063 | `pending` | Reject duplicate vector frame IDs during restore/staging. |
 | F073 | `50554c87` | Treat tokenizer newlines as whitespace. |
 | F076 | `5e1025be` | Escape FTS5 MATCH queries. |
-| F078 | `fbc57d8a` | Normalize FTS BM25 scores for bounded `minScore` filtering. |
+| F078 | `b9335725` | Normalize FTS BM25 scores for bounded `minScore` filtering. |
 | F079 | `8b513214` | Reject non-positive FTS `topK`. |
 | F082 | `bd2a6582` | Preserve non-socket daemon paths. |
 | F083 | `9a650260` | Harden broker socket roots. |
