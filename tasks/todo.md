@@ -2603,7 +2603,15 @@ Execution order:
 Checklist:
 - [x] F063: review and commit existing duplicate vector frame-id restore work.
 - [ ] F-tier: F156, F154, F159, F160, F125, F118, F120, F119, F113, F112, F122, F114, F109, F115, F116, F117, F124, F127, F155, F158.
-- [ ] D-tier: F071, F072.
+- [ ] D-tier: F072.
+
+### F071 Review
+
+- Updated MiniLM baseline quality coverage to instantiate `MiniLMEmbedder` and call the public `embed(batch:)` path instead of bypassing it with lower-level `MiniLMEmbeddings.encode(batch:)`.
+- Kept the same cosine baseline assertions and fixture-generation flow, now exercising the public batch provider path and its normalization/validation guards.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter MiniLMEmbeddingQualityTests`: passed with inference tests explicitly skipped.
+  - `WAX_TEST_MINILM=1 swift test --disable-automatic-resolution --filter MiniLMEmbeddingQualityTests`: passed.
 
 ### F070 Review
 
