@@ -2853,6 +2853,7 @@ Checklist:
 - Progress snapshot after F190: 153 completed and committed, 47 remaining.
 - Progress snapshot after F193: 154 completed and committed, 46 remaining.
 - Progress snapshot after F194: 155 completed and committed, 45 remaining.
+- Progress snapshot after F195: 156 completed and committed, 44 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -3282,6 +3283,22 @@ Checklist:
   - `git diff --check -- Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
 - Review:
   - Scoped code-review subagent approved the F194 regression with no findings.
+
+### F195 Review
+
+- `compact_context` now budgets candidates against the full rendered compacted context instead of raw hit text, including query/header/bullet/why overhead.
+- Final `compacted_text` is clamped through `TokenCounter.truncate` when the base query render alone exceeds the requested budget, and `used_tokens` is recomputed from the exact returned text.
+- Added regressions for many short matching hits and for a long query-only render; both assert returned `compacted_text` token count is within budget and equals `used_tokens`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerCompactContextBudgetsRenderedOutputTokens --disable-automatic-resolution` failed before the fix with 178 rendered tokens for a 128-token budget while reporting 109 used tokens.
+  - Review red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerCompactContextBudgetsLongQueryOnlyRender --disable-automatic-resolution` failed before the clamp with 1542 rendered tokens for a 128-token budget.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerCompactContextBudgetsRenderedOutputTokens|brokerCompactContextBudgetsLongQueryOnlyRender' --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerCompactContextBudgetsRenderedOutputTokens|brokerCompactContextBudgetsLongQueryOnlyRender|brokerCompactContextEmitsCanonicalDocumentMemoryIDsForChunkHits|brokerBackedF152CompactContextScopesToRequestedSession|brokerRecordRetrievalHitsCanonicalizesChunkFrameIDs' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the raw-hit budgeting root cause and recommended budgeting rendered output plus a final query-only clamp.
+  - Initial code review caught the long-query base-render edge; the final code-review subagent approved the corrected F195 diff with no findings.
 
 ### F038 Review
 
