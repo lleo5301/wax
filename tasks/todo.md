@@ -2873,6 +2873,20 @@ Checklist:
 - Review:
   - Code-review subagent approved the scoped F162 diff with no blockers.
 
+### F163 Review
+
+- Changed PDF extraction to retain page segments and ingest each non-empty page with `pdf_page_number`, while preserving file-level source and truncation metadata.
+- Added coverage proving page one and page two are stored with distinct page metadata and do not cross-contaminate payload text.
+- Added a regression for blank pages inside the extracted range so `pdf_extracted_page_count` continues to mean page coverage, not just non-empty stored pages.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter pdfIngestStoresPageProvenanceInFrameMetadata --disable-automatic-resolution` failed before the fix because no frames had `pdf_page_number`.
+  - Green: same focused provenance test passed after page-scoped ingest.
+  - Review regression: `swift test --build-path .build-codex/f106-red --filter pdfIngestCountsBlankPagesWithinExtractionCoverage --disable-automatic-resolution` failed with `pdf_extracted_page_count == "1"` before restoring coverage semantics; passed after the fix.
+  - `swift test --build-path .build-codex/f106-red --filter 'PDFIngestTests|PDFPlatformFallbackTests|pdfIngestError' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+- Review:
+  - First review caught the `pdf_extracted_page_count` coverage regression; re-review caught an AppKit portability risk in the test helper. Both were fixed, and the final reviewer approved the scoped F163 diff.
+
 ### F038 Review
 
 - Added red regressions proving the published MCP `recall`/`search` filter schema, MCP parser, and broker parser did not expose lifecycle and explicit-frame controls already supported by core `UnifiedSearch`.
