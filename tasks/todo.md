@@ -2794,7 +2794,7 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- [ ] C-tier: F090, F092, F088, F038, F029, F033, F096, F102, F106, F107, F108, F152, F153, F157.
+- [ ] C-tier: F092, F088, F038, F029, F033, F096, F102, F106, F107, F108, F152, F153, F157.
 - [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 
@@ -2810,6 +2810,20 @@ Checklist:
   - Follow-up review approved the process-level regression and scoped implementation.
 - Verification:
   - `swift test --traits WaxRepo --disable-automatic-resolution --filter waxRepoSearch`: passed.
+  - `swift build --product WaxRepo --traits WaxRepo --disable-automatic-resolution`: passed.
+
+### F090 Review
+
+- Added a red process-level regression for `wax-repo index --full --max-commits 1`: create a two-commit temp git repo, index both commits, then full-reindex one commit and verify the store shrinks instead of retaining old frames.
+- Initial green pass deleted the old store before opening the replacement store, but review found two real edge cases:
+  - empty parsed commit lists skipped the reset and left old store contents behind;
+  - a failed full reindex could delete the store while leaving a stale `last-indexed-hash`.
+- Reworked full reindex into a transactional path: build into `store.reindex.<uuid>.wax`, close it, write a temporary marker, then swap both store and marker through backup paths. Existing store/marker stay intact until the replacement is ready. Empty full parses clear both outputs.
+- Review:
+  - First review blocked on the early empty-return and stale-marker failure modes.
+  - Follow-up review approved the temporary-store swap implementation.
+- Verification:
+  - `swift test --traits WaxRepo --disable-automatic-resolution --filter 'waxRepoFullReindex|waxRepoSearch'`: passed.
   - `swift build --product WaxRepo --traits WaxRepo --disable-automatic-resolution`: passed.
 
 - Proved F156 is a duplicate of the completed F126 skip-detector fix.
