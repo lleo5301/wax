@@ -2837,8 +2837,8 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F153: 116 completed and committed, 84 remaining.
-- [ ] C-tier: F152, F157.
+- Progress snapshot after F157: 117 completed and committed, 83 remaining.
+- [ ] C-tier: F152.
 - [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 
@@ -3145,3 +3145,23 @@ Checklist:
   - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
   - Code-review subagent approved the scoped F153 diff.
   - A first cold-build red attempt under `.build-codex/f153-red` hit a local code-signing failure while linking `wax-cli`; it did not reach the test. The temporary generated build directory was deleted to recover disk space, and the focused red/green runs used the warm MCP build path.
+
+### Active Plan - F157 Readiness Stability Gate
+
+- [x] Add a shell regression proving soak/burn readiness gates run stability tests in hybrid mode by default.
+- [x] Update the gate script to pass the stability search mode explicitly while preserving operator overrides.
+- [x] Update `ProductionReadinessStabilityTests` so hybrid/vector modes create deterministic vector embeddings and assert vector-sourced recall coverage.
+- [x] Run focused script and stability XCTest gates, request review, commit the source/test change, then record verification.
+
+### F157 Review
+
+- Added shell-level gate regressions that load `production_readiness_gates.sh` without running the expensive suites, stub `run_and_capture`, and prove soak/burn stability commands default to `WAX_STABILITY_SEARCH_MODE=hybrid` while preserving an explicit `vector` override.
+- Updated the soak and burn smoke gates to pass `WAX_STABILITY_SEARCH_MODE="${WAX_STABILITY_SEARCH_MODE:-hybrid}"` into the production readiness stability XCTest.
+- Updated `ProductionReadinessStabilityTests` so `hybrid` and `vector` modes enable the CPU vector engine, write deterministic two-dimensional embeddings during ingest, query with deterministic embeddings during recall, and fail if no vector-sourced results are observed.
+- Verification:
+  - Red phase: `bash Resources/scripts/quality/production_readiness_gates_tests.sh` failed before the gate change because the soak stability command omitted `WAX_STABILITY_SEARCH_MODE=hybrid`.
+  - `bash Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+  - `WAX_REPLAY_ITERATIONS=80 WAX_STABILITY_SEARCH_MODE=hybrid WAX_STABILITY_OUTPUT=/tmp/wax-f157-stability.json swift test --build-path .build-codex/f106-red --enable-xctest --disable-swift-testing --filter ProductionReadinessStabilityTests.testSoakSmokeStability --disable-automatic-resolution`: passed and reported `vector_hits=153`.
+  - `WAX_REPLAY_ITERATIONS=80 WAX_STABILITY_SEARCH_MODE=vector WAX_STABILITY_OUTPUT=/tmp/wax-f157-vector-stability.json swift test --build-path .build-codex/f106-red --enable-xctest --disable-swift-testing --filter ProductionReadinessStabilityTests.testSoakSmokeStability --disable-automatic-resolution`: passed and reported `vector_hits=153`.
+  - `git diff --cached --check`: passed before the source/test commit.
+  - Code-review subagent approved the focused F157 diff with no findings.
