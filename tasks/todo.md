@@ -3292,6 +3292,28 @@ Checklist:
 - Source/test commit: `38207fcdc`.
 - Progress snapshot after F047: 182 completed and committed, 18 remaining.
 
+### Active Plan - F048 MCP Server Portable Exit
+
+- [x] Add a red static portability regression proving the MCP server entrypoint does not call `Darwin.exit` from trait-enabled code.
+- [x] Replace Darwin-qualified process exits with a platform-neutral helper backed by the conditionally imported C runtime.
+- [x] Verify the focused regression, the trait-enabled `wax-mcp` product build, and the narrow diff.
+- [x] Commit source/test and ledger updates separately.
+
+### F048 Review
+
+- Fixed the MCP server entrypoint so async startup/shutdown completion paths call `exitProcess(...)` instead of `Darwin.exit(...)`.
+- The helper uses the unqualified `exit(...)` supplied by the existing conditional Darwin/Glibc/Musl imports, so the trait-enabled source no longer hard-codes a Darwin symbol in the Linux path.
+- Added a static regression that fails if `Sources/WaxMCPServer/main.swift` reintroduces `Darwin.exit`.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f048-red --filter waxMCPEntrypointUsesPlatformNeutralExit --disable-automatic-resolution` failed before the fix because `main.swift` contained three `Darwin.exit` calls.
+  - Green: `swift test --build-path .build-codex/f048-red --filter waxMCPEntrypointUsesPlatformNeutralExit --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f048-mcp-build --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxMCPServer/main.swift Tests/WaxTests/PackageTraitManifestTests.swift`: passed.
+- Review:
+  - Local review checked that the only runtime change is the exit symbol dispatch and that the surrounding success/failure statuses remain unchanged.
+- Source/test commit: `c82cd3e76`.
+- Progress snapshot after F048: 183 completed and committed, 17 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.
