@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 112
+- Fully completed and committed: 113
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 88
+- Remaining not fully completed: 87
 
 Current resume point:
 - F-through-D tiers are complete; next remaining tier is C.
@@ -251,7 +251,7 @@ Support commit not counted as a finding fix:
 - [ ] F103 Corpus: corpus rebuild is non-atomic.
 - [x] F104 MCP config: invalid embedder choice falls back to MiniLM.
 - [ ] F105 Multimodal MCP: multimodal is advertised but not wired.
-- [ ] F106 HTTP lifecycle: cleanup loop has no cancellation.
+- [x] F106 HTTP lifecycle: cleanup loop has no cancellation.
 - [ ] F107 MCP tests: broker-backed durable capture test times out.
 - [ ] F108 MCP tests: locked-session corpus search test times out.
 - [x] F109 npm package: packed tarball lacks `dist` binaries.

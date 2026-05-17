@@ -2837,8 +2837,8 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F102: 112 completed and committed, 88 remaining.
-- [ ] C-tier: F106, F107, F108, F152, F153, F157.
+- Progress snapshot after F106: 113 completed and committed, 87 remaining.
+- [ ] C-tier: F107, F108, F152, F153, F157.
 - [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 
@@ -3097,3 +3097,23 @@ Checklist:
   - `swift test --build-path .build-codex/f102-red --traits default,MCPServer --disable-automatic-resolution --filter 'httpHandlerRejectsOversizedContentLengthBeforeReadingBody|httpHandlerRejectsStreamingOverflowBeforeRequestEnd|httpRequestBodyLimitRejectsContentLengthAndStreamingOverflow|httpApplicationRejectsUnauthorizedOffLoopbackRequests'`: passed.
   - `swift build --build-path .build-codex/f102-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
   - Code-review subagent approved the scoped F102 diff.
+
+### Active Plan - F106 HTTP Cleanup Lifecycle
+
+- [x] Add a deterministic red regression proving the HTTP session cleanup loop can be started and stopped without leaving a live task behind.
+- [x] Store the cleanup task handle, cancel it from shutdown paths, and make the cleanup loop exit when cancellation interrupts sleep.
+- [x] Run focused MCP HTTP lifecycle tests and the `wax-mcp` trait build.
+- [x] Run a post-fix review subagent, address findings, update the remediation ledger and checklist, then commit code and docs separately.
+
+### F106 Review
+
+- Added a deterministic lifecycle regression that starts the production HTTP app on an ephemeral port, waits for the session cleanup task to become active, stops the app, awaits the serving task, and verifies the cleanup handle is gone.
+- Stored the cleanup task handle, cancel/await it from both normal `start()` shutdown and explicit `stop()`, and changed the loop to exit when cancellation interrupts `Task.sleep` instead of swallowing cancellation and looping forever.
+- Review:
+  - Initial review found a reentrancy bug where `cleanupTask` was cleared before awaiting task exit, and noted the first test only exercised helper methods.
+  - Fixed the handle ordering and changed the test to drive the production `start()`/`stop()` lifecycle.
+  - Re-review approved the corrected scoped diff.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --disable-automatic-resolution --filter httpSessionCleanupTaskStopsWithApplicationStop` failed before implementation because the configuration/test lifecycle hooks did not exist.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --disable-automatic-resolution --filter 'httpSessionCleanupTaskStopsWithApplicationStop|httpHandlerRejectsOversizedContentLengthBeforeReadingBody|httpHandlerRejectsStreamingOverflowBeforeRequestEnd|httpApplicationRejectsUnauthorizedOffLoopbackRequests'`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
