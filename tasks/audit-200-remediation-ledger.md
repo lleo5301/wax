@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 137
+- Fully completed and committed: 138
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 63
+- Remaining not fully completed: 62
 
 Current resume point:
 - F-through-C tiers are complete; next remaining tier is B.
@@ -131,6 +131,7 @@ Known existing verification blockers from earlier runs:
 | F170 | `5e741acaa` | Persist PhotoRAG sync-state checkpoint frames after successful library sync. |
 | F171 | `3c6541b08` | Clarify PhotoRAG tags are metadata keywords or caption fallback terms, not classifier labels. |
 | F172 | `951546bd0` | Preserve local Photos video URLs so recalled video segments can attach thumbnails. |
+| F174 | `9afb78c2d` | Append broker session `.started` events before saving active manifests. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -338,7 +339,7 @@ Support commit not counted as a finding fix:
 - [x] F171 Photo tags: tags overpromise classifier labels.
 - [x] F172 Video thumbnails: Photos video local URL discarded, thumbnails fail.
 - [x] F173 Broker validation: direct broker ignores unknown args.
-- [ ] F174 Session start: manifest saved before `.started` event.
+- [x] F174 Session start: manifest saved before `.started` event.
 - [ ] F175 Session resume: lease stolen before `.resumed` event.
 - [ ] F176 Events: first event file creation return ignored.
 - [ ] F177 Events: one malformed JSONL line aborts whole log.

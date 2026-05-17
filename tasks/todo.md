@@ -3021,6 +3021,19 @@ Checklist:
 - Review:
   - Scoped code review approved the diff and confirmed the existing non-local Photos degraded/no-thumbnail path remains covered.
 
+### F174 Review
+
+- Broker `session_start` now appends the `.started` lifecycle event before saving the active session manifest, preventing event-write failures from leaving a manifest that appears resumable without a start event.
+- Added a focused MCP-trait regression that scopes the source check to `sessionStart` and verifies `BrokerSessionPersistence.appendEvent` precedes `BrokerSessionPersistence.saveManifest(manifest, to: manifestURL)`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerSessionStartAppendsStartedEventBeforeSavingManifest --disable-automatic-resolution` failed before the fix because the manifest save occurred first.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerSessionStartAppendsStartedEventBeforeSavingManifest --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerSessionStartAppendsStartedEventBeforeSavingManifest|brokerRetrievalEventsPersistQueryHashWithoutRawQuery' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Scoped code-review subagent approved the F174 diff with no findings.
+
 ### F038 Review
 
 - Added red regressions proving the published MCP `recall`/`search` filter schema, MCP parser, and broker parser did not expose lifecycle and explicit-frame controls already supported by core `UnifiedSearch`.
