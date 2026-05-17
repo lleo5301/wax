@@ -2842,6 +2842,7 @@ Checklist:
 - Progress snapshot after F170: 135 completed and committed, 65 remaining.
 - Progress snapshot after F171: 136 completed and committed, 64 remaining.
 - Progress snapshot after F172: 137 completed and committed, 63 remaining.
+- Progress snapshot after F182: 145 completed and committed, 55 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -3113,6 +3114,20 @@ Checklist:
 - Review:
   - Explorer identified the same source-metadata leak in both broker and compatibility paths.
   - Final scoped code-review subagent approved the combined F180 diff with no findings.
+
+### F182 Review
+
+- `markdown_sync` now requires managed markers to match the current sync surface, frame ID, prior document hash, optional memory ID, and compatible stored source metadata before binding a Markdown line to an existing memory frame.
+- `syncMemoryMarkdown` no longer pulls marker-referenced frames into the deletion/update set unless the marker is trusted, preventing a forged or stale frame ID from replacing or deleting unrelated durable memory.
+- Added a focused regression that exports a real memory marker, tampers its hash while preserving the frame ID, syncs the projection, and proves the original memory ID remains retrievable unchanged with zero updates/deletions.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownSyncDoesNotTrustFrameIDWithMismatchedMarkerHash --disable-automatic-resolution` failed before the fix because the protected memory was no longer retrievable.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownSyncDoesNotTrustFrameIDWithMismatchedMarkerHash|brokerMarkdownSyncRejectsSecretLikeDurableMemoryImports|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService+Markdown.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the root cause and warned not to compare the marker hash to edited Markdown text.
+  - Scoped code-review subagent approved the F182 diff with no findings.
 
 ### F038 Review
 
