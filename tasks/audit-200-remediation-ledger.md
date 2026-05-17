@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 175
+- Fully completed and committed: 176
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 25
+- Remaining not fully completed: 24
 
 Current resume point:
 - F-through-C tiers are complete; remaining active work is A-tier and deeper durability/structured-memory findings.
@@ -166,6 +166,7 @@ Known existing verification blockers from earlier runs:
 | F010 | `0d9aebfa6` | Preserve entity and predicate key case in structured fact hashes. |
 | F011 | `8514f07c6` | Preserve literal string object values in structured fact hashes. |
 | F013 | `b0c27154d` | Narrow structured fact update closure to matching fact spans. |
+| F014 | `c2f3bfe38` | Store structured fact version relations on bitemporal spans. |
 | F020 | `997b87853` | Report structured facts truncation only when an extra row exists. |
 | F021 | `fc93b63b6` | Update existing entity kind when callers supply a corrected non-empty kind. |
 | F019 | `fb28c8278` | Expose structured fact span identity and temporal bounds. |
@@ -216,7 +217,7 @@ Support commit not counted as a finding fix:
 - [x] F011 Structured facts: string value hash lowercases object values.
 - [x] F012 Evidence: `facts` query drops stored evidence.
 - [x] F013 Bitemporal: updating a fact closes all subject/predicate spans.
-- [ ] F014 Relations: `version_relation` is overwritten on the fact row.
+- [x] F014 Relations: `version_relation` is overwritten on the fact row.
 - [ ] F015 Retractions: retract can insert a current fact row.
 - [ ] F016 Span hash: hash omits `system_to` and allows sentinel collision.
 - [ ] F017 Time: non-monotonic system time and overflow are not guarded.

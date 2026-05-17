@@ -3070,6 +3070,36 @@ Checklist:
 - Source/test commit: `b0c27154d`.
 - Progress snapshot after F013: 175 completed and committed, 25 remaining.
 
+### Active Plan - F014 Span-Scoped Fact Relations
+
+- [x] Add red storage/API regressions proving repeated assertions for the same fact preserve per-span `version_relation` values.
+- [x] Move authoritative relation storage to `sm_fact_span`, migrate legacy stores to schema v7, and write relation on each new span.
+- [x] Surface span relation through fact query hits, broker/MCP payloads, and CLI JSON/text outputs.
+- [x] Verify focused version-relation/schema/structured-memory tests, MCP/CLI relation output tests, and default package build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F014 Review
+
+- Fixed structured fact relations so `version_relation` is authoritative per `sm_fact_span` instead of being overwritten on the stable fact row.
+- Added `relation` to `StructuredFactHit` and surfaced it through broker JSON, MCP compatibility JSON, CLI JSON, and CLI text output.
+- Bumped the FTS schema to v7, added `sm_fact_span.version_relation`, backfilled migrated spans from legacy fact rows, and rehashed legacy span keys with the relation-aware span identity.
+- Guarded same-timestamp superseding writes by bumping the inserted replacement span to the first monotonic system millisecond after any closed span.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter spanRelationsPreservePerAssertionRelation --disable-automatic-resolution` failed before the schema change because `sm_fact_span.version_relation` did not exist.
+  - Red: `swift test --build-path .build-codex/f106-red --filter sameTimestampSupersedingRelationBumpsSpanInsteadOfDroppingUpdate --disable-automatic-resolution` failed before the collision fix because update evidence landed on the old span and the replacement span was missing.
+  - Red: `swift test --build-path .build-codex/f106-red --filter 'migrationRehashesLegacySpanIdentityBeforeReassertDedupe|migrationBackfillsPartialV6RelationColumn' --disable-automatic-resolution` failed before the migration fix because upgraded spans kept obsolete keys and partial v6 backfill stayed at `.sets`.
+  - Green: `swift test --build-path .build-codex/f106-red --filter 'VersionRelationTests|StructuredMemoryCRUDTests|StructuredMemorySchemaTests|deserializeUpgradesLegacyBlobSchemaIdentity' --disable-automatic-resolution`: passed; 30 tests.
+  - Green: `swift test --traits default,MCPServer --filter 'factsQueryRendersSpanIdentityAndTemporalBounds|directFactsQueryTextRendersSpanTemporalBounds' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/StructuredMemory/VersionRelation.swift Sources/WaxCore/StructuredMemory/StructuredFacts.swift Sources/WaxCore/StructuredMemory/StructuredMemoryHashing.swift Sources/WaxTextSearch/StructuredMemorySchema.swift Sources/WaxTextSearch/FTS5Schema.swift Sources/WaxTextSearch/FTS5SearchEngine.swift Sources/Wax/Broker/AgentBrokerService.swift Sources/WaxMCPServer/WaxMCPTools.swift Sources/WaxCLI/FactsCommand.swift Tests/WaxIntegrationTests/VersionRelationTests.swift Tests/WaxIntegrationTests/StructuredMemorySchemaTests.swift Tests/WaxIntegrationTests/TextSearchEngineTests.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift Tests/WaxCLITests/WaxCLIMemoryTests.swift tasks/todo.md`: passed.
+- Review:
+  - Read-only explorer confirmed relation must be span-scoped because fact rows are stable SPO identities while spans represent assertions/versions.
+  - First code review flagged same-timestamp replacement span loss; the relation-aware span key, monotonic bump, and regression were added.
+  - Second code review flagged migration hash/backfill idempotency gaps; v7 migration now always backfills v6 stores and rehashes existing spans.
+  - Final code review approved the F014 patch with only a staging-boundary note; unrelated dirty files were left unstaged.
+- Source/test commit: `c2f3bfe38`.
+- Progress snapshot after F014: 176 completed and committed, 24 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.
