@@ -208,8 +208,8 @@ Support commit not counted as a finding fix:
 - [ ] F077 FTS index: delete/supersede do not update FTS index consistently.
 - [ ] F078 Ranking: BM25 score is not normalized versus `minScore`.
 - [x] F079 Validation: `topK <= 0` clamps to 1.
-- [ ] F080 Schema: FTS schema validation is weak.
-- [ ] F081 Tokenizer: default FTS tokenizer/version is unpinned.
+- [x] F080 Schema: FTS schema validation is weak.
+- [x] F081 Tokenizer: default FTS tokenizer/version is unpinned.
 - [x] F082 CLI daemon: `--socket-path` can unlink arbitrary file.
 - [x] F083 CLI daemon: normal broker socket directory is not private.
 - [x] F084 CLI daemon: socket `readToEnd` can hang.

@@ -2603,7 +2603,7 @@ Execution order:
 Checklist:
 - [x] F063: review and commit existing duplicate vector frame-id restore work.
 - [ ] F-tier: F156, F154, F159, F160, F125, F118, F120, F119, F113, F112, F122, F114, F109, F115, F116, F117, F124, F127, F155, F158.
-- [ ] D-tier: F080, F081, F078, F074, F075, F068, F069, F070, F071, F072.
+- [ ] D-tier: F078, F074, F075, F068, F069, F070, F071, F072.
 
 ### F023 Review
 
@@ -2701,8 +2701,20 @@ Checklist:
 - Implemented generic typed-object parsing for the supported `entity`, `time_ms`, and `data_base64` variants in both parsers while keeping the existing shorthand object forms.
 - Constrained the generic schema `type` field to the supported typed-object enum so the schema no longer advertises unsupported generic shapes.
 - Verification:
-  - `swift test --traits default,MCPServer --filter 'factAssertAcceptsPublishedGenericTypedObjects|brokerFactAssertAcceptsPublishedGenericTypedObject' --disable-automatic-resolution` failed before parser changes and passed after.
+  - `swift test --traits default,MCPServer --filter 'factAssertAcceptsPublishedGenericTypedObjects|brokerFactAssertAcceptsPublishedGenericTypedObjects' --disable-automatic-resolution` failed before parser changes and passed after.
   - `swift test --traits default,MCPServer --filter 'toolSchemaRegression|factAssertRejectsMixedTypedObjectKeys|temporalFactArgumentsAreHonoredByPublishedTools|graphToolsRoundTripWorks' --disable-automatic-resolution`
+
+### F080/F081 Review
+
+- Added SQLite-backed regressions proving serialized FTS blobs pin the `frames_fts` tokenizer and that a fake ordinary table named `frames_fts` is rejected even if its SQL text contains `fts5`.
+- Bumped the text-search schema to user version 4 and created new FTS tables as `fts5(content, tokenize = 'unicode61')`.
+- Added migration for legacy v0-v3 serialized FTS databases that rebuilds `frames_fts` with the pinned tokenizer while preserving rowids and `frame_mapping` references.
+- Tightened schema validation to require a real `CREATE VIRTUAL TABLE ... USING fts5` table and to reject unpinned tokenizer drift at current schema version.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName'` failed before the schema fix and passed after.
+  - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
+  - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
+  - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
 - [ ] C-tier: F089, F090, F092, F088, F038, F029, F033, F096, F102, F106, F107, F108, F152, F153, F157.
 - [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
