@@ -3073,6 +3073,20 @@ Checklist:
 - Review:
   - Scoped code-review subagent approved the F177 diff with no findings and additionally ran `swift test --traits default,MCPServer --filter brokerSession --disable-automatic-resolution`.
 
+### F178 Review
+
+- `BrokerSessionPersistence.listManifests` now ignores only non-UUID stray `.json` files in the session directory, while UUID-named session manifests still decode strictly and surface corruption.
+- Added direct persistence coverage for skipping malformed stray JSON and still throwing on malformed UUID-named session manifests, plus a selector-based `session_resume` regression proving a stray corrupt JSON file no longer blocks valid session discovery.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerSessionResumeSelectorSkipsCorruptStrayManifests --disable-automatic-resolution` failed before the fix because selector resume returned `ok == false`.
+  - Review red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerSessionListManifestsPropagatesMalformedSessionManifest --disable-automatic-resolution` failed against the first broad `try?` fix because UUID-named corrupt manifests were silently skipped.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerSessionListManifestsSkipsMalformedStrayJSON|brokerSessionListManifestsPropagatesMalformedSessionManifest|brokerSessionResumeSelectorSkipsCorruptStrayManifests|brokerSessionResumeSelectorSkipsEndedManifests' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/BrokerSessionPersistence.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Initial review rejected broad decode swallowing because it hid real UUID-named manifest corruption.
+  - Re-review approved the UUID-filtered correction with no findings.
+
 ### F038 Review
 
 - Added red regressions proving the published MCP `recall`/`search` filter schema, MCP parser, and broker parser did not expose lifecycle and explicit-frame controls already supported by core `UnifiedSearch`.
