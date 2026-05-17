@@ -2944,6 +2944,31 @@ Checklist:
 - Source/test commit: `0d9aebfa6`.
 - Progress snapshot after F010: 170 completed and committed, 30 remaining.
 
+### Active Plan - F011 String Fact Hash Case
+
+- [x] Add red hash and integration regressions proving string fact objects preserve literal case in identity instead of deduping `"OpenAI"` and `"openai"`.
+- [x] Change string fact hashing to use raw length-delimited string bytes while preserving key validation and existing non-string canonicalization such as `-0.0`.
+- [x] Extend the schema migration coverage so legacy v4/v5 stores with normalized string hashes are recomputed and repeated assertions reuse the original row.
+- [x] Verify focused structured-memory hashing/CRUD/schema tests plus the default package build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F011 Review
+
+- Fixed string fact identity hashing so `.string` objects are hashed from raw UTF-8 bytes instead of `StructuredMemoryCanonicalizer.normalizedString`, preserving case and diacritics for literal values.
+- Kept non-string hashing behavior unchanged, including `Double` zero canonicalization and raw entity/predicate key hashing from F010.
+- Bumped FTS schema `user_version` to 6 and routed versions 0-5 through structured fact hash recomputation before accepting the store as current.
+- Added hash regressions for `"OpenAI"` versus `"openai"` and `"Zoë"` versus `"Zoe"`, an integration regression proving both cased string facts are stored/queryable, and a v5 migration regression proving stale persisted string hashes are recomputed.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter 'hashFactPreservesStringObjectCase|assertFactPreservesStringObjectCaseInIdentity|deserializeV5RecomputesStringFactHashes' --disable-automatic-resolution` failed before the fix with identical hashes/fact IDs and a v5 repeated assertion inserting `FactRowID(2)`.
+  - Green: `swift test --build-path .build-codex/f106-red --filter 'hashFactPreservesStringObjectCase|hashFactPreservesStringObjectDiacritics|assertFactPreservesStringObjectCaseInIdentity|deserializeV5RecomputesStringFactHashes|StructuredMemorySchemaTests|StructuredMemoryHashingTests|StructuredMemoryCRUDTests|VersionRelationTests|serializedBlobHasSchemaIdentityPragmas|deserializeUpgradesLegacyBlobSchemaIdentity' --disable-automatic-resolution`: passed; 32 tests.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/StructuredMemory/StructuredMemoryHashing.swift Sources/WaxTextSearch/FTS5Schema.swift Tests/WaxCoreTests/StructuredMemoryHashingTests.swift Tests/WaxIntegrationTests/StructuredMemoryCRUDTests.swift Tests/WaxIntegrationTests/StructuredMemorySchemaTests.swift Tests/WaxIntegrationTests/VersionRelationTests.swift Tests/WaxIntegrationTests/TextSearchEngineTests.swift`: passed.
+- Review:
+  - Read-only explorer confirmed the F011 root cause in `.string` object hashing and noted the diacritic-folding variant.
+  - Code-review subagent approved the source/test patch with no findings, including schema-version ordering and migration safety.
+- Source/test commit: `8514f07c6`.
+- Progress snapshot after F011: 171 completed and committed, 29 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.
