@@ -2864,7 +2864,7 @@ Checklist:
 - [x] Run focused PDF tests, default build, post-fix review, update the ledger/checklist, and commit each issue or tightly-coupled issue cluster with verification notes.
 - [x] C-tier complete.
 - [x] B-tier PDF ingest cluster complete.
-- [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
+- [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F200.
 
 ### F161 Review
 
@@ -3719,3 +3719,14 @@ Checklist:
   - `swift test --build-path .build-codex/f106-red --filter textSearchSessionCommitRemovesDeletedAndSupersededFramesFromFTSIndex --disable-automatic-resolution`: passed.
   - `swift test --build-path .build-codex/f106-red --filter 'TextSearchEngineTests|StructuredMemoryCRUDTests' --disable-automatic-resolution`: passed.
   - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+
+### F197 Review
+
+- Added regressions for both corpus builders proving corrupt `corpus.wax.manifest.json` no longer aborts a rebuild.
+- Changed `CorpusBuildManifestStore.load(for:)` so manifest decode corruption is treated as a cache miss, while missing manifests still return `nil` and real file read errors still propagate.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerCorpusSearchRebuildsWhenCorpusManifestIsCorrupt --disable-automatic-resolution` threw `DecodingError.dataCorrupted` before the fix.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerCorpusSearchRebuildsWhenCorpusManifestIsCorrupt|corpusSearchBuilderRebuildsWhenCorpusManifestIsCorrupt' --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerCorpusSearchRebuildsWhenCorpusManifestIsCorrupt|corpusSearchBuilderRebuildsWhenCorpusManifestIsCorrupt|corpusSearchBuildReusesExistingCorpusWhenSourcesUnchanged|brokerCorpusSearchRebuildsWhenSourceFingerprintChanges|corpusSearchBuildsAcrossSessionStoresAndReturnsProvenance|brokerCorpusSearchBuildSkipsLockedSessionStore' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Code-review subagent approved the scoped F197 diff with no findings.
