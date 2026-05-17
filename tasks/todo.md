@@ -2852,6 +2852,7 @@ Checklist:
 - Progress snapshot after F189: 152 completed and committed, 48 remaining.
 - Progress snapshot after F190: 153 completed and committed, 47 remaining.
 - Progress snapshot after F193: 154 completed and committed, 46 remaining.
+- Progress snapshot after F194: 155 completed and committed, 45 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -3269,6 +3270,18 @@ Checklist:
 - Review:
   - Explorer confirmed the marker metadata was already correct and the only bug was section grouping through `MemorySemantics.classifyCandidate`.
   - Scoped code-review subagent approved the F193 diff with no findings.
+
+### F194 Review
+
+- Verified the compact-context implementation already canonicalizes working, durable, and episodic hits back to document frame IDs before rendering `memory_id`; this was previously fixed by the F152 compact-context canonicalization commit.
+- Added an issue-specific regression that forces raw chunk search hits with a long session memory, confirms raw `search` returns chunk frames, then proves `compact_context` emits only non-chunk frame IDs and retrievable memory IDs.
+- Verification:
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerCompactContextEmitsCanonicalDocumentMemoryIDsForChunkHits --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerCompactContextEmitsCanonicalDocumentMemoryIDsForChunkHits|brokerBackedF152CompactContextScopesToRequestedSession|brokerRecordRetrievalHitsCanonicalizesChunkFrameIDs' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Scoped code-review subagent approved the F194 regression with no findings.
 
 ### F038 Review
 
