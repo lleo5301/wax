@@ -78,7 +78,7 @@ Known existing verification blockers from earlier runs:
 | F085 | `f8ffb6e7` | Redact CLI license key output. |
 | F086 | `858b83b6` | Enforce require-vector for direct stats/flush. |
 | F087 | `2495c05d` | Reject invalid embedder runtime flags. |
-| F088 | `pending` | Add broker/MCP parity commands to `wax-cli`. |
+| F088 | `64af3922` | Add broker/MCP parity commands to `wax-cli`. |
 | F089 | `112dcefa` | Run `wax-repo search <query>` as a one-shot command. |
 | F090 | `405a6248` | Rebuild WaxRepo full reindex into a fresh store before swapping. |
 | F092 | `36d5e36a` | Build WaxRepo search results from stored metadata instead of previews. |
