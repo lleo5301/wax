@@ -79,7 +79,7 @@ Known existing verification blockers from earlier runs:
 | F086 | `858b83b6` | Enforce require-vector for direct stats/flush. |
 | F087 | `2495c05d` | Reject invalid embedder runtime flags. |
 | F089 | `112dcefa` | Run `wax-repo search <query>` as a one-shot command. |
-| F090 | `pending` | Rebuild WaxRepo full reindex into a fresh store before swapping. |
+| F090 | `405a6248` | Rebuild WaxRepo full reindex into a fresh store before swapping. |
 | F093 | `89140c79` | Stabilize daemon socket path regression. |
 | F094 | `29f997c8` | Gate `knowledge_capture` by structured-memory flag. |
 | F095 | `f5c8d24b` | Honor broker access-stats feature flag. |
