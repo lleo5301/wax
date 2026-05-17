@@ -2845,6 +2845,7 @@ Checklist:
 - Progress snapshot after F182: 145 completed and committed, 55 remaining.
 - Progress snapshot after F183: 146 completed and committed, 54 remaining.
 - Progress snapshot after F184: 147 completed and committed, 53 remaining.
+- Progress snapshot after F185: 148 completed and committed, 52 remaining.
 
 ### Active Plan - F161/F162/F163 PDF Ingest Cluster
 
@@ -3158,6 +3159,20 @@ Checklist:
 - Review:
   - Explorer identified the same validation timing gap in checked DREAMS dry-runs.
   - Scoped code-review subagent approved the F184 diff with no findings.
+
+### F185 Review
+
+- `BrokerMarkdownSync` now requires an explicit marker with `managed == true` before a parsed bullet is treated as a managed import candidate.
+- Updated secret-import regressions and the process-level daily-note import flow to use explicit managed markers when import is intentional.
+- Added regressions proving markerless `MEMORY.md` and daily-note bullets report zero creations and do not become searchable memory.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownSyncIgnoresMarkerlessMemoryBullets --disable-automatic-resolution` failed before the parser change because sync reported one creation.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownSyncIgnoresMarkerlessMemoryBullets|brokerMarkdownSyncIgnoresMarkerlessDailyNoteBullets|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams|brokerMarkdownSyncRejectsSecretLikeDurableMemoryImports|brokerMarkdownSyncDryRunRejectsSecretLikeDurableMemoryImports|brokerMarkdownSyncDryRunRejectsSecretLikeDreamApprovals|brokerMarkdownSyncDoesNotTrustFrameIDWithMismatchedMarkerHash|brokerMarkdownSyncDoesNotDeleteLockedMemoryWhenLineRemoved' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/BrokerMarkdownSync.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed daily notes share the same markerless-import root cause.
+  - Scoped code-review subagent approved the F185 diff with no findings.
 
 ### F038 Review
 

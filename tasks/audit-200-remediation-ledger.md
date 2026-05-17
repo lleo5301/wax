@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 147
+- Fully completed and committed: 148
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 53
+- Remaining not fully completed: 52
 
 Current resume point:
 - F-through-C tiers are complete; next remaining tier is B.
@@ -141,6 +141,7 @@ Known existing verification blockers from earlier runs:
 | F182 | `2e0f6a1fd` | Validate Markdown projection markers before matching existing memory frames. |
 | F183 | `620348b66` | Preserve locked Markdown-managed memories when projection lines are removed. |
 | F184 | `8dff9e315` | Run durable-write validation during Markdown sync dry-runs. |
+| F185 | `259982606` | Require explicit managed Markdown markers for sync imports. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -359,7 +360,7 @@ Support commit not counted as a finding fix:
 - [x] F182 Markdown sync: marker trust uses frame ID only.
 - [x] F183 Markdown sync: locked memory can be deleted by removing markdown line.
 - [x] F184 Markdown sync: dry-run skips durable-write validation.
-- [ ] F185 Markdown import: markerless bullets imported as managed.
+- [x] F185 Markdown import: markerless bullets imported as managed.
 - [ ] F186 DREAMS: duplicate checked lines create duplicate durable memories.
 - [ ] F187 DREAMS: export excludes ended sessions.
 - [ ] F188 DREAMS: projection closes session stores in unawaited task.
