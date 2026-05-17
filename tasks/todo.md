@@ -2837,8 +2837,8 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F106: 113 completed and committed, 87 remaining.
-- [ ] C-tier: F107, F108, F152, F153, F157.
+- Progress snapshot after F108: 115 completed and committed, 85 remaining.
+- [ ] C-tier: F152, F153, F157.
 - [ ] B-tier: F064, F065, F066, F067, F053, F054, F077, F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 
@@ -3117,3 +3117,13 @@ Checklist:
   - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --disable-automatic-resolution --filter httpSessionCleanupTaskStopsWithApplicationStop` failed before implementation because the configuration/test lifecycle hooks did not exist.
   - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --disable-automatic-resolution --filter 'httpSessionCleanupTaskStopsWithApplicationStop|httpHandlerRejectsOversizedContentLengthBeforeReadingBody|httpHandlerRejectsStreamingOverflowBeforeRequestEnd|httpApplicationRejectsUnauthorizedOffLoopbackRequests'`: passed.
   - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+
+### F107/F108 Verification
+
+- F107 maps to `brokerBackedKnowledgeCaptureDefaultsToDurable`. The current broker-backed MCP process test passes and the earlier Memory Semantics remediation already records the durable-default fix and targeted broker coverage.
+- F108 maps to `corpusSearchSkipsLockedBrokerManagedSessionStore` plus the lower-level `brokerCorpusSearchBuildSkipsLockedSessionStore`. The current process test passes and the existing corpus builder code uses a bounded lock wait, skips locked source stores, and indexes readable session stores.
+- Because both issues are already covered and fail to reproduce on the current branch, no source edit was made for either item.
+- Verification:
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --disable-automatic-resolution --filter brokerBackedKnowledgeCaptureDefaultsToDurable`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --disable-automatic-resolution --filter corpusSearchSkipsLockedBrokerManagedSessionStore`: passed.
+  - F107 and F108 explorer subagents independently confirmed the likely test mappings, timeout signatures, and current passing focused gates.
