@@ -2837,9 +2837,9 @@ Checklist:
   - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
   - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
   - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
-- Progress snapshot after F053/F054 verification: 124 completed and committed, 76 remaining.
+- Progress snapshot after F077: 125 completed and committed, 75 remaining.
 - [x] C-tier complete.
-- [ ] B-tier: F077, F161, F162, F163.
+- [ ] B-tier: F161, F162, F163.
 - [ ] A-tier: F027, F030, F031, F032, F037, F025, F026, F034, F197, F194, F195, F196, F200.
 
 ### F038 Review
@@ -3231,4 +3231,18 @@ Checklist:
 - Verification:
   - `git grep -n "USearchVectorEngine\\|USearchIndex\\|@preconcurrency import USearch\\|toUSearchMetric\\|case usearch\\|\\.usearch" HEAD -- 'Package.swift' 'Sources/**/*.swift' 'Tests/**/*.swift'`: no active source hits; only stale comments remain.
   - `swift test --build-path .build-codex/f106-red --filter 'packageManifestDoesNotDependOnRemovedVectorDependency|loadedVectorSearchEngineRejectsLegacyUSearchVectorIndexes|loadedVectorSearchEngineCurrentEncodingRejectsLegacyUSearchVectorIndexes' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+
+### F077 Review
+
+- Added an integration regression proving a persisted text index no longer returns FTS hits for frames deleted or superseded after indexing.
+- Moved inactive-frame reconciliation to the `FTS5SearchEngine.stageForCommit(into:)` boundary so every lex-index staging caller, including structured-memory staging, gets the same cleanup.
+- Batched inactive-frame deletes in one SQLite write transaction and only adjusted `docCount`/`dirty` when mappings were actually removed, avoiding repeated no-op serialization churn.
+- Review:
+  - Initial review rejected the session-wrapper-only cleanup because `WaxStructuredMemorySession` could bypass it and because no-op removals dirtied the engine.
+  - Re-review approved the staged fix after the cleanup moved into `FTS5SearchEngine.stageForCommit(into:)`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --filter textSearchSessionCommitRemovesDeletedAndSupersededFramesFromFTSIndex --disable-automatic-resolution` failed before the fix with stale deleted and superseded FTS hits.
+  - `swift test --build-path .build-codex/f106-red --filter textSearchSessionCommitRemovesDeletedAndSupersededFramesFromFTSIndex --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'TextSearchEngineTests|StructuredMemoryCRUDTests' --disable-automatic-resolution`: passed.
   - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.

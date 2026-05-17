@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 124
+- Fully completed and committed: 125
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 76
+- Remaining not fully completed: 75
 
 Current resume point:
 - F-through-C tiers are complete; next remaining tier is B.
@@ -80,6 +80,7 @@ Known existing verification blockers from earlier runs:
 | F074 | `37e4565b` | Keep first SEP and padding token type IDs in segment zero. |
 | F075 | `434912b0` | Reject unsupported MiniLM CoreML output data types. |
 | F076 | `5e1025be` | Escape FTS5 MATCH queries. |
+| F077 | `3ac522f2` | Purge deleted and superseded frames from FTS staging. |
 | F078 | `b9335725` | Normalize FTS BM25 scores for bounded `minScore` filtering. |
 | F079 | `8b513214` | Reject non-positive FTS `topK`. |
 | F082 | `bd2a6582` | Preserve non-socket daemon paths. |
@@ -228,7 +229,7 @@ Support commit not counted as a finding fix:
 - [x] F074 Tokenizer: token type IDs mark SEP/padding as segment 1.
 - [x] F075 CoreML dtype: unsupported `MLMultiArray` dtype becomes zeros.
 - [x] F076 FTS5: raw MATCH query is not escaped.
-- [ ] F077 FTS index: delete/supersede do not update FTS index consistently.
+- [x] F077 FTS index: delete/supersede do not update FTS index consistently.
 - [x] F078 Ranking: BM25 score is not normalized versus `minScore`.
 - [x] F079 Validation: `topK <= 0` clamps to 1.
 - [x] F080 Schema: FTS schema validation is weak.
