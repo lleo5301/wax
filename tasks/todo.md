@@ -3087,6 +3087,19 @@ Checklist:
   - Initial review rejected broad decode swallowing because it hid real UUID-named manifest corruption.
   - Re-review approved the UUID-filtered correction with no findings.
 
+### F179 Review
+
+- `memory_promote` now validates an explicit `session_id` before proposal generation or durable writes, preventing stale-session approval requests from writing durable memory and then failing during promotion event recording.
+- Added a regression that ends a session, proves the explicit content is otherwise promotable, attempts approved promotion with the ended session ID, and verifies both unchanged durable frame count and durable-only search miss for the unique token.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMemoryPromoteRejectsStaleSessionBeforeDurableWrite --disable-automatic-resolution` failed before the fix because durable frame count increased and the token was searchable even though the command returned an inactive-session error.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMemoryPromoteRejectsStaleSessionBeforeDurableWrite|brokerImplicitMemoryPromotePreservesResolvedSessionProvenance|promotionMaxCandidatesAreBounded' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the stale explicit-session write-before-validation failure and false-positive traps.
+  - Scoped code-review subagent approved the F179 diff with no findings.
+
 ### F038 Review
 
 - Added red regressions proving the published MCP `recall`/`search` filter schema, MCP parser, and broker parser did not expose lifecycle and explicit-frame controls already supported by core `UnifiedSearch`.

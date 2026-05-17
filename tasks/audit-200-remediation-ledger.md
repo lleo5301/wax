@@ -20,9 +20,9 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 142
+- Fully completed and committed: 143
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 58
+- Remaining not fully completed: 57
 
 Current resume point:
 - F-through-C tiers are complete; next remaining tier is B.
@@ -136,6 +136,7 @@ Known existing verification blockers from earlier runs:
 | F176 | `d9a0403c8` | Throw when first broker event log file creation fails. |
 | F177 | `5ba327ad5` | Skip malformed broker event JSONL lines while preserving valid events. |
 | F178 | `9416e09b0` | Ignore non-session stray JSON while listing broker session manifests. |
+| F179 | `331657a10` | Validate explicit promotion sessions before durable writes. |
 | F125 | `332b2fd6` | Add website/docs PR build gate and prevent PR deploys. |
 | F126 | `67291613` | Fix Swift Testing skip detection gate. |
 | F154 | `15bd156b` | Make HTTP MCP verifier perform a real `tools/call`. |
@@ -348,7 +349,7 @@ Support commit not counted as a finding fix:
 - [x] F176 Events: first event file creation return ignored.
 - [x] F177 Events: one malformed JSONL line aborts whole log.
 - [x] F178 Manifests: corrupt stray manifest aborts all listing.
-- [ ] F179 Promotion: memory written before stale-session validation.
+- [x] F179 Promotion: memory written before stale-session validation.
 - [ ] F180 Promotion: metadata keeps raw `session_id`.
 - [x] F181 Promotion: `max_candidates` unbounded above.
 - [ ] F182 Markdown sync: marker trust uses frame ID only.
