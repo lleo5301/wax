@@ -2864,7 +2864,7 @@ Checklist:
 - [x] Run focused PDF tests, default build, post-fix review, update the ledger/checklist, and commit each issue or tightly-coupled issue cluster with verification notes.
 - [x] C-tier complete.
 - [x] B-tier PDF ingest cluster complete.
-- [ ] A-tier: F031, F032, F037, F025, F026, F034.
+- [ ] A-tier: F032, F037, F025, F026, F034.
 
 ### Active Plan - F027 Unified Search As-Of Semantics
 
@@ -3807,3 +3807,24 @@ Checklist:
   - First review found a high-severity large-`topK` cap regression; the final fix preserves `baseLimit` even when the overfetch budget is capped.
   - Final code-review subagent reported no source/test findings; it only requested this task/ledger update.
 - Progress snapshot after F030: 163 completed and committed, 37 remaining.
+
+### Active Plan - F031 Pending Preview Consistency
+
+- [x] Add a red unified-search regression where a pending frame matches via pending metadata and must render its pending payload preview.
+- [x] Teach batch preview loading to include pending frame payloads, matching `frameMetaIncludingPending` semantics.
+- [x] Verify the focused regression, the unified-search/performance preview slices, and the MCP product build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F031 Review
+
+- Fixed `Wax.framePreviews(frameIds:maxBytes:)` to build preview plans from `frameMetasIncludingPendingUnlocked`, so pending frames that already have WAL payload offsets are previewable before commit.
+- Added a low-level pending preview regression and a unified-search regression proving a pending vector result can match pending metadata and still render its payload preview.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter pendingMetadataFilteredResultUsesPendingPayloadPreview --disable-automatic-resolution` failed before the fix with `previewText == nil`.
+  - `swift test --build-path .build-codex/f106-red --filter 'pendingMetadataFilteredResultUsesPendingPayloadPreview|framePreviewsIncludesPendingFrames' --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'UnifiedSearchTests|PerformanceImprovementsTests' --disable-automatic-resolution`: passed; 39 tests.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+- Review:
+  - Read-only explorer independently confirmed the committed-only preview path as the root cause and the pending-aware preview plan as the minimal fix.
+  - Code-review subagent reported no source/test findings; it only requested this task/ledger update.
+- Progress snapshot after F031: 164 completed and committed, 36 remaining.
