@@ -4623,3 +4623,26 @@ Checklist:
   - Existing valid pending-frame same-commit delete/supersede paths remain covered because the validation includes pending put-frame count, not only committed TOC count.
 - Source/test commit: `c8704360f fix: validate delete supersede before wal append`.
 - Progress snapshot after F009: 195 checklist items complete and committed, 5 unchecked findings remain.
+
+### Active Plan - F001 Create Lock Ordering
+
+- [x] Add a red regression proving `Wax.create` does not truncate an existing store when another writer holds the file lock.
+- [x] Acquire the exclusive create lock without truncating, then open and truncate only after lock ownership is proven.
+- [x] Verify the focused regression, lifecycle/lock slices, default build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F001 Review
+
+- Fixed `Wax.create` so it acquires an exclusive lock through a non-truncating create/open path before opening the store and calling `truncate(to: 0)`.
+- Added cleanup for failed create writes so the opened file and acquired lock are released if initialization fails after lock ownership is established.
+- Added a behavioral regression that creates a valid store, holds the exclusive lock, attempts `Wax.create` with a short timeout, then verifies file size and payload are preserved after the lock failure.
+- Verification:
+  - Red phase: `swift test --filter createDoesNotTruncateExistingStoreWhenLockUnavailable --disable-automatic-resolution` failed before the fix because the store size became `0` and reopen hit a short read.
+  - Green: the same focused filter passed.
+  - `swift test --filter 'createDoesNotTruncateExistingStoreWhenLockUnavailable|LifecycleTests|FileLockTests' --disable-automatic-resolution`: passed; 17 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/Wax.swift Sources/WaxCore/IO/FileLock.swift Tests/WaxCoreTests/LifecycleTests.swift`: passed.
+- Review:
+  - Subagent review could not be launched because the existing agent-thread limit was reached; local review checked lock acquisition ordering, descriptor/lock cleanup on throws, and that the helper only exposes an exclusive create-lock path.
+- Source/test commit: `c6f67a75f fix: lock before truncating created store`.
+- Progress snapshot after F001: 196 checklist items complete and committed, 4 unchecked findings remain.
