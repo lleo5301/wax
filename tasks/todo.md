@@ -3359,6 +3359,32 @@ Checklist:
 - Source/test commit: `153e6a5d6`.
 - Progress snapshot after F050: 185 completed and committed, 15 remaining.
 
+### Active Plan - F091 WaxRepo Truncated History Checkpoint
+
+- [x] Add a red WaxRepo executable regression where `--max-commits 1` indexes only the newest commit and a later unbounded index must still recover older history.
+- [x] Keep `last-indexed-hash` conservative by only writing a checkpoint when the fetched git-log batch is known not to be truncated.
+- [x] Verify the focused regression, the wider WaxRepo index test slice, and the WaxRepo product build.
+- [x] Run post-fix review, then commit source/test and ledger updates separately.
+
+### F091 Review
+
+- Fixed WaxRepo indexing so a bounded `--max-commits` run does not advance `.wax-repo/last-indexed-hash` when `git log -n` may have truncated the history batch.
+- Added `checkpointHash(for:maxCommits:)`; it returns the newest commit hash only for unlimited runs or bounded runs that return fewer commits than the limit.
+- Updated full-reindex finalization to support replacing the store without creating a checkpoint when the full run was intentionally bounded and may not represent all history.
+- Added an executable smoke regression proving an initial `index --text-only --max-commits 1` followed by unbounded `index --text-only` can still search the older commit.
+- Verification:
+  - Red: `swift test --traits default,WaxRepo --filter waxRepoLimitedIndexDoesNotCheckpointPastUnindexedOlderHistory --disable-automatic-resolution` failed before the fix because search returned only the newer commit.
+  - Green: `swift test --traits default,WaxRepo --filter waxRepoLimitedIndexDoesNotCheckpointPastUnindexedOlderHistory --disable-automatic-resolution`: passed.
+  - `swift test --traits default,WaxRepo --filter WaxRepoIndexCommandTests --disable-automatic-resolution`: passed; 4 tests.
+  - `swift build --product WaxRepo --traits default,WaxRepo --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxRepo/Commands/IndexCommand.swift Tests/WaxTests/WaxRepoIndexCommandTests.swift`: passed.
+- Review:
+  - Explorer subagent independently reproduced the baseline failure mode and confirmed the minimal fix shape.
+  - Code-review subagent was started for the scoped diff but did not return before the wait timeout.
+  - Local review confirmed the fix prevents permanent older-history skips; true bounded backfill pagination would require a separate oldest-commit cursor and is outside F091.
+- Source/test commit: `5de373cd9`.
+- Progress snapshot after F091: 186 completed and committed, 14 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.

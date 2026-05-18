@@ -20,12 +20,12 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 185
+- Fully completed and committed: 186
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 15
+- Remaining not fully completed: 14
 
 Current resume point:
-- F047 through F050 are now fixed; remaining active work is the still-unchecked WaxRepo, broker/session, corpus, multimodal MCP, test-gate, and deeper durability/structured-memory findings.
+- F047 through F050 and F091 are now fixed; remaining active work is the still-unchecked broker/session, corpus, multimodal MCP, test-gate, and deeper durability/structured-memory findings.
 - The active request is to fix all remaining findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
@@ -96,6 +96,7 @@ Known existing verification blockers from earlier runs:
 | F088 | `64af3922` | Add broker/MCP parity commands to `wax-cli`. |
 | F089 | `112dcefa` | Run `wax-repo search <query>` as a one-shot command. |
 | F090 | `405a6248` | Rebuild WaxRepo full reindex into a fresh store before swapping. |
+| F091 | `5de373cd9` | Avoid checkpointing WaxRepo history when `--max-commits` may have truncated the batch. |
 | F092 | `36d5e36a` | Build WaxRepo search results from stored metadata instead of previews. |
 | F093 | `89140c79` | Stabilize daemon socket path regression. |
 | F094 | `29f997c8` | Gate `knowledge_capture` by structured-memory flag. |
@@ -303,7 +304,7 @@ Support commit not counted as a finding fix:
 - [x] F088 CLI surface: CLI lacks broker/MCP parity subcommands.
 - [x] F089 WaxRepo: `wax-repo search` still launches TUI.
 - [x] F090 WaxRepo: `--full` duplicates store content.
-- [ ] F091 WaxRepo: `max-commits` checkpoint can skip older history permanently.
+- [x] F091 WaxRepo: `max-commits` checkpoint can skip older history permanently.
 - [x] F092 WaxRepo: repo search parses preview instead of metadata.
 - [x] F093 CLI tests: daemon stable socket path expectation fails.
 - [x] F094 MCP structured: `knowledge_capture` bypasses structured-memory flag.
