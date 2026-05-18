@@ -253,7 +253,7 @@ From `VectorSerializer.swift`, vectors are stored in a custom binary format:
 │ VecSegmentHeaderV1 (36 bytes)                │
 │   magic: "MV2V" (0x4D563256)                │
 │   version: 1                                 │
-│   encoding: 1=uSearch, 2=metal, 3=flat       │
+│   encoding: 1=legacy unsupported, 2=metal, 3=flat │
 │   similarity: 0=cosine, 1=dot, 2=l2         │
 │   dimension: UInt32                          │
 │   vectorCount: UInt64                        │
@@ -629,7 +629,6 @@ All actor boundaries are designed for `Sendable` compliance with strict concurre
 | Package | Version | Purpose |
 |---------|---------|---------|
 | MetalANNS | 0.1.3 | GPU-accelerated HNSW |
-| USearch | 2.24.0 | CPU vector index (fallback) |
 | GRDB.swift | 7.0.0 | SQLite FTS5 wrapper |
 | swift-crypto | 3.7.0 | SHA-256 checksums |
 | swift-sdk (MCP) | 0.10.0 | MCP server protocol |

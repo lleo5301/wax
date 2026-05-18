@@ -1,3 +1,43 @@
+- [x] Remove USearch from Wax entirely.
+  - [x] Add regression coverage proving legacy USearch vector payloads fail with a rebuild-oriented error and CPU vector search uses Accelerate.
+  - [x] Remove USearch from package dependencies and vector engine runtime selection.
+  - [x] Remove USearch-specific serializer and engine code while preserving flat vector persistence.
+  - [x] Update docs/tests/benchmarks that still describe or instantiate USearch.
+  - [x] Run targeted vector/unified/session tests plus package resolution/build checks.
+
+## USearch Removal 2026-05-17
+
+- Scope:
+  - Remove `USearch` from Wax to avoid downstream `USearch -> NumKong -> CNumKong` package/linkage failures.
+  - Keep `AccelerateVectorEngine` as the CPU fallback and `MetalANNSVectorEngine` as the Apple GPU path.
+  - Treat legacy USearch-serialized vector indexes as unsupported and require rebuilding the vector index.
+- Verification plan:
+  - Start with focused failing tests for legacy payload rejection and Accelerate engine selection.
+  - Then remove the dependency, engine implementation, serializer coupling, and stale docs/tests.
+  - Finish with package resolution, targeted tests, build, and a reference sweep for live USearch dependency names.
+- Results:
+  - Removed the `USearch` package dependency, `USearchVectorEngine`, and `USearchSendable`.
+  - `LoadedVectorSearchEngine` now routes CPU fallback to `AccelerateVectorEngine`; MetalANNS remains the preferred GPU path.
+  - `VectorSerializer` keeps encoding `1` only as a legacy marker and rejects it with a rebuild-vector-index error.
+  - Docs, benchmarks, release scripts, and dependency smoke tests now describe Accelerate/MetalANNS instead of USearch.
+- Verification:
+  - `swift package resolve`: passed; ignored local `Package.resolved` no longer contains the removed dependency.
+  - `swift package describe --type json`: no removed vector dependency references.
+  - `swift build`: passed.
+  - `swift test --filter 'VectorSerializerTests|VectorSearchEngineTests|DependencyTests'`: passed; 41 tests.
+  - `swift test --filter VectorSearchDocsTests`: passed; 5 tests.
+  - `swift test --filter waxVecIndexPersistsAndReopens`: passed after the final test cleanup.
+  - `swift test --filter UnifiedSearchTests --no-parallel`: passed after routing normalized/OR-expanded FTS queries through a raw match API.
+  - `swift test --filter 'VectorSerializerTests|VectorSearchEngineTests|UnifiedSearchTests|WaxSessionTests' --no-parallel`: passed; 70 tests.
+  - `swift package resolve --disable-automatic-resolution`: passed; ignored local `Package.resolved` contains no removed dependency and has the current NIO pin.
+  - `swift test --no-parallel`: passed; 938 tests.
+  - `swift test --traits default,MCPServer --filter brokerSearchAppliesLifecycleAndFrameIDFilters --no-parallel --disable-automatic-resolution`: passed.
+  - `swift test --traits default,WaxRepo --filter 'waxRepoFullReindexReplacesExistingStore|waxRepoSearchQueryRunsOneShotAndExits|waxRepoSearchUsesStoredMetadataWhenPreviewOmitsHeader' --no-parallel --disable-automatic-resolution`: passed.
+  - `git diff --check`: passed.
+- Review:
+  - Code-review subagent flagged a potentially stale ignored `Package.resolved`; locked resolution passed locally and the removed dependency is absent.
+  - It flagged an async cleanup race in a trait-gated broker test; the test now awaits `AgentBrokerService.close()` before temp cleanup.
+
 - [x] Sweep GitHub issues in `christopherkarani/Wax`.
   - [x] Confirm open issue inventory.
   - [x] Inspect all current GitHub issues and recent closure evidence.
@@ -1951,3 +1991,2748 @@
   - `swift test --traits default,MCPServer --filter 'releaseWaxMCPScriptsSyncMetadataVersion|releaseWaxMCPWrapperExecutesCanonicalScriptFromRepoRoot|waxMCPPackageAdvertisesReleaseArchitectures|buildWaxMCPBinariesWritesRelocatableChecksums|brokerSocketFallbackUsesPrivateUserDirectory' --disable-automatic-resolution`: passed; 5 tests.
   - `bash -n Resources/scripts/release-waxmcp.sh scripts/release-waxmcp.sh Resources/scripts/build-waxmcp-binaries.sh`: passed.
   - `git diff --check`: passed.
+
+## 200-Item Audit 2026-05-13
+
+- Scope:
+  - Audit-only: find 200 verified, non-duplicate bugs or implementation gaps.
+  - Do not fix code, stage files, delete generated artifacts, or disturb user-owned dirty work.
+  - Treat a finding as accepted only with exact code path, line/function, failure mode, impact, proof, false-positive check, and recommended fix/test.
+- Plan:
+  - [x] Inventory repo state, dirty files, prior task notes, and reusable memory before deeper work.
+  - [x] Split audit across subagents for Package/build graph, WaxCore durability, Wax facade/search/broker, vector/CoreML/tokenizers, FTS5, CLI, MCP server, npm/OpenClaw, website/docs/snippets/skills, tests/CI/release scripts.
+    - First wave complete: Package/traits, WaxCore durability, structured memory, facade/search/broker, vector engines, MiniLM/Arctic/tokenizers.
+    - Second wave complete: FTS5/text search, CLI, MCP server, npm/OpenClaw artifacts, website/docs/snippets/WaxDemo, tests/CI/release scripts.
+    - Third wave complete: RAG/orchestrator, broker markdown/session, enrichment/surrogates/access stats, media RAG, public API/docs, test-contract gaps.
+  - [x] Run relevant build/test/script/package gates and capture exact pass/fail evidence.
+    - Completed: default build, MCP build, npm pack dry-runs, WaxDemo build probe, WaxCLI focused test, WaxMCPServer focused/full probes, MiniLM quality/embedder probes, WaxCore/focused durability suites, vector suites, iOS Xcode build, script syntax checks.
+  - [x] Deduplicate by root cause, reject style nits and speculative wishlist items, and keep only verified defects/gaps.
+    - Duplicates rejected include commit atomicity across durability/facade, vector-mode schema drift across facade/MCP, broker socket-path findings across CLI/MCP, npm release packaging across package/CI, and access-stat/surrogate duplicates across RAG/enrichment.
+  - [x] Launch targeted follow-up passes for any under-covered area until 200 verified findings survive or a hard blocker proves the target cannot be met honestly.
+  - [x] Add a review/verification section summarizing the audit method, accepted count, blockers, and remaining risk.
+
+## 200-Item Audit Review 2026-05-13
+
+- Verified total: 200 non-duplicate bugs or implementation gaps accepted for the final audit table.
+- Worktree preservation: no source fixes were made; only this task log was updated. Existing untracked `.build-codex/`, `.playwright-mcp/`, `.qwen/`, `issue61_full.png`, and `issue61_snapshot.md` were left untouched.
+- Method: repository inventory, memory lookup, three parallel subagent waves across the requested slices, local gate execution, focused reruns for failing tests, static proof through concrete code paths, and root-cause deduplication before final acceptance.
+- Key gates:
+  - `swift build --disable-automatic-resolution`: passed.
+  - `swift build --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - WaxCore and focused crash/WAL/delete/unified/vector/concurrency test subsets: passed.
+  - `WAX_TEST_MINILM=1 swift test --filter MiniLMEmbeddingQualityTests --disable-automatic-resolution`: passed.
+  - `WAX_TEST_MINILM=1 swift test --filter MiniLMEmbedderTests --disable-automatic-resolution`: failed on MiniLM batch embedding behavior.
+  - `swift test --traits default,MCPServer --filter WaxCLITests --disable-automatic-resolution`: failed on stable socket path expectation.
+  - `swift test --traits default,MCPServer --filter WaxMCPServerTests --disable-automatic-resolution`: failed on two broker-backed timeout tests.
+  - `Resources/scripts/quality/verify_public_snippets.sh`: missing.
+  - `swift build --package-path Resources/WaxDemo --disable-automatic-resolution`: failed because `Resources/WaxDemo` points at missing `../Wax`.
+  - `xcodebuild -scheme Wax -destination 'generic/platform=iOS'`: passed, so iOS build-surface claims were not counted as failures.
+- Blockers: no blocker prevented the audit. Linux runtime verification and external release publishing were not executed locally; Linux/package/release findings were accepted only where static CI/package/script evidence was precise.
+
+## 200-Item Remediation Plan 2026-05-13
+
+- Scope:
+  - Fix all 200 accepted audit findings using TDD and one fix commit per issue.
+  - Preserve the existing dirty/untracked state and do not stage generated artifacts.
+  - Use subagents for disjoint slices, but keep final integration and commits explicit in this worktree.
+- Ledger:
+  - [x] Create `tasks/audit-200-remediation-ledger.md` before source edits.
+- Plan:
+  - [ ] Commit the remediation ledger/planning note separately from issue fixes.
+  - [ ] Batch 1: fix isolated packaging/docs/test-gate issues with fast verification.
+  - [ ] Batch 2: fix MiniLM/tokenizer/vector validation issues with focused failing tests first.
+  - [ ] Batch 3: fix CLI/MCP schema/process issues with trait-enabled tests.
+  - [ ] Batch 4: fix broker/session/markdown/corpus issues with failure-injection tests.
+  - [ ] Batch 5: fix WaxCore durability/structured-memory transactional issues with focused crash/replay tests.
+  - [ ] Batch 6: fix media/API/docs public-surface issues with snippet/external-consumer compile gates.
+  - [ ] After every issue: run focused verification, review diff for regressions, update ledger status, and commit only that issue.
+
+### F128 Review
+
+- Added a README regression test that proves the quick-start Swift snippet imports `Foundation` before `Wax`.
+- Verified the test failed before the README change because the snippet used `URL.documentsDirectory` with only `import Wax`.
+- Added `import Foundation` to the README Swift quick-start and CLI snippets.
+- Verification: `swift test --filter readmeQuickStartImportsFoundationBeforeWax --disable-automatic-resolution` passed.
+
+
+### F129 Plan
+
+- [x] Add a focused README static regression that fails while the public `Memory(at:)` quick-start advertises hybrid recall without an embedding provider.
+- [x] Update only the root README quick-start wording so the public no-embedding `Memory` path is described as text-only.
+- [x] Run the focused README regression, review the diff for unrelated changes, update the F129 ledger entry, and commit only the F129 files.
+
+### F129 Review
+
+- Added a README regression that extracts the root Swift quick-start and fails if the no-embedding public `Memory(at:)` example advertises hybrid or `text + vector` recall.
+- Verified the focused test failed before the README fix on the existing `hybrid recall (text + vector)` claim.
+- Reworded the root README quick-start comment to describe text-only recall without an embedding provider.
+- Verification:
+  - `swift test --filter readmePublicMemoryQuickStartDoesNotAdvertiseHybridWithoutEmbedding --disable-automatic-resolution`: failed before the README change, then passed after.
+  - `swift test --filter READMEExamplesTests --disable-automatic-resolution`: passed.
+  - `git diff --check -- README.md Tests/WaxIntegrationTests/READMEExamplesTests.swift tasks/audit-200-remediation-ledger.md tasks/todo.md`: passed.
+### F111 Review
+
+- Fixed the standalone WaxDemo manifest dependency from missing `../Wax` to the repository root.
+- Follow-up verification showed the path fix exposed package-boundary errors: the demo executables imported `WaxCore` internals that are `package`-scoped in the root package.
+- Reworked the standalone demo executables to depend on the public `Wax` product and use public `Memory` / `FrameStore` APIs only.
+- Verification:
+  - `swift package describe --package-path Resources/WaxDemo --disable-automatic-resolution`: passed.
+  - `swift build --package-path Resources/WaxDemo --disable-automatic-resolution`: passed.
+
+### F076 Review
+
+- Added a regression that searches for FTS5 syntax/punctuation as literal user text instead of raw MATCH syntax.
+- The focused test failed before the fix and passed after escaping/tokenizing query terms.
+- Verification:
+  - `swift test --filter searchTreatsFTS5SyntaxAndPunctuationAsLiteralText`: passed.
+  - `swift test --filter TextSearchEngine`: passed.
+  - `swift test --filter FTS5Serializer`: passed.
+
+### F123 Review
+
+- Added a shell fixture for Swift Testing summary lines using `with 0 failures`.
+- Fixed `production_readiness_gates.sh` to parse both `and N failures` and `with N failures` summary formats.
+- Verification:
+  - `bash -n Resources/scripts/quality/production_readiness_gates.sh`: passed.
+  - `bash -n Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+  - `bash Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+  - `shellcheck Resources/scripts/quality/production_readiness_gates.sh Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+  - `git diff --check HEAD~1..HEAD`: passed.
+
+### F079 Review
+
+- Added a regression proving FTS5 search rejects `topK: 0` instead of silently clamping it to one result.
+- Replaced the search limit clamp with validation that throws `WaxError.encodingError` for non-positive `topK` while still capping oversized positive values.
+- Verification:
+  - `swift test --filter searchRejectsNonPositiveTopK --disable-automatic-resolution`: passed.
+  - `swift test --filter TextSearchEngine --disable-automatic-resolution`: passed.
+
+### F044 Review
+
+- Added a regression proving whitespace-only recall returns an empty context without calling the query embedder.
+- Trimmed the recall query before embedding/search and added an early empty-query return from the shared recall execution path.
+- Verification:
+  - `swift test --filter whitespaceOnlyRecallDoesNotRequestEmbedding --disable-automatic-resolution`: passed.
+  - `swift test --filter MemoryOrchestratorGapTests --disable-automatic-resolution`: passed.
+
+### F046 Review
+
+- Added a manifest regression proving the `WaxRepo` executable target carries the `MiniLMEmbeddings` compile define when the trait is enabled.
+- Added `.define("MiniLMEmbeddings", .when(traits: ["MiniLMEmbeddings"]))` to the `WaxRepo` executable target settings.
+- Verification:
+  - `swift test --filter waxRepoProductEnablesMiniLMCompileDefine --disable-automatic-resolution`: passed.
+  - `swift build --product WaxRepo --traits MiniLMEmbeddings,WaxRepo --disable-automatic-resolution`: passed.
+
+### F045 Review
+
+- Added a manifest regression proving the `wax-mcp` executable target carries the `MiniLMEmbeddings` compile define when the trait is enabled.
+- Added `.define("MiniLMEmbeddings", .when(traits: ["MiniLMEmbeddings"]))` to the `wax-mcp` executable target settings.
+- Verification:
+  - `swift test --filter waxMCPProductEnablesMiniLMCompileDefine --disable-automatic-resolution`: passed.
+  - `swift build --product wax-mcp --traits MCPServer --disable-automatic-resolution`: passed.
+
+### F073 Review
+
+- Added a regression proving the BERT tokenizer treats newline-separated text the same as space-separated text.
+- Fixed tokenizer whitespace handling so newlines do not produce extra `[UNK]` tokens.
+- Verification:
+  - `swift test --filter bertTokenizerTreatsNewlinesAsWhitespace --disable-automatic-resolution`: passed.
+  - `swift test --filter BertTokenizer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxBertTokenizer/BertTokenizer.swift Tests/WaxIntegrationTests/BertTokenizerReuseTests.swift`: passed.
+
+### F121 Review
+
+- Added a README regression proving the local waxmcp development command uses the real repo-root path.
+- Fixed the npm README command from `./npm/waxmcp` to `./Resources/npm/waxmcp`.
+- Verification:
+  - `swift test --filter npmReadmeLocalDevelopmentUsesRepoRootPackagePath --disable-automatic-resolution`: passed in a detached verification worktree.
+  - `(cd Resources/npm/waxmcp && npm pack --dry-run)`: passed.
+  - `git diff --check -- Resources/npm/waxmcp/README.md Tests/WaxIntegrationTests/READMEExamplesTests.swift`: passed.
+
+### F043 Review
+
+- Added a regression proving MCP search rejects unknown nested filter keys instead of silently ignoring them.
+- Added an explicit allowlist for supported filter keys in the compatibility MCP filter parser.
+- Verification:
+  - `swift test --traits default,MCPServer --filter searchRejectsUnknownFilterKeys --disable-automatic-resolution`: passed.
+  - `swift test --traits default,MCPServer --filter 'searchRejectsUnknownFilterKeys|metadataFiltersApplyToSearchAndRecall' --disable-automatic-resolution`: passed.
+
+### F151 Plan
+
+- [x] Prove the default SwiftPM test list omits the MCP trait test target.
+- [x] Prove the MCPServer trait SwiftPM test list includes the MCP trait test target.
+- [x] Add a required CI/quality-gate check that documents and enforces the MCP trait test target is present before the production MCP lane runs.
+- [x] Run syntax/static checks for the touched scripts and record the F151 review.
+
+### F151 Review
+
+- Added a production-readiness inventory check that runs SwiftPM test discovery in default mode and `MCPServer` trait mode before the production MCP test lane.
+- The new gate allows the default no-trait `wax_mcpTests.mcpServerTestsRequireTrait()` sentinel but fails if default test discovery unexpectedly includes real MCP trait suites.
+- The MCP trait inventory now fails unless the trait list includes `wax_mcpTests.WaxMCPProcessTests/...` and `wax_mcpTests.toolsListContainsExpectedTools()`.
+- Static proof:
+  - Default test list: `0` real MCP trait entries.
+  - MCP trait test list: `81` `wax_mcpTests` entries.
+- Verification:
+  - `bash -n Resources/scripts/quality/production_readiness_gates.sh Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+  - `bash Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+  - `shellcheck Resources/scripts/quality/production_readiness_gates.sh Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+  - `assert_mcp_trait_test_inventory`: passed against real SwiftPM test discovery.
+
+### F052 Review
+
+- Added regressions proving USearch, Accelerate, and Metal vector engines reject NaN/Inf vectors for `add`, `addBatch`, and query search, including empty-index searches.
+- The focused regressions failed before validation with nine expectation failures.
+- Centralized vector dimension/capacity/finite checks and routed USearch, Accelerate, Metal, and Metal ANNS validation through the shared helper.
+- Verification:
+  - `swift test --filter 'RejectsNonFiniteVectors|uSearchVectorEngineRejectsNonFiniteVectors|accelerateVectorEngineRejectsNonFiniteVectors|metalVectorEngineRejectsNonFiniteVectors' --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter VectorSearchEngine --disable-automatic-resolution`: passed.
+
+### F132 Review
+
+- Corrected Getting Started docs to use the real `WaxOptions` labels.
+- Verification:
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxCore/WaxCore.docc/Articles/GettingStarted.md:Resources/website/docs/core/getting-started.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+  - `git diff --check -- Sources/WaxCore/WaxCore.docc/Articles/GettingStarted.md Resources/website/docs/core/getting-started.md Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F138 Review
+
+- Replaced deprecated `.metalPreferred` vector engine docs with `.auto`, `.gpuOnly`, and `.cpuOnly`.
+- Verification:
+  - Targeted grep found no remaining `.metalPreferred` references in the owned vector-search docs.
+  - Targeted public snippet verification for the vector-search docs passed.
+  - `git diff --check` passed for the owned docs.
+
+### F149 Review
+
+- Replaced PhotoRAG `.all` scope examples with the actual `.fullLibrary` API.
+- Verification:
+  - Static grep proved `PhotoScope` exposes `.fullLibrary`, not `.all`.
+  - Public snippet verification passed across `64 files, 294 fenced snippets`.
+  - `git diff --check` passed.
+
+### F150 Review
+
+- Added a regression proving VideoRAG docs must not advertise package-only `VideoRAGOrchestrator` as public API.
+- Rewrote VideoRAG docs to describe the package-only status and removed public-consumer setup/ingest snippets.
+- Verification:
+  - `swift test --filter videoRAGDocsDoNotAdvertisePackageOnlyOrchestratorAsPublicAPI`: failed before and passed after.
+  - Targeted public snippet verification for VideoRAG docs passed.
+  - Static grep confirmed `VideoRAGOrchestrator` remains `package actor` and docs now call it package-only.
+
+### F147 Plan
+
+- [x] Prove `PhotoRAGOrchestrator` is package-only and the owned docs still advertise it like public API.
+- [x] Add a focused docs regression for the PhotoRAG public-surface claim.
+- [x] Rewrite only the owned PhotoRAG docs to describe the package-only contributor surface.
+- [x] Verify the focused test, targeted snippet scan, static grep, and whitespace diff.
+- [x] Mark only F147 complete in the ledger and record the review.
+
+### F147 Review
+
+- Added a regression proving PhotoRAG docs must not advertise package-only `PhotoRAGOrchestrator` as public API.
+- Verified the focused regression failed before the docs rewrite on both owned docs.
+- Rewrote the DocC and website PhotoRAG pages as package-only contributor documentation and removed public construction, ingest, sync, and recall snippets.
+- Verification:
+  - `swift test --filter photoRAGDocsDoNotAdvertisePackageOnlyOrchestratorAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/Wax/Wax.docc/Articles/PhotoRAG.md:Resources/website/docs/media/photo-rag.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+  - Static grep confirmed `PhotoRAGOrchestrator` remains `package actor` with a `package init`, and the owned docs now call the surface package-only and not public API.
+  - `git diff --check -- Sources/Wax/Wax.docc/Articles/PhotoRAG.md Resources/website/docs/media/photo-rag.md Tests/WaxTests/PhotoRAGDocsTests.swift tasks/audit-200-remediation-ledger.md tasks/todo.md`: passed.
+
+### F140 Review
+
+- Added a regression proving Text Search docs must not advertise package-only `FTS5SearchEngine` as public API.
+- Verified the focused regression failed before the docs rewrite on the owned WaxTextSearch and website text-search docs.
+- Reframed the owned text-search docs as package-only contributor documentation and removed DocC topic links that promoted `FTS5SearchEngine` as a public symbol.
+- Verification:
+  - `swift test --filter textSearchDocsDoNotAdvertisePackageOnlyFTS5EngineAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxTextSearch/WaxTextSearch.docc/Documentation.md:Sources/WaxTextSearch/WaxTextSearch.docc/Articles/TextSearchEngine.md:Resources/website/docs/text-search/text-search-engine.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+  - Static grep confirmed `FTS5SearchEngine` remains `package actor` and the owned docs now call the surface package-only and not public API.
+
+### F051 Review
+
+- Added a WaxCore regression proving malformed staged vector-index bytes are rejected before commit.
+- The focused regression failed before validation because `stageVecIndexForNextCommit` accepted `Data([0x01])`.
+- Added MV2V header, length, metadata, and flat/Metal/uSearch segment consistency validation in WaxCore staging.
+- Replaced stale/no-op test fixtures that used dummy vector bytes with minimal valid flat-vector segments.
+- Verification:
+  - `swift test --filter stageVecIndexRejectsMalformedSegmentBytes --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter 'IndexStagingNoOpTests|DurabilityRegressionTests|VectorSearchEngine' --disable-automatic-resolution`: passed.
+
+### F130 Plan
+
+- [x] Prove `Wax` is `package actor` while the owned WaxCore docs advertise it as public-facing API.
+- [x] Add a focused docs regression that fails on public Wax actor snippets/phrasing.
+- [x] Rewrite only WaxCore DocC and website core docs to describe the package-only boundary.
+- [x] Verify the focused docs regression, targeted snippet scan, static grep, and whitespace diff.
+- [x] Mark only F130 complete in the ledger and record the review.
+
+### F130 Review
+
+- Added a focused docs regression proving `Sources/WaxCore/Wax.swift` keeps `Wax` as a `package actor` while the owned WaxCore docs must not advertise direct `Wax` actor usage as public API.
+- Verified the regression failed before the docs rewrite on public-facing `Wax.create`, `Wax.open`, writer-lease, frame-write, commit, read, and close snippets.
+- Rewrote the owned WaxCore DocC and website core docs to describe the package-only boundary and point downstream consumers at the top-level `Wax` product APIs.
+- Verification:
+  - `swift test --filter waxCoreDocsDoNotAdvertisePackageOnlyWaxActorAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxCore/WaxCore.docc/Documentation.md:Sources/WaxCore/WaxCore.docc/Articles/GettingStarted.md:Sources/WaxCore/WaxCore.docc/Articles/ConcurrencyModel.md:Resources/website/docs/core/getting-started.md:Resources/website/docs/core/concurrency-model.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+  - Targeted grep found no remaining direct public `Wax.create`, `Wax.open`, `store.acquireWriterLease`, `store.putFrame`, `store.commit`, `store.releaseWriterLease`, `store.readPayload`, or `store.close` guidance in the owned WaxCore docs.
+  - `git diff --check -- Sources/WaxCore/WaxCore.docc/Documentation.md Sources/WaxCore/WaxCore.docc/Articles/GettingStarted.md Sources/WaxCore/WaxCore.docc/Articles/ConcurrencyModel.md Resources/website/docs/core/getting-started.md Resources/website/docs/core/concurrency-model.md Tests/WaxTests/WaxCoreDocsTests.swift tasks/audit-200-remediation-ledger.md tasks/todo.md`: passed.
+
+### F131 Plan
+
+- [x] Prove `Sources/WaxCore/WaxCore.docc/Documentation.md` topic links include package-only symbols.
+- [x] Add a focused docs regression that fails while package-only WaxCore symbols appear in the public DocC topics list.
+- [x] Rewrite only `Sources/WaxCore/WaxCore.docc/Documentation.md` to remove or reframe package-only topics from the public topic list.
+- [x] Verify the focused regression, targeted snippet scan, static grep, and whitespace diff.
+- [x] Mark only F131 complete in the ledger and record the review.
+
+### F131 Review
+
+- Added a focused regression proving WaxCore DocC topics must not link package-only symbols as public topics.
+- Verified the regression failed before the docs rewrite with 42 package-only WaxCore symbol links in the topic list.
+- Reframed the WaxCore landing topic list to expose conceptual articles plus the public `WaxError` symbol, while explicitly omitting package-only implementation symbols.
+- Verification:
+  - `swift test --filter waxCoreDocCTopicsDoNotLinkPackageOnlySymbols --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter WaxCoreDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxCore/WaxCore.docc/Documentation.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+  - Targeted grep confirmed no package-only WaxCore symbol links remain in the `Documentation.md` topic list and `WaxError` remains listed.
+
+### F135 Plan
+
+- [x] Prove `VectorSearchEngine` is package-only while the owned vector-search docs advertise it as public API.
+- [x] Add a focused docs regression for the `VectorSearchEngine` public-surface claim.
+- [x] Rewrite only the owned WaxVectorSearch DocC and website vector-search docs to describe the package-only contributor surface.
+- [x] Verify the focused regression, targeted snippet scan, static grep, and whitespace diff.
+- [x] Mark only F135 complete in the ledger and record the review.
+
+### F135 Review
+
+- Added a focused docs regression proving `Sources/WaxVectorSearch/VectorSearchEngine.swift` keeps `VectorSearchEngine` as a `package protocol` while the owned vector-search docs must not advertise it as public API.
+- Verified the regression failed before the docs rewrite on the public-looking protocol topic and shared-protocol phrasing.
+- Reframed the owned WaxVectorSearch DocC and website vector-search docs to call `VectorSearchEngine` package-only and not public API, and removed it from the DocC engine topic list.
+- Verification:
+  - `swift test --filter vectorSearchDocsDoNotAdvertisePackageOnlyProtocolAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxVectorSearch/WaxVectorSearch.docc/Documentation.md:Sources/WaxVectorSearch/WaxVectorSearch.docc/Articles/VectorSearchEngines.md:Resources/website/docs/vector-search/vector-search-engines.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+  - Static grep confirmed `VectorSearchEngine` remains `package protocol`, the owned docs now call it package-only and not public API, and the stale public-protocol phrases are absent.
+
+### F057 Review
+
+- Added a vector serializer regression with a huge flat-segment header that previously crashed the test process with Swift's integer overflow trap.
+- Replaced unchecked `Int` byte-count multiplications with checked `UInt64` arithmetic before converting to `Int`.
+- Added explicit overflow and `Int.max` diagnostics for vector payload and frame-id byte counts.
+- Verification:
+  - `swift test --filter flatSegmentDecodeRejectsVectorByteCountOverflow --disable-automatic-resolution`: crashed before and passed after.
+  - `swift test --filter VectorSerializer --disable-automatic-resolution`: passed.
+
+### F056 Review
+
+- Added a USearch batch regression proving duplicate frame IDs in one batch should behave like repeated adds and serialize one live vector.
+- The focused regression failed before the fix with `duplicateKeysError` on an empty-index batch containing duplicate IDs.
+- Deduplicated USearch batch inputs before reserve/add, preserving the last vector for each frame ID.
+- Verification:
+  - `swift test --filter uSearchVectorEngineAddBatchDuplicateIdsDoNotOvercount --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter VectorSearchEngine --disable-automatic-resolution`: passed.
+
+### F141 Review
+
+- Added a regression proving Text Search docs must not advertise package-only `TextSearchResult` as public API.
+- Verified the focused regression failed before the docs rewrite on the DocC module topics, DocC article, and website text-search page.
+- Reframed the owned text-search docs so the result value is described as a package-only implementation detail instead of a documented public symbol/type.
+- Verification:
+  - `swift test --filter textSearchDocsDoNotAdvertisePackageOnlyTextSearchResultAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter TextSearchDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxTextSearch/WaxTextSearch.docc/Documentation.md:Sources/WaxTextSearch/WaxTextSearch.docc/Articles/TextSearchEngine.md:Resources/website/docs/text-search/text-search-engine.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F139 Review
+
+- Added a vector docs regression proving the package-only `VectorSearchEngine` protocol does not declare `addBatchStreaming` and public/contributor docs must not present it as part of the shared operation flow.
+- Verified the focused regression failed before removing the stale streaming snippet from both vector-engine docs pages.
+- Removed the `addBatchStreaming` snippet from common operations while preserving the documented `addBatch`, `search`, `remove`, and `stageForCommit` flow.
+- Verification:
+  - `swift test --filter vectorSearchDocsDoNotClaimProtocolHasStreamingBatchAPI --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter VectorSearchDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxVectorSearch/WaxVectorSearch.docc/Documentation.md:Sources/WaxVectorSearch/WaxVectorSearch.docc/Articles/VectorSearchEngines.md:Resources/website/docs/vector-search/vector-search-engines.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F136 Review
+
+- Added a vector docs regression proving public/contributor docs must not instantiate package-only `USearchVectorEngine` directly.
+- Verified the focused regression failed before removing `USearchVectorEngine(...)` snippets from the module overview, DocC article, and website page.
+- Replaced the CPU construction snippets with contributor-facing prose that Wax package internals select the CPU backend through the loader/session configuration.
+- Verification:
+  - `swift test --filter vectorSearchDocsDoNotInstantiatePackageOnlyUSearchEngineAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter VectorSearchDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxVectorSearch/WaxVectorSearch.docc/Documentation.md:Sources/WaxVectorSearch/WaxVectorSearch.docc/Articles/VectorSearchEngines.md:Resources/website/docs/vector-search/vector-search-engines.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F137 Review
+
+- Added a vector docs regression proving public/contributor docs must not instantiate package-only `MetalVectorEngine` directly.
+- Verified the focused regression failed before removing `MetalVectorEngine(...)` snippets from the DocC article and website page.
+- Replaced the Metal construction snippet with contributor-facing prose that Wax package internals check Metal availability before backend selection.
+- Verification:
+  - `swift test --filter vectorSearchDocsDoNotInstantiatePackageOnlyMetalEngineAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter VectorSearchDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxVectorSearch/WaxVectorSearch.docc/Documentation.md:Sources/WaxVectorSearch/WaxVectorSearch.docc/Articles/VectorSearchEngines.md:Resources/website/docs/vector-search/vector-search-engines.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F148 Review
+
+- Added a PhotoRAG docs regression proving the package-only orchestrator requires `MultimodalEmbeddingProvider` and the owned docs must not advertise plain `EmbeddingProvider` for PhotoRAG.
+- Static proof showed `PhotoRAGOrchestrator` stores `embedder: any MultimodalEmbeddingProvider`; the current PhotoRAG docs already name that requirement after the earlier package-only rewrite.
+- Verification:
+  - `swift test --filter photoRAGDocsNameMultimodalEmbeddingProviderRequirement --disable-automatic-resolution`: passed.
+  - `swift test --filter PhotoRAGDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/Wax/Wax.docc/Articles/PhotoRAG.md:Resources/website/docs/media/photo-rag.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F142 Review
+
+- Added a text-search docs regression proving structured-memory examples must not expose package-only engine methods and types such as `upsertEntity`, `assertFact`, `EntityKey`, `StructuredTimeRange`, or `StructuredMemoryAsOf`.
+- Verified the focused regression failed before removing the structured entity/fact code samples from the DocC article and website page.
+- Replaced those samples with implementation-level prose that describes entity, alias, fact, bitemporal, and evidence behavior without advertising package-only calls.
+- Verification:
+  - `swift test --filter textSearchDocsDoNotShowPackageOnlyStructuredMemoryExamplesAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter TextSearchDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxTextSearch/WaxTextSearch.docc/Documentation.md:Sources/WaxTextSearch/WaxTextSearch.docc/Articles/TextSearchEngine.md:Resources/website/docs/text-search/text-search-engine.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F134 Review
+
+- Added a WaxCore docs regression proving structured-memory implementation types and engine calls are package-only and must not be advertised as public consumer API.
+- Verified the focused regression failed before the docs rewrite on both the DocC article and website page.
+- Reframed the structured-memory docs as a storage-model explanation, preserving entity/fact/bitemporal/evidence semantics while removing package-only Swift type construction and engine calls.
+- Verification:
+  - `swift test --filter waxCoreStructuredMemoryDocsDoNotAdvertisePackageOnlyTypesAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter WaxCoreDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxCore/WaxCore.docc/Articles/StructuredMemory.md:Resources/website/docs/core/structured-memory.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F143 Review
+
+- Added a Wax public-docs regression proving `WaxSession` remains `package actor` and must not be listed as a user-facing symbol or shown with direct constructors/config.
+- Verified the focused regression failed before the docs rewrite on the module overview, DocC session article, and website session page.
+- Reframed session-management docs around public orchestrator lifecycle and explicitly marked the lower-level session layer package-only and not public API.
+- Verification:
+  - `swift test --filter waxDocsDoNotAdvertisePackageOnlyWaxSessionAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter WaxPublicDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/Wax/Wax.docc/Documentation.md:Sources/Wax/Wax.docc/Articles/SessionManagement.md:Resources/website/docs/orchestrator/session-management.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F146 Review
+
+- Added a Wax public-docs regression proving `WaxSession` has `Data`-based `put` overloads, no `put(text:)` overload, and session docs must not advertise nonexistent text or text-batch signatures.
+- Static before-proof from `git show HEAD~2:Sources/Wax/Wax.docc/Articles/SessionManagement.md` showed `session.put(text:)`, `timestamp: nowMs`, `embedding: vectorData`, and `putBatch(texts:)` examples.
+- The F143 session docs rewrite removed the stale examples; this commit adds the dedicated F146 guard and ledger closeout.
+- Verification:
+  - `swift test --filter sessionDocsDoNotAdvertiseNonexistentTextPutOverloads --disable-automatic-resolution`: passed.
+  - `swift test --filter WaxPublicDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/Wax/Wax.docc/Articles/SessionManagement.md:Resources/website/docs/orchestrator/session-management.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F144 Review
+
+- Added a Wax public-docs regression proving `SearchRequest` is package-only and public docs must not list it as a topic or show direct request construction/search calls.
+- Verified the focused regression failed before the docs rewrite on the module topics, DocC unified-search article, and website unified-search page.
+- Reframed unified-search docs as an internal retrieval/fusion behavior explanation and pointed public callers to orchestrator recall instead of package-only request/response/filter diagnostics types.
+- Verification:
+  - `swift test --filter unifiedSearchDocsDoNotConstructPackageOnlySearchRequestAsPublicAPI --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter WaxPublicDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/Wax/Wax.docc/Articles/UnifiedSearch.md:Resources/website/docs/orchestrator/unified-search.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F145 Review
+
+- Added a vector/docs regression proving `VectorEnginePreference` is package-only and public/config docs must not expose that enum, deprecated Metal knob, or CPU/GPU-only cases as user configuration.
+- Verified the focused regression failed before the docs rewrite across vector-search docs, MemoryOrchestrator config tables, and Photo/Video RAG config tables.
+- Removed the package-only preference topic and replaced user-facing config rows with implementation-level backend-selection prose.
+- Verification:
+  - `swift test --filter docsDoNotExposePackageOnlyVectorEnginePreferenceAsPublicConfig --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter VectorSearchDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/WaxVectorSearch/WaxVectorSearch.docc/Documentation.md:Sources/WaxVectorSearch/WaxVectorSearch.docc/Articles/VectorSearchEngines.md:Resources/website/docs/vector-search/vector-search-engines.md:Sources/Wax/Wax.docc/Articles/MemoryOrchestrator.md:Resources/website/docs/orchestrator/memory-orchestrator.md:Sources/Wax/Wax.docc/Articles/PhotoRAG.md:Resources/website/docs/media/photo-rag.md:Sources/Wax/Wax.docc/Articles/VideoRAG.md:Resources/website/docs/media/video-rag.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F133 Review
+
+- Added a WaxCore docs regression proving `Wax` has no `putFrame`, `frame`, or `readPayload` methods and public docs must not show those method-shaped calls.
+- Verified the focused regression failed before the architecture docs rewrite on `Wax.putFrame()`.
+- Replaced the stale architecture diagram call with a generic frame payload write into the WAL while preserving legitimate WAL opcode terminology elsewhere.
+- Verification:
+  - `swift test --filter docsDoNotAdvertiseNonexistentFramePayloadMethods --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter WaxCoreDocsTests --disable-automatic-resolution`: passed.
+  - `WAX_PUBLIC_SNIPPET_FILES="Sources/Wax/Wax.docc/Articles/Architecture.md:Resources/website/docs/architecture.md:Sources/WaxCore/WaxCore.docc/Articles/GettingStarted.md:Resources/website/docs/core/getting-started.md" Resources/scripts/quality/verify_public_snippets.sh`: passed.
+
+### F022 Review
+
+- Added a structured-memory regression proving empty, whitespace-only, and overlong entity/predicate keys are rejected for entity upserts, fact subjects, fact predicates, and entity-valued fact objects.
+- Verified the focused regression failed before validation with 12 missing expected errors.
+- Added shared structured-memory key validation and applied it at entity upsert, fact assertion, fact lookup filters, and fact hashing so invalid keys cannot bypass the text-search engine path.
+- Verification:
+  - `swift test --filter structuredMemoryRejectsInvalidEntityAndPredicateKeys --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter StructuredMemoryCRUDTests --disable-automatic-resolution`: passed.
+  - `swift test --filter 'StructuredMemoryCRUDTests|StructuredMemoryHashingTests|WaxSessionTests' --disable-automatic-resolution`: passed.
+
+### F055 Review
+
+- Added a USearch load regression proving staged vector index bytes must be visible before commit.
+- Verified the focused regression failed before the fix because `USearchVectorEngine.load` loaded no staged vectors and returned no hits.
+- Updated USearch loading to prefer `readStagedVecIndexBytes()` before committed vector index bytes, matching the Accelerate loader behavior.
+- Verification:
+  - `swift test --filter uSearchVectorEngineLoadPrefersStagedVectorIndexBytes --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter VectorSearchEngineTests --disable-automatic-resolution`: passed.
+
+### F086 Review
+
+- Added a CLI regression proving direct-store `stats` and `flush` fail when `--require-vector` is combined with `--no-embedder`.
+- Verified the focused regression failed before the fix: both direct commands exited 0 with text-only/vector-disabled output.
+- Passed `store.requireVector` through direct-store stats/flush `StoreSession.withOpen` calls so direct and broker-backed paths enforce the same vector requirement.
+- Verification:
+  - `swift test --traits default,MCPServer --filter directStatsAndFlushHonorRequireVectorWithNoEmbedder --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --traits default,MCPServer --filter 'brokerBackedVectorRequirementFailsFastWhenNoEmbedderIsConfigured|vectorRequiredOpenRejectsNoEmbedderFlag' --disable-automatic-resolution`: passed.
+
+### F087 Review
+
+- Added parser regressions proving invalid embedder runtime flags are rejected instead of silently ignored.
+- Verified the focused regression failed before validation for invalid compute units, blank compute unit, zero batch size, zero prewarm batch size, and zero timeout.
+- Added `VectorStoreOptions` validation for runtime compute-unit names and positive numeric bounds before resolved tuning is applied.
+- Verification:
+  - `swift test --traits default,MCPServer --filter invalidEmbedderRuntimeFlagsAreRejected --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --traits default,MCPServer --filter agentDaemonPolicyPrefersDaemonForVectorCommands --disable-automatic-resolution`: passed.
+
+### F085 Review
+
+- Added CLI regressions proving `mcp install --dry-run --license-key` must not print the raw key and `mcp serve --license-key` must not pass the raw key through child argv.
+- Verified the focused regressions failed before the fix: dry-run output included `WAX_LICENSE_KEY=<secret>`, and the stub server observed `--license-key <secret>` in argv with no `WAX_LICENSE_KEY` environment value.
+- Kept real install registration behavior unchanged while redacting the displayed dry-run command; changed `mcp serve` to pass the normalized key via `WAX_LICENSE_KEY`, which `wax-mcp` already treats as the documented fallback.
+- Verification:
+  - `swift test --traits default,MCPServer --filter 'mcpInstallDryRunRedactsLicenseKey|mcpServePassesLicenseKeyInEnvironmentOnly' --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --traits default,MCPServer --filter WaxCLITests --disable-automatic-resolution`: existing failure in `agentDaemonConfigurationUsesStableSocketPaths`, where `AgentDaemonTransport.configuration` ignored `WAX_CLI_DAEMON_DIR` and used `/tmp/wax-broker-501/...`; the new F085 tests passed inside this gate.
+
+### F093 Review
+
+- Used the existing daemon stable-socket regression as the red proof: on this machine the test fixture's `FileManager.default.temporaryDirectory` path was long enough that `AgentBrokerPathing` correctly fell back to `/tmp/wax-broker-<uid>/...`, making the test's custom-root prefix assertion fail.
+- Changed the fixture to use a short `/tmp/wxdc-<id>` daemon root, so the test exercises stable custom-root hashing instead of the separate long-path fallback behavior covered by `brokerSocketFallbackUsesPrivateUserDirectory`.
+- Verification:
+  - `swift test --traits default,MCPServer --filter agentDaemonConfigurationUsesStableSocketPaths --disable-automatic-resolution`: failed before and passed after.
+
+### F083 Review
+
+- Added broker socket-root regressions proving `WAX_BROKER_DIR` roots must be private `0700` directories owned by the current user and must reject symlink directories.
+- Verified the focused regressions failed before the fix: short env roots were created as `0755`, and symlink roots were accepted.
+- Reused `ensurePrivateDirectory` for preferred socket roots, making default/env roots follow the same hardening path already used by long-path fallbacks.
+- Verification:
+  - `swift test --traits default,MCPServer --filter 'brokerSocketEnvironmentRootUsesPrivateDirectory|brokerSocketEnvironmentRootRejectsSymlink' --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --traits default,MCPServer --filter WaxCLITests --disable-automatic-resolution`: passed.
+
+### F082 Review
+
+- Added a process-level daemon regression proving `wax-cli daemon --socket-path <regular-file>` must reject the path and preserve the file contents.
+- Verified the focused regression failed before the fix because daemon startup unlinked the regular file before binding.
+- Replaced the blind pre-bind `unlink` with a stale-socket check using `lstat`: missing paths are allowed, existing Unix sockets are removed, and every other existing path is rejected.
+- Verification:
+  - `swift test --traits default,MCPServer --filter daemonSocketPathDoesNotReplaceRegularFile --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --traits default,MCPServer --filter WaxCLITests --disable-automatic-resolution`: F082 test passed; `pathLaunchedWaxMCPResolvesSiblingWaxCLIFromPath` timed out once waiting for MCP `tools/list`.
+  - `swift test --traits default,MCPServer --filter pathLaunchedWaxMCPResolvesSiblingWaxCLIFromPath --disable-automatic-resolution`: passed on immediate focused rerun.
+
+### F084 Review
+
+- Added a daemon socket regression that holds one client connection open after writing a partial JSON payload, then verifies a later valid stats request still receives a response.
+- Verified the focused regression failed before the fix by timing out waiting for the second client's broker socket response.
+- Replaced EOF-only socket reads with bounded newline-oriented `poll`/`recv` loops on both the daemon request side and broker-client response side, preserving EOF fallback for clients that close after a partial final line.
+- Verification:
+  - `swift test --traits default,MCPServer --filter daemonSocketClientTimeoutDoesNotBlockLaterRequests --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --traits default,MCPServer --filter WaxCLITests --disable-automatic-resolution`: passed.
+
+### F095 Review
+
+- Added a broker-backed CLI regression proving `WAX_MCP_FEATURE_ACCESS_STATS=1` must surface as `features.accessStatsScoringEnabled == true` in stats.
+- Verified the focused regression failed before the fix because broker-backed stats still reported `false`.
+- Passed the access-stats feature flag from daemon environment into `AgentBrokerService`, then applied it to long-term, session, and ad-hoc orchestrator configs.
+- Verification:
+  - `swift test --traits default,MCPServer --filter brokerStatsHonorAccessStatsFeatureFlag --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --traits default,MCPServer --filter WaxCLITests --disable-automatic-resolution`: passed.
+  - `swift test --traits default,MCPServer --filter WaxMCPServerTests --disable-automatic-resolution`: failed in existing focused-reproducible cases `rememberSearchAndRecallExposeTypedExplainableMemory` and `waxMCPProcessRememberWithRealCoreMLEmbedder`.
+  - `swift test --traits default,MCPServer --filter rememberSearchAndRecallExposeTypedExplainableMemory --disable-automatic-resolution`: failed, recall explanations did not contain `user preference`.
+  - `swift test --traits default,MCPServer --filter waxMCPProcessRememberWithRealCoreMLEmbedder --disable-automatic-resolution`: failed, tool payload was not a JSON object.
+
+### F094 Review
+
+- Added schema and tool-call regressions proving `knowledge_capture` must be unavailable when structured memory is disabled.
+- Verified the focused regressions failed before the fix: disabled schema still published `knowledge_capture`, and a disabled direct call returned success.
+- Moved `knowledge_capture` into the structured-only schema group and added it to structured command validation so broker and compatibility call paths reject it when disabled.
+- Verification:
+  - `swift test --traits default,MCPServer --filter 'toolsListHonorsStructuredMemoryFlag|toolsBlockStructuredMemoryOnlyToolsWhenDisabled|toolSchemaRegression' --disable-automatic-resolution`: failed before and passed after.
+
+### F101 Review
+
+- Added a broker-service regression with two manifests sharing the same `agent_id`/`run_id`: the newer manifest is ended, while the older one remains active.
+- Verified the regression failed before the fix because selector-based `session_resume` chose the newest ended manifest and returned an error.
+- Updated selector-based manifest resolution to skip ended manifests; explicit `session_id` lookup still loads the requested manifest and rejects ended sessions in `sessionResume`.
+- Verification:
+  - `swift test --traits default,MCPServer --filter 'brokerSessionResumeSelectorSkipsEndedManifests|endedSessionIDIsRejectedOnLaterScopedCalls|brokerBackedSessionResumeReopensPersistedSessionAfterRestart' --disable-automatic-resolution`: failed before for `brokerSessionResumeSelectorSkipsEndedManifests` and passed after.
+
+### F100 Review
+
+- Added a broker-service regression proving `memory_append`/`memory_get` and `handoff`/`handoff_latest` preserve leading whitespace and trailing newlines in authored content.
+- Verified the regression failed before the fix because broker memory content returned without the leading spaces/trailing newline.
+- Added whitespace-preserving argument accessors for content fields only, preserved corpus document payload text while still skipping whitespace-only documents, and stopped trimming handoff content before storage.
+- Verification:
+  - `swift test --traits default,MCPServer --filter brokerRememberPreservesContentWhitespace --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --traits default,MCPServer --filter 'brokerRememberPreservesContentWhitespace|toolsRememberRecallSearchFlushStatsHappyPath|handoffRoundTripAndStatsSessionBlockWork|brokerRetrievalEventsPersistQueryHashWithoutRawQuery' --disable-automatic-resolution`: passed.
+
+### F058 Review
+
+- Added a Metal-vector regression proving deserialization rejects trailing bytes after an otherwise valid serialized Metal vector segment.
+- Verified the focused regression failed before the fix because the trailing byte was silently accepted.
+- Added checked vector/frame-id byte-count arithmetic, frame-id payload bounds checks, and exact end-of-segment validation in `MetalVectorEngine.deserialize`.
+- Verification:
+  - `swift test --filter metalVectorEngineRejectsTrailingBytesDuringDeserialize --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter 'metalVectorEngineRejectsTrailingBytesDuringDeserialize|metalVectorEngineAddBatchUpdatesExistingIdsCorrectly|metalVectorEngineRejectsNonFiniteVectors|VectorSerializerTests' --disable-automatic-resolution`: passed.
+
+### F059 Review
+
+- Added a static Metal deserializer regression proving frame IDs are not decoded through alignment-assuming `bindMemory(to: UInt64.self)`.
+- Verified the regression failed before the fix on the existing frame-id decode.
+- Replaced the frame-id array decode with per-slot `loadUnaligned` little-endian loads from the original byte buffer.
+- Verification:
+  - `swift test --filter metalVectorEngineDeserializeAvoidsAlignedUInt64Binding --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter 'metalVectorEngineDeserializeAvoidsAlignedUInt64Binding|metalVectorEngineRejectsTrailingBytesDuringDeserialize|metalVectorEngineAddBatchUpdatesExistingIdsCorrectly' --disable-automatic-resolution`: passed.
+
+### F060 Review
+
+- Added a direct Metal-vector regression proving scaled cosine query vectors must not inflate similarity scores above the normalized cosine range.
+- Verified the focused regression failed before the fix with a score delta of `9.0` from the expected `1.0`.
+- Normalized validated search queries before copying them into the transient Metal query buffer, matching the shader's normalized-query contract.
+- Verification:
+  - `swift test --filter metalVectorEngineNormalizesScaledSearchQueries --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter 'metalVectorEngineNormalizesScaledSearchQueries|vectorSearchSessionCosineSearchNormalizesScaledQueries|metalVectorEngineAddBatchUpdatesExistingIdsCorrectly' --disable-automatic-resolution`: passed.
+
+### F061 Review
+
+- Added a focused static regression proving `MetalVectorEngine.search` must inspect completed command-buffer status and error before consuming result buffers.
+- Verified the regression failed before the fix because the search path committed and awaited the command buffer without checking `status` or `error`.
+- Added a post-completion validator that throws a `WaxError` for any non-completed Metal command-buffer status, preserving the Metal error description when available.
+- Verification:
+  - `swift test --filter metalVectorEngineChecksCommandBufferFailureAfterCompletion --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter 'metalVectorEngineChecksCommandBufferFailureAfterCompletion|metalVectorEngineNormalizesScaledSearchQueries|metalVectorEngineRejectsTrailingBytesDuringDeserialize|metalVectorEngineAddBatchUpdatesExistingIdsCorrectly' --disable-automatic-resolution`: passed.
+
+### F062 Review
+
+- Added a static vector-load regression proving manifest and decoded segment `vectorCount` values must not be converted through unchecked `Int(...)` casts.
+- Verified the regression failed before the fix on both `Int(manifest.vectorCount)` and `Int(info.vectorCount)` in `LoadedVectorSearchEngine`.
+- Added checked `UInt64` to `Int` conversion for committed manifests and decoded vector segments, plus checked addition for committed/staged count plus pending embeddings.
+- Added a review-driven behavioral regression for projected-count addition overflow using `Int.max + 1`.
+- Verification:
+  - `swift test --filter loadedVectorSearchEngineChecksVectorCountConversions --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter loadedVectorSearchEngineRejectsProjectedVectorCountOverflow --disable-automatic-resolution`: failed before the helper existed and passed after.
+  - `swift test --filter 'loadedVectorSearchEngineRejectsProjectedVectorCountOverflow|loadedVectorSearchEngineChecksVectorCountConversions|uSearchVectorEngineLoadPrefersStagedVectorIndexBytes|unifiedSearchFallsBackToUSearchWhenMetalCannotDeserialize|vectorSearchSessionCosineSearchNormalizesScaledQueries' --disable-automatic-resolution`: passed.
+
+### F063 Review
+
+- Added duplicate-frame-id regressions for flat vector serialization, flat/Metal segment decode, direct `MetalVectorEngine.deserialize`, and core vector-index staging.
+- Verified each focused regression failed before the corresponding validation boundary was added.
+- Added shared frame-id uniqueness validation in `VectorSerializer`, reused it for direct Metal restore, and added an equivalent core validator for staged vector segments before commit.
+- Code review approved the focused F063 changes with no findings.
+- Verification:
+  - `swift test --filter 'flatVectorSerializationRejectsDuplicateFrameIds|metalSegmentDecodeRejectsDuplicateFrameIds|metalVectorEngineDeserializeRejectsDuplicateFrameIds|stageVecIndexRejectsDuplicateFrameIds' --disable-automatic-resolution`: failed before and passed after.
+  - `swift test --filter 'flatVectorSerializationRejectsDuplicateFrameIds|metalSegmentDecodeRejectsDuplicateFrameIds|metalVectorEngineDeserializeRejectsDuplicateFrameIds|stageVecIndexRejectsDuplicateFrameIds|metalSegmentDecodeRoundTrip|vectorEngineSerializeDeserializeRoundtripPreservesSearch|metalVectorEngineRejectsTrailingBytesDuringDeserialize|metalVectorEngineDeserializeAvoidsAlignedUInt64Binding|waxVecIndexPersistsAndReopens' --disable-automatic-resolution`: passed.
+
+## F-to-A Remediation Plan
+
+Requested: 2026-05-17
+
+Goal: fix every remaining item ranked F through A in the difficulty table, with one issue fix per commit and focused TDD verification for each issue.
+
+Execution order:
+1. Land F063 first because it is already implemented locally and blocks a clean worktree.
+2. Fix F-tier packaging/docs/gate issues.
+3. Fix D-tier schema, validation, tokenizer, CoreML guard, and runtime flag issues.
+4. Fix C-tier CLI/MCP/WaxRepo surface issues.
+5. Fix B-tier local subsystem/runtime issues.
+6. Fix A-tier search, pending/committed, and corpus semantics issues.
+
+Checklist:
+- [x] F063: review and commit existing duplicate vector frame-id restore work.
+- [x] F-tier: F156, F154, F159, F160, F125, F118, F120, F119, F113, F112, F122, F114, F109, F115, F116, F117, F124, F127, F155, F158.
+- [x] D-tier complete.
+
+### F072 Review
+
+- Added MiniLM pre-tokenized input regressions proving batch size is inferred from the first input dimension and mismatched input/mask rows fail closed.
+- Verified the regression failed before the fix because there was no batch-size inference path and `generateEmbeddings(inputIds:attentionMask:)` always decoded with batch size `1`.
+- Changed pre-tokenized generation to return all decoded embeddings and pass the inferred batch size into prediction/decode instead of hard-coding `1`.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter 'miniLMPreTokenizedBatchSizeUsesInputRows|miniLMPreTokenizedBatchSizeRejectsMismatchedInputRows'`: failed before and passed after.
+  - `swift test --disable-automatic-resolution --filter 'MiniLMFloat16DecodingTests|MLMultiArrayBatchBuilderTests|MiniLMBatchBuilderTests'`: passed.
+
+### F071 Review
+
+- Updated MiniLM baseline quality coverage to instantiate `MiniLMEmbedder` and call the public `embed(batch:)` path instead of bypassing it with lower-level `MiniLMEmbeddings.encode(batch:)`.
+- Kept the same cosine baseline assertions and fixture-generation flow, now exercising the public batch provider path and its normalization/validation guards.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter MiniLMEmbeddingQualityTests`: passed with inference tests explicitly skipped.
+  - `WAX_TEST_MINILM=1 swift test --disable-automatic-resolution --filter MiniLMEmbeddingQualityTests`: passed.
+
+### F070 Review
+
+- Added a stub-backed MiniLM embedder regression proving model prediction errors propagate to callers instead of being converted to nil.
+- Verified the regression initially failed at compile time because the MiniLM model protocol did not allow throwing errors, matching the hidden-error implementation gap.
+- Replaced the `try? localModel.prediction(...)` path with a throwing continuation and made MiniLM encode APIs throw through to `MiniLMEmbedder`.
+- Fixed the surfaced batch-shape blocker by planning MiniLM CoreML predictions as supported single-item model calls; the real gated batch-size tests now pass instead of hitting `MultiArray Shape (2 x 32)` / `(4 x 32)` errors.
+- False-positive check: `rg` no longer finds `try? localModel.prediction`; real MiniLM inference tests remain explicitly skipped unless `WAX_TEST_MINILM=1`.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter miniLMEmbedderPropagatesModelPredictionErrors`: failed before and passed after.
+  - `swift test --disable-automatic-resolution --filter 'miniLMEmbedderPropagatesModelPredictionErrors|MiniLMEmbedderTests|MiniLMEmbeddingQualityTests'`: passed.
+  - `swift test --disable-automatic-resolution --filter miniLMEmbedderBatchPlanningUsesOnlySupportedCoreMLBatchShapes`: failed before and passed after.
+  - `WAX_TEST_MINILM=1 swift test --disable-automatic-resolution --filter MiniLMEmbedderTests`: passed after the batch-shape fix.
+  - `WAX_TEST_MINILM=1 swift test --disable-automatic-resolution --filter MiniLMEmbeddingQualityTests`: passed.
+
+### F069 Review
+
+- Added MiniLM embedder regressions proving direct NaN outputs and batched Infinity outputs are rejected before callers receive vectors.
+- Verified `miniLMEmbedderRejectsNonFiniteBatchOutputs` failed before the explicit guard because Infinity normalized into a vector containing non-finite values without throwing.
+- Added explicit finite-value and finite-magnitude checks before L2 normalization.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter 'miniLMEmbedderRejectsNonFiniteDirectOutputs|miniLMEmbedderRejectsNonFiniteBatchOutputs'`: failed before and passed after.
+  - `swift test --disable-automatic-resolution --filter 'miniLMEmbedderRejectsNonFiniteDirectOutputs|miniLMEmbedderRejectsNonFiniteBatchOutputs|miniLMEmbedderNormalizesDirectOutputs|miniLMEmbedderRejectsZeroMagnitudeOutputs|MiniLMEmbedderTests'`: passed.
+
+### F068 Review
+
+- Added a fast MiniLM embedder regression with an injected model returning `[3, 4, 0...]`, proving `MiniLMEmbedder.embed` returns a unit-normalized vector that matches its identity metadata.
+- Verified the first test pass failed at compile time before the test seam existed; the production path only accepted concrete `MiniLMEmbeddings` and returned raw model vectors.
+- Added a package-level `MiniLMEmbeddingModel` seam so tests can exercise `MiniLMEmbedder` without loading CoreML, then normalized direct and batch outputs before returning them.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter miniLMEmbedderNormalizesDirectOutputs`: failed before and passed after.
+
+### F075 Review
+
+- Added a MiniLM decode regression proving an `.int32` `MLMultiArray` output is rejected instead of decoded as an all-zero embedding.
+- Verified `miniLMDecodingRejectsUnsupportedOutputDataTypes` failed before the fix with `[[0.0, 0.0, 0.0]]`.
+- Added an early dtype guard in `decodeEmbeddings` so only `.float16` and `.float32` CoreML output arrays are accepted.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter miniLMDecodingRejectsUnsupportedOutputDataTypes`: failed before and passed after.
+  - `swift test --disable-automatic-resolution --filter 'MiniLMFloat16DecodingTests|miniLMDecodingRejectsUnsupportedOutputDataTypes'`: passed.
+
+### F074 Review
+
+- Added tokenizer regressions proving single-sentence token type IDs keep `[SEP]` and padding in segment 0, while pair-shaped input keeps only the second segment active.
+- Verified `bertTokenizerSingleSentenceTypeIdsKeepSepAndPaddingInSegmentZero` failed before the fix because the first `[SEP]` and padding tokens were emitted as segment `1`.
+- Updated `buildModelInputsWithTypeIds` so padding always returns type `0`, the first `[SEP]` remains type `0`, and non-padding tokens after the first separator are type `1`.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter bertTokenizerSingleSentenceTypeIdsKeepSepAndPaddingInSegmentZero`: failed before and passed after.
+  - `swift test --disable-automatic-resolution --filter 'bertTokenizerSingleSentenceTypeIdsKeepSepAndPaddingInSegmentZero|bertTokenizerPairTypeIdsKeepOnlySecondSegmentActive|BertTokenizerReuseTests|MiniLMBatchBuilderTests'`: passed.
+
+### F078 Review
+
+- Added regressions proving FTS results expose bounded `0...1` scores and unified text-only `minScore` filters against those normalized values.
+- Verified the new regressions failed before the fix: raw SQLite BM25 values were around `1.4e-06`, so a relevant result failed a `0.9` threshold and unified text-only search returned no results.
+- Replaced raw FTS BM25 ranks with a deterministic bounded transform that does not depend on the returned result window.
+- Code review caught an earlier window-relative normalization attempt; added regressions for weak single matches and topK/result-window score stability before replacing that approach.
+- False-positive check: a full `UnifiedSearchTests` run still exposes existing natural-language fallback failures around FTS OR-query construction; the focused F078 change is isolated to score scaling and the new `minScore` regression passes.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter 'textSearchScoresAreNormalizedForThresholds|textOnlyMinScoreUsesNormalizedTextScores|searchScoresAreOrderedAndNonConstant|searchTieBreaksOnFrameIdForDeterminism'`: failed before and passed after.
+  - `swift test --disable-automatic-resolution --filter 'textSearchSingleWeakMatchDoesNotBecomePerfectScore|textSearchScoresDoNotDependOnReturnedWindow'`: failed against the first window-relative implementation and passed after the direct transform.
+  - `swift test --disable-automatic-resolution --filter 'textSearchScoresAreNormalizedForThresholds|textSearchSingleWeakMatchDoesNotBecomePerfectScore|textSearchScoresDoNotDependOnReturnedWindow|textOnlyMinScoreUsesNormalizedTextScores|searchScoresAreOrderedAndNonConstant|searchTieBreaksOnFrameIdForDeterminism'`: passed.
+  - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|textOnlyMinScoreUsesNormalizedTextScores'`: passed.
+
+### F023 Review
+
+- Added a regression proving structured fact evidence rejects negative and empty UTF-8 spans plus confidence values outside `[0, 1]` or non-finite values.
+- Added shared structured-memory evidence validation and called it from `FTS5SearchEngine.assertFact` before queued writes.
+- False-positive check: negative `chunkIndex` is already impossible through the package initializer because the field is `UInt32?`; the fix covers only runtime-representable invalid evidence.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter assertFactRejectsInvalidEvidence`
+  - `swift test --disable-automatic-resolution --filter 'structuredMemoryRejectsInvalidEntityAndPredicateKeys|assertFactAndQueryAsOfReturnsCurrentFact'`
+
+### F028 Review
+
+- Added deterministic fuzzy alias resolution: exact normalized alias matches rank first, then normalized prefix matches, then word-boundary substring matches.
+- Escaped SQL `LIKE` wildcard characters in user aliases so `%`, `_`, and `/` do not become broad query operators.
+- Added regression coverage for exact-match precedence, prefix matching, word matching, and wildcard escaping.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter resolveEntitiesUsesDeterministicFuzzyAliasMatching`
+  - `swift test --disable-automatic-resolution --filter upsertEntityNormalizesAliasesAndResolves`
+  - `swift test --disable-automatic-resolution --filter 'resolveEntitiesUsesDeterministicFuzzyAliasMatching|upsertEntityNormalizesAliasesAndResolves'`
+
+### F104 Review
+
+- Added a broker regression proving an invalid raw embedder choice fails instead of silently falling through to MiniLM.
+- Added explicit command-line broker embedder validation for `auto`, `minilm`, and `arctic`.
+- Verification:
+  - `swift test --traits default,MCPServer --filter brokerRejectsInvalidEmbedderChoice --disable-automatic-resolution`
+  - `swift test --traits default,MCPServer --filter toolsListContainsExpectedTools --disable-automatic-resolution`
+
+### F173 Review
+
+- Added a direct broker regression proving unknown top-level arguments are rejected instead of ignored.
+- Moved the broker/MCP command argument allowlist into `AgentBrokerCommandSurface` so MCP and direct broker calls share the same validation surface.
+- Kept broker control commands (`shutdown`, `exit`, `quit`) out of the public MCP tool surface after review caught the regression risk.
+- Verification:
+  - `swift test --traits default,MCPServer --filter brokerRejectsUnknownTopLevelArguments --disable-automatic-resolution`
+  - `swift test --traits default,MCPServer --filter toolsRejectUnknownTopLevelArguments --disable-automatic-resolution`
+  - `swift test --traits default,MCPServer --filter 'brokerRejectsUnknownTopLevelArguments|toolsRejectUnknownTopLevelArguments|mcpRejectsBrokerControlCommands' --disable-automatic-resolution`
+  - `swift test --traits default,MCPServer --filter unknownToolReturnsErrorResult --disable-automatic-resolution`
+
+### F181 Review
+
+- Added a regression proving environment and request-level `max_candidates` inputs are capped at the broker promotion maximum.
+- Added a shared `BrokerPromotionSettings.maxCandidateLimit` and used it from both environment parsing and request parsing.
+- Aligned `session_synthesize` and `memory_promote` MCP schema maxima with the runtime clamp after review identified a schema/runtime mismatch.
+- Verification:
+  - `swift test --traits default,MCPServer --filter promotionMaxCandidatesAreBounded --disable-automatic-resolution`
+  - `swift test --traits default,MCPServer --filter brokerBackedSessionSynthesizePromotesDefaultSessionWrites --disable-automatic-resolution`
+  - `swift test --traits default,MCPServer --filter toolSchemaRegression --disable-automatic-resolution`
+
+### F192 Review
+
+- Changed newly rendered Markdown projection markers from raw JSON inside HTML comments to base64-encoded JSON.
+- Kept parser compatibility for existing raw JSON markers.
+- Added a regression proving marker fields containing `-->` cannot terminate the generated comment and still parse back to the original marker.
+- Verification:
+  - `swift test --traits default,MCPServer --filter markdownProjectionMarkerEscapesCommentTerminators --disable-automatic-resolution`
+  - `swift test --traits default,MCPServer --filter 'brokerBackedMarkdownExportProjectsCompatibilityFiles|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`
+
+### F191 Review
+
+- Added a regression proving hostile `wax.source_date` metadata such as `../escape` cannot write a daily note outside the Markdown projection `memory/` directory.
+- Added daily-note date-key validation for exported durable daily notes; invalid values fall back to the document timestamp day.
+- Verification:
+  - `swift test --traits default,MCPServer --filter markdownExportSanitizesDailySourceDateFilenames --disable-automatic-resolution`
+  - `swift test --traits default,MCPServer --filter brokerBackedMarkdownExportProjectsCompatibilityFiles --disable-automatic-resolution`
+
+### F035 Review
+
+- Added schema regression coverage proving `recall`, `search`, `memory_search`, `corpus_search`, and `compact_context` expose `text`, `vector`, and `hybrid` search modes.
+- Updated MCP compatibility mode parsing so `search` accepts `mode=vector` and routes it to vector-only search instead of rejecting it as an invalid mode.
+- Verification:
+  - `swift test --traits default,MCPServer --filter schemasExposeVectorSearchMode --disable-automatic-resolution`
+  - `swift test --traits default,MCPServer --filter compatibilitySearchAcceptsVectorMode --disable-automatic-resolution`
+  - `swift test --traits default,MCPServer --filter 'toolSchemaRegression|recallValidatesModeAndSearchControls' --disable-automatic-resolution`
+
+### F036 Review
+
+- Added regressions proving unpublished `flush` and legacy `wax_flush` MCP calls are rejected instead of executing or returning rename guidance.
+- Moved `flush` from the public MCP command surface into broker-internal control commands so direct broker maintenance remains available while public MCP tools match the published schema.
+- Removed compatibility normalization that stripped arbitrary `wax_` prefixes, keeping legacy aliases explicit and preventing hidden commands from bypassing public-tool validation.
+- Verification:
+  - `swift test --traits default,MCPServer --filter 'hiddenFlushToolIsRejectedConsistently|legacyWaxFlushIsRejectedBecauseFlushIsNotPublished|toolsListContainsExpectedTools|mcpRejectsBrokerControlCommands' --disable-automatic-resolution`
+
+### F039 Review
+
+- Added a schema regression proving `fact_assert` publishes the version relation enum accepted by the broker and MCP handlers.
+- Added the optional `relation` field to the `fact_assert` MCP schema with `sets`, `updates`, `extends`, and `retracts`.
+- Verification:
+  - `swift test --traits default,MCPServer --filter factAssertSchemaExposesVersionRelation --disable-automatic-resolution` failed before the schema fix and passed after.
+  - `swift test --traits default,MCPServer --filter 'factAssertSchemaExposesVersionRelation|toolSchemaRegression|graphToolsRoundTripWorks' --disable-automatic-resolution`
+
+### F040 Review
+
+- Added failing regressions for the published generic fact object shape `{ "type": "...", "value": ... }` on both MCP compatibility calls and direct broker commands.
+- Implemented generic typed-object parsing for the supported `entity`, `time_ms`, and `data_base64` variants in both parsers while keeping the existing shorthand object forms.
+- Constrained the generic schema `type` field to the supported typed-object enum so the schema no longer advertises unsupported generic shapes.
+- Verification:
+  - `swift test --traits default,MCPServer --filter 'factAssertAcceptsPublishedGenericTypedObjects|brokerFactAssertAcceptsPublishedGenericTypedObjects' --disable-automatic-resolution` failed before parser changes and passed after.
+  - `swift test --traits default,MCPServer --filter 'toolSchemaRegression|factAssertRejectsMixedTypedObjectKeys|temporalFactArgumentsAreHonoredByPublishedTools|graphToolsRoundTripWorks' --disable-automatic-resolution`
+
+### F012 Review
+
+- Added a direct structured-memory regression proving `facts(...)` returns stored evidence for asserted facts instead of dropping it on readback.
+- Selected the fact span ID in the structured facts query, loaded matching `sm_evidence` rows, and hydrated `StructuredFactHit.evidence` from those rows in stable evidence ID order.
+- Verification:
+  - `swift test --build-path .build-codex/f029-red --disable-automatic-resolution --filter assertFactAndQueryAsOfReturnsCurrentFact`: passed after the evidence readback fix.
+
+### F029 Review
+
+- Added red regressions proving `fact_assert.evidence` was rejected or ignored by both MCP compatibility calls and direct broker commands.
+- Added the `evidence` argument to the broker allowlist and MCP schema, parsed structured evidence in both paths, returned `evidence_count`, and surfaced full evidence arrays through `facts_query`.
+- Review found a schema/runtime mismatch: evidence objects silently ignored unknown nested fields despite `additionalProperties: false`; added MCP and broker regressions and now reject unknown evidence fields in both parsers.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f029-red --traits default,MCPServer --disable-automatic-resolution --filter 'factAssertAcceptsEvidence|brokerFactAssertAcceptsEvidence'` failed before implementation.
+  - Review red phase: `swift test --build-path .build-codex/f029-red --traits default,MCPServer --disable-automatic-resolution --filter 'factAssertRejectsUnknownEvidenceFields|brokerFactAssertRejectsUnknownEvidenceFields'` failed before nested-key validation.
+  - `swift test --build-path .build-codex/f029-red --traits default,MCPServer --disable-automatic-resolution --filter 'factAssertSchemaExposesEvidence|factAssertAcceptsEvidence|factAssertRejectsUnknownEvidenceFields|brokerFactAssertAcceptsEvidence|brokerFactAssertRejectsUnknownEvidenceFields|factAssertAcceptsPublishedGenericTypedObjects|brokerFactAssertAcceptsPublishedGenericTypedObjects|temporalFactArgumentsAreHonoredByPublishedTools|graphToolsRoundTripWorks'`: passed.
+  - `swift test --build-path .build-codex/f029-red --disable-automatic-resolution --filter 'assertFactAndQueryAsOfReturnsCurrentFact|assertFactRejectsInvalidEvidence|StructuredMemoryCRUDTests|VersionRelationTests|StructuredMemoryWaxPersistenceTests'`: passed.
+  - `swift build --build-path .build-codex/f029-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Code-review subagent approved after the nested-key validation fix.
+
+### F033 Review
+
+- Added a red regression proving compatibility `memory_search` applied public `topK` before horizon/session filtering, so a filtered durable hit could hide an eligible working hit.
+- Review caught the first implementation still used an internal candidate cap equal to the public max; added a many-filtered-hits regression that failed with the smaller overfetch budget.
+- `memory_search` now retrieves a bounded internal candidate window before filtering and stops only after post-filtered results reach the requested public `topK`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f033-red --traits default,MCPServer --disable-automatic-resolution --filter memorySearchOverfetchesBeforeHorizonFiltering`: failed before implementation and passed after.
+  - Review red phase: `swift test --build-path .build-codex/f033-red --traits default,MCPServer --disable-automatic-resolution --filter memorySearchOverfetchesAcrossManyFilteredHits`: failed with the first small overfetch budget and passed after the internal ceiling fix.
+  - `swift test --build-path .build-codex/f033-red --traits default,MCPServer --disable-automatic-resolution --filter 'memorySearchOverfetchesBeforeHorizonFiltering|memorySearchOverfetchesAcrossManyFilteredHits|toolsRememberRecallSearchFlushStatsHappyPath|brokerBackedMemorySearchDoesNotLeakAcrossSessions'`: passed.
+  - `swift build --build-path .build-codex/f033-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Code-review subagent approved after the larger internal candidate budget and boundary regression.
+
+### F096 Review
+
+- Added red regressions for the HTTP auth policy: loopback binds remain local-only/no-token, non-loopback binds require auth, bearer tokens must match exactly, and unauthorized non-loopback requests do not create sessions.
+- Added `--http-auth-token` plus `WAX_MCP_HTTP_AUTH_TOKEN` fallback, normalized empty tokens away, rejected off-loopback HTTP startup without a token, and enforced `Authorization: Bearer <token>` before session creation or lookup.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f096-red --traits default,MCPServer --disable-automatic-resolution --filter 'httpAuthPolicyRequiresTokenOffLoopbackOnly|httpAuthPolicyValidatesBearerToken'` failed before implementation.
+  - `swift test --build-path .build-codex/f096-red --traits default,MCPServer --disable-automatic-resolution --filter 'httpAuthPolicyRequiresTokenOffLoopbackOnly|httpAuthPolicyValidatesBearerToken|httpApplicationRejectsUnauthorizedOffLoopbackRequests|httpRequestBodyLimitRejectsContentLengthAndStreamingOverflow'`: passed.
+  - `swift build --build-path .build-codex/f096-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `scripts/verify-waxmcp-http.sh`: passed, proving loopback HTTP still works without a token.
+  - Code-review subagent approved. Its broader `WaxMCPServerTests` check still saw the known unrelated `waxMCPProcessRememberWithRealCoreMLEmbedder` payload-shape failure.
+
+### F080/F081 Review
+
+- Added SQLite-backed regressions proving serialized FTS blobs pin the `frames_fts` tokenizer and that a fake ordinary table named `frames_fts` is rejected even if its SQL text contains `fts5`.
+- Bumped the text-search schema to user version 4 and created new FTS tables as `fts5(content, tokenize = 'unicode61')`.
+- Added migration for legacy v0-v3 serialized FTS databases that rebuilds `frames_fts` with the pinned tokenizer while preserving rowids and `frame_mapping` references.
+- Tightened schema validation to require a real `CREATE VIRTUAL TABLE ... USING fts5` table and to reject unpinned tokenizer drift at current schema version.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName'` failed before the schema fix and passed after.
+  - `swift test --disable-automatic-resolution --filter 'serializedBlobPinsFTS5Tokenizer|deserializeRejectsFakeFTS5TableName|deserializeUpgradesLegacyBlobSchemaIdentity|migrationPreservesFTSSearchResults|deserializeUpgradesV1BlobToV2|deserializeUpgradesLegacyBlobSchemaIdentityToV2'`
+  - `swift test --disable-automatic-resolution --filter TextSearchEngineTests`
+  - `swift test --disable-automatic-resolution --filter 'TextSearchEngineTests|StructuredMemorySchemaTests|VersionRelationTests|FTS5SerializerTests'`
+- Progress snapshot after F168: 133 completed and committed, 67 remaining.
+- Progress snapshot after F169: 134 completed and committed, 66 remaining.
+- Progress snapshot after F170: 135 completed and committed, 65 remaining.
+- Progress snapshot after F171: 136 completed and committed, 64 remaining.
+- Progress snapshot after F172: 137 completed and committed, 63 remaining.
+- Progress snapshot after F182: 145 completed and committed, 55 remaining.
+- Progress snapshot after F183: 146 completed and committed, 54 remaining.
+- Progress snapshot after F184: 147 completed and committed, 53 remaining.
+- Progress snapshot after F185: 148 completed and committed, 52 remaining.
+- Progress snapshot after F186: 149 completed and committed, 51 remaining.
+- Progress snapshot after F187: 150 completed and committed, 50 remaining.
+- Progress snapshot after F188: 151 completed and committed, 49 remaining.
+- Progress snapshot after F189: 152 completed and committed, 48 remaining.
+- Progress snapshot after F190: 153 completed and committed, 47 remaining.
+- Progress snapshot after F193: 154 completed and committed, 46 remaining.
+- Progress snapshot after F194: 155 completed and committed, 45 remaining.
+- Progress snapshot after F195: 156 completed and committed, 44 remaining.
+- Progress snapshot after F196: 157 completed and committed, 43 remaining.
+
+### Active Plan - F161/F162/F163 PDF Ingest Cluster
+
+- [x] F161: add a red portability regression proving `MemoryOrchestrator.remember(pdfAt:)` has a non-PDFKit fallback surface, then implement a clear unsupported-platform error path without hiding the API behind `#if canImport(PDFKit)`.
+- [x] F162: add a red regression proving truncated PDF extraction records total pages, extracted pages, and truncation state, then carry that metadata through PDF ingest.
+- [x] F163: add a red regression proving PDF page provenance survives ingest, then preserve page-level metadata instead of only joining all pages into one anonymous text payload.
+- [x] Run focused PDF tests, default build, post-fix review, update the ledger/checklist, and commit each issue or tightly-coupled issue cluster with verification notes.
+- [x] C-tier complete.
+- [x] B-tier PDF ingest cluster complete.
+- [x] A-tier complete.
+
+### Active Plan - F026 Bitemporal Facts Query
+
+- [x] Add a red MCP facts-query regression where `valid_as_of` is inside a fact's valid interval while `system_as_of` is latest, proving a single collapsed `as_of` hides the fact.
+- [x] Extend `MemoryOrchestrator.facts`, broker `facts_query`, and MCP `facts_query` to accept separate effective system and valid as-of timestamps while preserving `as_of` compatibility.
+- [x] Update tool schema/command-surface metadata and verify focused MCP facts tests plus the MCP product build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F026 Review
+
+- Fixed facts query bitemporal collapse by threading `system_as_of` and `valid_as_of` through the broker command surface, MCP schema, MCP direct compatibility path, broker service path, and `MemoryOrchestrator.facts`.
+- Preserved legacy `as_of` behavior as shorthand for both system and valid time when the new fields are omitted.
+- Added broker and direct MCP regressions where a fact is valid at domain time `150` but only known at current system time; collapsed `as_of = 150` returns no hit, while `valid_as_of = 150` plus `system_as_of = Int64.max` returns the fact.
+- Tightened timestamp double coercion after review found a crash risk around rounded `Double(Int64.max)` values; broker and direct MCP now reject those values as out of range instead of trapping.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter temporalFactArgumentsAreHonoredByPublishedTools --disable-automatic-resolution` failed before the fix with `unsupported argument(s): system_as_of, valid_as_of`.
+  - Green: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerFactsQuerySupportsSeparateSystemAndValidTime|mcpFactsQuerySupportsSeparateSystemAndValidTime|brokerFactsQueryRejectsRoundedOutOfRangeTimestampDoubles|mcpFactsQueryRejectsRoundedOutOfRangeTimestampDoubles|temporalFactArgumentsAreHonoredByPublishedTools' --disable-automatic-resolution`: passed; 5 tests.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'temporalFactArgumentsAreHonoredByPublishedTools|brokerFactsQuerySupportsSeparateSystemAndValidTime|mcpFactsQuerySupportsSeparateSystemAndValidTime|brokerFactsQueryRejectsRoundedOutOfRangeTimestampDoubles|mcpFactsQueryRejectsRoundedOutOfRangeTimestampDoubles|brokerFactAssertIncludesEvidenceInFactsQuery|brokerFactAssertAcceptsEvidence|brokerFactRetractHonorsSystemTime|publishedToolSchemasExposeStructuredMemoryTools|compatRejectsFractionalIntegerArguments' --disable-automatic-resolution`: passed; 6 matched tests.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+- Review:
+  - Read-only subagent independently confirmed the F026 root cause across `StructuredMemoryAsOf`, orchestrator, broker, command surface, schema, and MCP compatibility path.
+  - First code review flagged the timestamp double conversion trap and a weak direct MCP regression; both were fixed.
+  - Re-review approved the final F026 source/test change with no blocking findings.
+- Source/test commit: `774ca2919`.
+- Progress snapshot after F026: 168 completed and committed, 32 remaining.
+
+### Active Plan - F034 Multiple Active Session Working Memory
+
+- [x] Add red broker and MCP compatibility regressions where multiple active sessions exist and an unscoped working-memory retrieval must fail instead of silently returning no working context or cross-session context.
+- [x] Tighten session resolution for commands that include current working memory so more than one active session requires an explicit `session_id`, while durable-only or explicit-session calls remain compatible.
+- [x] Verify focused session-search/compact-context tests plus the MCP product build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F034 Review
+
+- Fixed ambiguous multi-session working-memory retrieval by making broker `memory_search` require `session_id` when `include_working` is true and more than one session is active.
+- Fixed broker `compact_context` to require an explicit `session_id` when multiple sessions are active, preventing silent omission of the current working-memory layer and checkpoint recording.
+- Fixed the MCP direct compatibility path for `memory_search` and `compact_context` with the same ambiguity rule; explicit sessions and single-session convenience still work.
+- Preserved durable-only unscoped `memory_search` behavior by allowing omitted `session_id` when `include_working` is false.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMemorySearchRequiresSessionIDWhenMultipleActiveSessionsIncludeWorking|brokerCompactContextRequiresSessionIDWhenMultipleSessionsAreActive|compatMemorySearchRequiresSessionIDWhenMultipleActiveSessionsIncludeWorking|compatCompactContextRequiresSessionIDWhenMultipleSessionsAreActive' --disable-automatic-resolution` failed before the fix with ambiguous calls succeeding or returning cross-session working hits.
+  - Green: same focused command passed; 4 tests.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMemorySearchRequiresSessionIDWhenMultipleActiveSessionsIncludeWorking|brokerCompactContextRequiresSessionIDWhenMultipleSessionsAreActive|compatMemorySearchRequiresSessionIDWhenMultipleActiveSessionsIncludeWorking|compatCompactContextRequiresSessionIDWhenMultipleSessionsAreActive|sessionStartEndAndScopedRecallSearchWork|compatCompactContextScopesToRequestedSession|brokerCompactContextScopesToRequestedSession|brokerBackedF152|brokerSessionEndRequiresIDWhenMultipleSessionsAreActive|sessionEndRequiresIDWhenMultipleSessionsAreActive' --disable-automatic-resolution`: passed; 8 matched tests.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Broader nearby run including `brokerSearchAppliesLifecycleAndFrameIDFilters` still has an unrelated lifecycle filter failure where filtered deleted/superseded IDs are empty; it does not exercise the F034 resolver path and remains outside this issue.
+- Review:
+  - Read-only explorer confirmed the F034 root cause in broker and compatibility `memory_search`/`compact_context`, and recommended keeping `recall`/`search` out of the narrow working-memory ambiguity fix.
+  - Code-review subagent approved the final F034 change, confirming durable-only unscoped search compatibility and the decision to leave `recall`/`search` unchanged.
+- Source/test commit: `40236e8df`.
+- Progress snapshot after F034: 169 completed and committed, 31 remaining.
+
+### Active Plan - F010 Fact Hash Key Case
+
+- [x] Add a red structured-memory regression proving subject and predicate key case changes create distinct fact identities instead of returning the same fact row.
+- [x] Change fact hashing so entity and predicate keys are length-delimited but not case-folded, while leaving alias lookup normalization untouched.
+- [x] Verify focused structured-memory hashing/CRUD tests and a relevant package build/test gate.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F010 Review
+
+- Fixed structured fact identity hashing so subject entity keys, predicate keys, and entity-valued object keys are hashed as raw length-delimited key bytes instead of alias-normalized strings.
+- Left `.string` object hashing on the existing normalized string path so F011 remains a separate open issue.
+- Added direct hash coverage for subject, predicate, and entity-object case differences plus an integration regression proving `person:Alice`, `person:alice`, and `Status` facts no longer collapse into the same `fact_id`.
+- Added FTS schema version 5 migration coverage for direct v4 structured stores and chained v2 structured stores, proving persisted legacy hashes are recomputed before repeated assertions can create duplicate fact rows.
+- Tightened migration ordering after review found that intermediate v2/v3 paths could stamp version 5 before F010 hash recomputation; intermediate tokenizer migrations now stamp only version 4 and final version 5 is written after `migrateV4ToV5`.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter assertFactPreservesSubjectAndPredicateCaseInIdentity --disable-automatic-resolution` failed before the fix because differently cased keys returned the same `FactRowID`.
+  - Red migration review repro: `deserializeV4RecomputesStructuredFactHashes` failed before the migration because a repeated fact after deserializing a v4 store inserted `FactRowID(2)` instead of reusing `FactRowID(1)`.
+  - Green: `swift test --build-path .build-codex/f106-red --filter 'migrationUpgradesPreVersionRelationBlobAndSupportsUpdates|deserializeV4RecomputesStructuredFactHashes|StructuredMemorySchemaTests|StructuredMemoryHashingTests|StructuredMemoryCRUDTests|VersionRelationTests|serializedBlobHasSchemaIdentityPragmas|deserializeUpgradesLegacyBlobSchemaIdentity' --disable-automatic-resolution`: passed; 28 tests.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/StructuredMemory/StructuredMemoryHashing.swift Sources/WaxTextSearch/FTS5Schema.swift Tests/WaxCoreTests/StructuredMemoryHashingTests.swift Tests/WaxIntegrationTests/StructuredMemoryCRUDTests.swift Tests/WaxIntegrationTests/StructuredMemorySchemaTests.swift Tests/WaxIntegrationTests/VersionRelationTests.swift Tests/WaxIntegrationTests/TextSearchEngineTests.swift`: passed.
+- Review:
+  - Read-only explorer confirmed the F010 root cause in `StructuredMemoryHasher.hashFact` and `.entity` object hashing while distinguishing F011 string-object normalization.
+  - First code review flagged the schema migration compatibility gap for persisted v4 stores; direct v4 migration coverage and implementation were added.
+  - Second code review flagged premature version 5 stamping on chained v2/v3 upgrades; migration ordering was fixed and chained v2 coverage was added.
+  - Final re-review approved the F010 source/test patch with no findings.
+- Source/test commit: `0d9aebfa6`.
+- Progress snapshot after F010: 170 completed and committed, 30 remaining.
+
+### Active Plan - F011 String Fact Hash Case
+
+- [x] Add red hash and integration regressions proving string fact objects preserve literal case in identity instead of deduping `"OpenAI"` and `"openai"`.
+- [x] Change string fact hashing to use raw length-delimited string bytes while preserving key validation and existing non-string canonicalization such as `-0.0`.
+- [x] Extend the schema migration coverage so legacy v4/v5 stores with normalized string hashes are recomputed and repeated assertions reuse the original row.
+- [x] Verify focused structured-memory hashing/CRUD/schema tests plus the default package build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F011 Review
+
+- Fixed string fact identity hashing so `.string` objects are hashed from raw UTF-8 bytes instead of `StructuredMemoryCanonicalizer.normalizedString`, preserving case and diacritics for literal values.
+- Kept non-string hashing behavior unchanged, including `Double` zero canonicalization and raw entity/predicate key hashing from F010.
+- Bumped FTS schema `user_version` to 6 and routed versions 0-5 through structured fact hash recomputation before accepting the store as current.
+- Added hash regressions for `"OpenAI"` versus `"openai"` and `"Zoë"` versus `"Zoe"`, an integration regression proving both cased string facts are stored/queryable, and a v5 migration regression proving stale persisted string hashes are recomputed.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter 'hashFactPreservesStringObjectCase|assertFactPreservesStringObjectCaseInIdentity|deserializeV5RecomputesStringFactHashes' --disable-automatic-resolution` failed before the fix with identical hashes/fact IDs and a v5 repeated assertion inserting `FactRowID(2)`.
+  - Green: `swift test --build-path .build-codex/f106-red --filter 'hashFactPreservesStringObjectCase|hashFactPreservesStringObjectDiacritics|assertFactPreservesStringObjectCaseInIdentity|deserializeV5RecomputesStringFactHashes|StructuredMemorySchemaTests|StructuredMemoryHashingTests|StructuredMemoryCRUDTests|VersionRelationTests|serializedBlobHasSchemaIdentityPragmas|deserializeUpgradesLegacyBlobSchemaIdentity' --disable-automatic-resolution`: passed; 32 tests.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/StructuredMemory/StructuredMemoryHashing.swift Sources/WaxTextSearch/FTS5Schema.swift Tests/WaxCoreTests/StructuredMemoryHashingTests.swift Tests/WaxIntegrationTests/StructuredMemoryCRUDTests.swift Tests/WaxIntegrationTests/StructuredMemorySchemaTests.swift Tests/WaxIntegrationTests/VersionRelationTests.swift Tests/WaxIntegrationTests/TextSearchEngineTests.swift`: passed.
+- Review:
+  - Read-only explorer confirmed the F011 root cause in `.string` object hashing and noted the diacritic-folding variant.
+  - Code-review subagent approved the source/test patch with no findings, including schema-version ordering and migration safety.
+- Source/test commit: `8514f07c6`.
+- Progress snapshot after F011: 171 completed and committed, 29 remaining.
+
+### Active Plan - F020 Structured Facts Truncation Flag
+
+- [x] Add a red structured facts regression proving `wasTruncated` is false when the result count exactly equals the caller limit and true only when an additional matching row exists.
+- [x] Change structured facts pagination to fetch one sentinel row beyond the visible limit and build hits only from the visible rows.
+- [x] Verify focused structured-memory CRUD tests plus the default package build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F020 Review
+
+- Fixed structured facts pagination by fetching one sentinel row beyond the requested visible limit and setting `wasTruncated` only when that extra row exists.
+- Built hits and loaded evidence only from visible rows, so sentinel rows are not exposed and do not trigger evidence fetches.
+- Preserved `limit: 0` behavior by keeping the SQL fetch limit at 0 when the clamped visible limit is 0.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter factsWasTruncatedRequiresExtraMatchingRowBeyondLimit --disable-automatic-resolution` failed before the fix because a single matching fact with `limit: 1` returned `wasTruncated == true`.
+  - Green: same focused command passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'factsWasTruncatedRequiresExtraMatchingRowBeyondLimit|StructuredMemoryCRUDTests|StructuredMemorySchemaTests|StructuredMemoryHashingTests' --disable-automatic-resolution`: passed; 28 tests.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxTextSearch/FTS5SearchEngine.swift Tests/WaxIntegrationTests/StructuredMemoryCRUDTests.swift`: passed.
+- Review:
+  - Read-only explorer confirmed the false-positive exact-limit root cause and no migration impact.
+  - Code-review subagent approved the patch with no findings, including `limit: 0`, sentinel evidence, ordering, and count behavior.
+- Source/test commit: `997b87853`.
+- Progress snapshot after F020: 172 completed and committed, 28 remaining.
+
+### Active Plan - F021 Entity Kind Correction
+
+- [x] Add a red structured-memory regression proving a repeated `upsertEntity` with a non-empty corrected kind updates the stored entity kind returned by alias resolution.
+- [x] Update entity upsert handling to replace stale non-empty kinds when the caller supplies a non-empty different kind, while preserving empty-kind calls from fact assertion.
+- [x] Verify focused structured-memory CRUD tests plus the default package build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F021 Review
+
+- Fixed entity upsert handling so an existing entity kind is updated when the caller supplies a different non-empty kind.
+- Preserved implicit fact assertion behavior by keeping the non-empty guard, so `assertFact` paths that ensure entities with `kind: ""` cannot clear a real kind.
+- Added a regression that upserts `agent:alice` as `person`, upserts the same entity as `agent`, then resolves by alias and expects the corrected `agent` kind.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter upsertEntityCorrectsExistingNonEmptyKind --disable-automatic-resolution` failed before the fix because the resolver still returned `person`.
+  - Green: same focused command passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'upsertEntityCorrectsExistingNonEmptyKind|StructuredMemoryCRUDTests' --disable-automatic-resolution`: passed; 12 tests.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxTextSearch/FTS5SearchEngine.swift Tests/WaxIntegrationTests/StructuredMemoryCRUDTests.swift`: passed.
+- Review:
+  - Read-only explorer confirmed the storage path, public CLI/MCP/broker impact, and that no migration can safely infer historical corrected kinds.
+  - Code-review subagent approved the source/test patch with no findings.
+- Source/test commit: `fc93b63b6`.
+- Progress snapshot after F021: 173 completed and committed, 27 remaining.
+
+### Active Plan - F019 Distinguishable Fact Spans
+
+- [x] Add a red structured facts regression proving duplicate open spans for the same fact row produce indistinguishable `StructuredFactHit` values.
+- [x] Surface span identity and valid/system ranges on `StructuredFactHit` and populate them from the structured facts query.
+- [x] Thread span identity/time metadata through broker, MCP, and CLI JSON/text results so serialized query hits are distinguishable.
+- [x] Verify focused structured-memory CRUD tests plus the default package build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F019 Review
+
+- Fixed structured fact query hits so duplicate open spans for the same fact row are no longer value-identical: hits now include `spanId`, `valid`, and `system` ranges in addition to the stable `factId`.
+- Populated span identity and both bitemporal ranges from `sm_fact_span`, and keyed evidence lookup by non-optional `span_id`.
+- Threaded the new fields through broker JSON, MCP compatibility JSON, CLI JSON, and CLI text output; CLI text now renders `[fact_id:span_id] ... valid=[from..to/open] system=[from..to/open]`.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter factsDuplicateOpenSpansForSameFactAreDistinguishable --disable-automatic-resolution` failed before the fix because duplicate open span hits compared equal.
+  - Red: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter directFactsQueryTextRendersSpanTemporalBounds --disable-automatic-resolution` failed before the CLI text fix because text output omitted valid/system bounds.
+  - Green: `swift test --build-path .build-codex/f106-red --filter factsDuplicateOpenSpansForSameFactAreDistinguishable --disable-automatic-resolution`: passed.
+  - Green: `swift test --traits default,MCPServer --filter directFactsQueryTextRendersSpanTemporalBounds --disable-automatic-resolution`: passed.
+  - Green: `swift test --traits default,MCPServer --filter factsQueryRendersSpanIdentityAndTemporalBounds --disable-automatic-resolution`: passed.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/StructuredMemory/StructuredFacts.swift Sources/WaxTextSearch/FTS5SearchEngine.swift Sources/Wax/Broker/AgentBrokerService.swift Sources/WaxMCPServer/WaxMCPTools.swift Sources/WaxCLI/FactsCommand.swift Tests/WaxIntegrationTests/StructuredMemoryCRUDTests.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift Tests/WaxCLITests/WaxCLIMemoryTests.swift`: passed.
+- Review:
+  - Read-only explorer confirmed duplicate spans for the same fact were possible and indistinguishable without span identity/ranges.
+  - First code review flagged missing temporal bounds in CLI text output; the shared text formatter and regression test were added.
+  - Final code review approved the scoped F019 patch with no findings.
+- Source/test commit: `fb28c8278`.
+- Progress snapshot after F019: 174 completed and committed, 26 remaining.
+
+### Active Plan - F013 Narrow Fact Updates
+
+- [x] Add a red structured facts regression proving `.updates` for one object does not close another open object with the same subject/predicate.
+- [x] Narrow superseding span closure to the updated fact identity rather than every open subject/predicate span.
+- [x] Verify focused structured-memory CRUD/version relation tests plus the default package build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F013 Review
+
+- Fixed `.updates` / superseding structured fact assertions so closure happens after resolving the asserted fact identity and only touches open spans for that same `fact_id`.
+- Added half-open valid-time overlap checks to preserve non-overlapping historical valid intervals for the same fact.
+- Updated version-relation regressions so same-fact updates still close the prior overlapping span, distinct objects with the same subject/predicate remain current, and older valid intervals stay queryable at later system times.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter updateFactPreservesDistinctObjectsForSameSubjectPredicate --disable-automatic-resolution` failed before the fact-id fix because the distinct `Rust` fact was closed.
+  - Red: `swift test --build-path .build-codex/f106-red --filter updateFactOnlyClosesOverlappingValidIntervals --disable-automatic-resolution` failed before the valid-overlap fix because the older valid interval became unqueryable at a later system time.
+  - Green: `swift test --build-path .build-codex/f106-red --filter 'updateFactPreservesDistinctObjectsForSameSubjectPredicate|updateFactOnlyClosesOverlappingValidIntervalsForSameFact|updateFactRetractsPriorSpanForSameFact|VersionRelationTests' --disable-automatic-resolution`: passed; 5 tests.
+  - Green: `swift test --build-path .build-codex/f106-red --filter 'VersionRelationTests|StructuredMemoryCRUDTests' --disable-automatic-resolution`: passed; 18 tests.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxTextSearch/FTS5SearchEngine.swift Tests/WaxIntegrationTests/VersionRelationTests.swift tasks/todo.md`: passed.
+- Review:
+  - Read-only explorer confirmed the broad subject/predicate close root cause and recommended computing/fetching `factId` before superseding closure.
+  - Code-review subagent approved the F013 source/test patch with no findings.
+- Source/test commit: `b0c27154d`.
+- Progress snapshot after F013: 175 completed and committed, 25 remaining.
+
+### Active Plan - F014 Span-Scoped Fact Relations
+
+- [x] Add red storage/API regressions proving repeated assertions for the same fact preserve per-span `version_relation` values.
+- [x] Move authoritative relation storage to `sm_fact_span`, migrate legacy stores to schema v7, and write relation on each new span.
+- [x] Surface span relation through fact query hits, broker/MCP payloads, and CLI JSON/text outputs.
+- [x] Verify focused version-relation/schema/structured-memory tests, MCP/CLI relation output tests, and default package build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F014 Review
+
+- Fixed structured fact relations so `version_relation` is authoritative per `sm_fact_span` instead of being overwritten on the stable fact row.
+- Added `relation` to `StructuredFactHit` and surfaced it through broker JSON, MCP compatibility JSON, CLI JSON, and CLI text output.
+- Bumped the FTS schema to v7, added `sm_fact_span.version_relation`, backfilled migrated spans from legacy fact rows, and rehashed legacy span keys with the relation-aware span identity.
+- Guarded same-timestamp superseding writes by bumping the inserted replacement span to the first monotonic system millisecond after any closed span.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter spanRelationsPreservePerAssertionRelation --disable-automatic-resolution` failed before the schema change because `sm_fact_span.version_relation` did not exist.
+  - Red: `swift test --build-path .build-codex/f106-red --filter sameTimestampSupersedingRelationBumpsSpanInsteadOfDroppingUpdate --disable-automatic-resolution` failed before the collision fix because update evidence landed on the old span and the replacement span was missing.
+  - Red: `swift test --build-path .build-codex/f106-red --filter 'migrationRehashesLegacySpanIdentityBeforeReassertDedupe|migrationBackfillsPartialV6RelationColumn' --disable-automatic-resolution` failed before the migration fix because upgraded spans kept obsolete keys and partial v6 backfill stayed at `.sets`.
+  - Green: `swift test --build-path .build-codex/f106-red --filter 'VersionRelationTests|StructuredMemoryCRUDTests|StructuredMemorySchemaTests|deserializeUpgradesLegacyBlobSchemaIdentity' --disable-automatic-resolution`: passed; 30 tests.
+  - Green: `swift test --traits default,MCPServer --filter 'factsQueryRendersSpanIdentityAndTemporalBounds|directFactsQueryTextRendersSpanTemporalBounds' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/StructuredMemory/VersionRelation.swift Sources/WaxCore/StructuredMemory/StructuredFacts.swift Sources/WaxCore/StructuredMemory/StructuredMemoryHashing.swift Sources/WaxTextSearch/StructuredMemorySchema.swift Sources/WaxTextSearch/FTS5Schema.swift Sources/WaxTextSearch/FTS5SearchEngine.swift Sources/Wax/Broker/AgentBrokerService.swift Sources/WaxMCPServer/WaxMCPTools.swift Sources/WaxCLI/FactsCommand.swift Tests/WaxIntegrationTests/VersionRelationTests.swift Tests/WaxIntegrationTests/StructuredMemorySchemaTests.swift Tests/WaxIntegrationTests/TextSearchEngineTests.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift Tests/WaxCLITests/WaxCLIMemoryTests.swift tasks/todo.md`: passed.
+- Review:
+  - Read-only explorer confirmed relation must be span-scoped because fact rows are stable SPO identities while spans represent assertions/versions.
+  - First code review flagged same-timestamp replacement span loss; the relation-aware span key, monotonic bump, and regression were added.
+  - Second code review flagged migration hash/backfill idempotency gaps; v7 migration now always backfills v6 stores and rehashes existing spans.
+  - Final code review approved the F014 patch with only a staging-boundary note; unrelated dirty files were left unstaged.
+- Source/test commit: `c2f3bfe38`.
+- Progress snapshot after F014: 176 completed and committed, 24 remaining.
+
+### Active Plan - F015 Retraction Assertions
+
+- [x] Add a red regression proving `assertFact(... relation: .retracts)` closes the matching open span without returning a current fact.
+- [x] Special-case `.retracts` in structured assertion flush so it closes overlapping spans and does not insert an open replacement span.
+- [x] Verify focused version-relation/structured-memory tests plus the default package build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F015 Review
+
+- Fixed `assertFact(... relation: .retracts)` so it uses the existing same-fact, overlapping-valid-window close logic and then skips insertion of a new current span.
+- Added a regression that first proves the original fact is historically visible, then asserts `.retracts`, verifies no current hit remains, and checks the serialized store still contains only the original `.sets` span relation.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter retractsRelationClosesPriorFactWithoutCreatingCurrentFact --disable-automatic-resolution` failed before the fix because `facts` returned an open `.retracts` span.
+  - Green: same focused command passed after the storage change.
+  - Green: `swift test --build-path .build-codex/f106-red --filter 'retractsRelationClosesPriorFactWithoutCreatingCurrentFact|VersionRelationTests|StructuredMemoryCRUDTests' --disable-automatic-resolution`: passed; 24 tests.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxTextSearch/FTS5SearchEngine.swift Tests/WaxIntegrationTests/VersionRelationTests.swift tasks/todo.md`: passed.
+- Review:
+  - Read-only explorer confirmed the broken path was `fact_assert` with relation `retracts`, not direct `fact_retract`.
+  - Code-review subagent approved the scoped F015 patch and confirmed `.updates`, direct `retractFact`, and same-timestamp close behavior were not regressed.
+- Source/test commit: `2df14d250`.
+- Progress snapshot after F015: 177 completed and committed, 23 remaining.
+
+### Active Plan - F016 Span Hash Identity
+
+- [x] Add red hash-level coverage proving open-ended valid ranges do not collide with explicit `-1` ends.
+- [x] Add red storage/query coverage proving spans with the same system start but different system end remain distinct.
+- [x] Encode optional valid/system end bounds without sentinels and include `system_to_ms` in span identity, including migration rehash.
+- [x] Verify focused WaxCore hashing, version-relation/schema tests, and the default package build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F016 Review
+
+- Fixed structured span identity so optional valid/system end bounds are encoded with explicit presence tags rather than a `-1` sentinel, and `system_to_ms` is part of the hash.
+- Bumped the FTS schema to v8 and rehashed v7 spans so existing stores move to the new identity contract.
+- Updated span close paths so retract/supersede writes update both `system_to_ms` and `span_key_hash`; a closed span no longer keeps its former open-ended hash.
+- Added regressions for nil-vs-`-1` valid bounds, different `system_to_ms` bounds, v7 migration rehashing, and close-then-reassert dedupe.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter 'hashSpanKeyDistinguishesOpenEndedValidRangeFromExplicitMinusOneEnd|spanIdentityDistinguishesSystemEndBounds' --disable-automatic-resolution` failed before the hash change.
+  - Red: `swift test --build-path .build-codex/f106-red --filter migrationRehashesOldV7BoundedSystemSpanIdentity --disable-automatic-resolution` failed before the v8 migration rehash.
+  - Red: `swift test --build-path .build-codex/f106-red --filter closingSpanRehashesBeforeSameSystemStartReassert --disable-automatic-resolution` failed before close paths rehashed closed spans.
+  - Green: `swift test --build-path .build-codex/f106-red --filter 'StructuredMemoryHashingTests|VersionRelationTests|StructuredMemorySchemaTests|TextSearchEngineTests|deserializeUpgradesLegacyBlobSchemaIdentity' --disable-automatic-resolution`: passed; 56 tests.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/StructuredMemory/StructuredMemoryHashing.swift Sources/WaxTextSearch/FTS5Schema.swift Sources/WaxTextSearch/FTS5SearchEngine.swift Tests/WaxCoreTests/StructuredMemoryHashingTests.swift Tests/WaxIntegrationTests/VersionRelationTests.swift Tests/WaxIntegrationTests/StructuredMemorySchemaTests.swift Tests/WaxIntegrationTests/TextSearchEngineTests.swift tasks/todo.md`: passed.
+- Review:
+  - Explorer confirmed the original bug and identified the extra close-path rehash invariant required once `system_to_ms` became part of identity.
+  - Code-review subagent approved the scoped F016 changes after excluding the unrelated raw FTS search API hunk from staging.
+- Source/test commit: `401a23204`.
+- Progress snapshot after F016: 178 completed and committed, 22 remaining.
+
+### Active Plan - F017 Structured Fact System Time
+
+- [x] Add red structured-memory regressions for earlier-than-open superseding system time, `Int64.max` system starts, same-time close overflow, and legacy migration constraint installation.
+- [x] Make high-level structured fact timestamps monotonic within `MemoryOrchestrator` and reject unclosable `system_from_ms` values.
+- [x] Guard superseding close timestamps against backwards time and `Int64.max` promotion.
+- [x] Bump the FTS schema to v9 and rebuild legacy `sm_fact_span` tables with the `system_from_ms < Int64.max` check while preserving evidence rows.
+- [x] Verify focused structured-memory gates, run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F017 Review
+
+- Fixed structured fact system time so actor-level assertions allocate monotonic timestamps instead of reusing a backwards wall clock.
+- Rejected unclosable `system_from_ms == Int64.max` writes and same-time superseding closes that would promote the replacement span to the sentinel.
+- Bumped the FTS schema to v9; v7/v8 migrations now reject existing unclosable spans and rebuild legacy `sm_fact_span` with the new check constraint.
+- Added migration coverage for legacy span-table constraint installation and evidence preservation during the rebuild.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter supersedingFactRejectsEarlierSystemTimeThanOpenSpan --disable-automatic-resolution` failed before the backwards-time guard.
+  - Red: `swift test --build-path .build-codex/f106-red --filter assertFactRejectsUnclosableSystemFromMax --disable-automatic-resolution` failed before the `Int64.max` guard.
+  - Red: `swift test --build-path .build-codex/f106-red --filter structuredSchemaRejectsUnclosableSystemFromMax --disable-automatic-resolution` failed before the schema check.
+  - Red-after-review: `swift test --build-path .build-codex/f017-review-red --filter supersedingFactRejectsCloseTimestampAtInt64MaxBeforeInsert --disable-automatic-resolution` failed before the same-time close overflow guard.
+  - Red-after-review: `swift test --build-path .build-codex/f017-review-red2 --filter migrationInstallsSystemFromSentinelCheckOnLegacySpanTable --disable-automatic-resolution` failed before the v9 table rebuild.
+  - Green: `swift test --build-path .build-codex/f017-review-red --filter 'supersedingFactRejectsEarlierSystemTimeThanOpenSpan|supersedingFactRejectsMonotonicCloseOverflowAtInt64Max|supersedingFactRejectsCloseTimestampAtInt64MaxBeforeInsert|migrationInstallsSystemFromSentinelCheckOnLegacySpanTable|migrationRebuildsLegacySpanTableWithoutDroppingEvidence|VersionRelationTests|StructuredMemoryCRUDTests|StructuredMemorySchemaTests|TextSearchEngineTests|MemoryOrchestratorSessionGraphAndStatsTests' --disable-automatic-resolution`: passed; 66 tests.
+  - `swift build --build-path .build-codex/f017-review-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Orchestrator/MemoryOrchestrator.swift Sources/WaxTextSearch/FTS5Schema.swift Sources/WaxTextSearch/FTS5SearchEngine.swift Sources/WaxTextSearch/StructuredMemorySchema.swift Tests/WaxIntegrationTests/VersionRelationTests.swift Tests/WaxIntegrationTests/StructuredMemorySchemaTests.swift Tests/WaxIntegrationTests/TextSearchEngineTests.swift tasks/todo.md`: passed.
+- Review:
+  - Explorer confirmed the root cause and recommended the actor-local monotonic timestamp allocator plus schema backstop.
+  - First code review found two blockers: same-time close could still reach `Int64.max`, and legacy v8/v7 tables were marked v9 without installing the new check.
+  - Re-review approved the runtime guard and v9 rebuild; the unrelated raw FTS search helper remained unstaged for F017.
+- Source/test commit: `c189c9dbf`.
+- Progress snapshot after F017: 179 completed and committed, 21 remaining.
+
+### Active Plan - F018 Same-Time Direct Retraction
+
+- [x] Add a red direct `retractFact` regression where the retraction timestamp equals the open span's `system_from_ms`.
+- [x] Preserve visibility at the original system tick and close the span at the next millisecond.
+- [x] Keep earlier-than-open retractions rejected and existing idempotent retraction behavior intact.
+- [x] Verify focused and wider structured-memory gates, run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F018 Review
+
+- Fixed direct structured fact retractions so `atMs == system_from_ms` closes the open span at `system_from_ms + 1`, matching the same-timestamp superseding behavior.
+- Kept `atMs < system_from_ms` as an encoding error and preserved the existing no-op idempotency when a second retract finds no open span.
+- Added a regression proving a same-timestamp retract leaves the fact visible at the original tick and absent at the next tick.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f018-red --filter retractFactAtSameSystemTimestampClosesAtNextMillisecond --disable-automatic-resolution` failed before the fix with `retraction time must be after system_from_ms`.
+  - Green: `swift test --build-path .build-codex/f018-red --filter retractFactAtSameSystemTimestampClosesAtNextMillisecond --disable-automatic-resolution`: passed.
+  - Green: `swift test --build-path .build-codex/f018-red --filter 'retractFactAtSameSystemTimestampClosesAtNextMillisecond|retractFactClosesSystemTimeAndIsIdempotent|retractsRelationClosesPriorFactWithoutCreatingCurrentFact|StructuredMemoryCRUDTests|VersionRelationTests' --disable-automatic-resolution`: passed; 33 tests.
+  - `swift build --build-path .build-codex/f018-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxTextSearch/FTS5SearchEngine.swift Tests/WaxIntegrationTests/StructuredMemoryCRUDTests.swift`: passed.
+- Review:
+  - Code-review subagent approved the scoped F018 diff and confirmed the unrelated raw FTS search helper remained unstaged.
+- Source/test commit: `942027bb4`.
+- Progress snapshot after F018: 180 completed and committed, 20 remaining.
+
+### Active Plan - F024 Structured Edge Traversal
+
+- [x] Add a red engine-level regression that calls the missing structured edge traversal API over entity-valued facts.
+- [x] Implement inbound/outbound edge traversal for `FactValue.entity` facts with optional predicate filtering and bitemporal as-of filters.
+- [x] Forward the edge API through `WaxStructuredMemorySession`, `WaxSession`, and `MemoryOrchestrator`.
+- [x] Add a higher-level `MemoryOrchestrator` regression proving the graph API is reachable from the structured-memory facade.
+- [x] Verify focused and wider structured-memory gates, locally review the diff, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F024 Review
+
+- Fixed the dead structured edge API by adding `FTS5SearchEngine.edges(...)` and forwarding it through the package structured-memory session stack.
+- The edge query only returns entity-valued facts, supports inbound/outbound direction, optional predicate filtering, bitemporal system/valid as-of windows, deterministic ordering, and overfetch-by-one truncation.
+- Added regressions for direct engine traversal and `MemoryOrchestrator` facade access.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f024-red --filter structuredEdgesTraverseEntityValuedFactsByDirectionAndPredicate --disable-automatic-resolution` failed before the fix because `FTS5SearchEngine` had no `edges` member.
+  - Green: `swift test --build-path .build-codex/f024-red --filter 'structuredEdgesTraverseEntityValuedFactsByDirectionAndPredicate|memoryOrchestratorExposesStructuredEdgeTraversal' --disable-automatic-resolution`: passed; 2 tests.
+  - Green: `swift test --build-path .build-codex/f024-red --filter 'structuredEdgesTraverseEntityValuedFactsByDirectionAndPredicate|memoryOrchestratorExposesStructuredEdgeTraversal|StructuredMemoryCRUDTests|VersionRelationTests|StructuredMemorySchemaTests' --disable-automatic-resolution`: passed; 42 tests.
+  - `swift build --build-path .build-codex/f024-red --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxTextSearch/FTS5SearchEngine.swift Sources/Wax/StructuredMemorySession.swift Sources/Wax/WaxSession.swift Sources/Wax/Orchestrator/MemoryOrchestrator.swift Tests/WaxIntegrationTests/StructuredMemoryCRUDTests.swift`: passed.
+- Review:
+  - The planned explorer subagent hit the account usage limit before returning results.
+  - Local blocking review checked that the query filters to entity-valued facts, applies temporal predicates, preserves direction and predicate, and excludes the unrelated raw FTS search helper from staging.
+- Source/test commit: `bb693369d`.
+- Progress snapshot after F024: 181 completed and committed, 19 remaining.
+
+### Active Plan - F047 MCP Multimodal Linux Import Guard
+
+- [x] Add a red static portability regression proving the MCP multimodal adapter cannot import CoreGraphics under only the `MCPServer` trait.
+- [x] Guard the adapter behind the same Apple image-framework availability required by `MultimodalEmbeddingProvider`.
+- [x] Verify the focused regression and a trait-enabled `wax-mcp` product build.
+- [x] Run local review after the review subagent hit the account usage limit, then commit source/test and ledger updates separately.
+
+### F047 Review
+
+- Fixed the MCP multimodal adapter's Linux compile gap by changing the file guard from plain `#if MCPServer` to `#if MCPServer && canImport(CoreGraphics) && canImport(ImageIO)`.
+- Matched the guard to the public `MultimodalEmbeddingProvider` boundary, which is defined only when ImageIO/CoreGraphics-backed image types are available.
+- Added a static regression that fails if the adapter regresses to an unconditional CoreGraphics import under the MCP trait.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f047-red --filter waxMCPMultimodalAdapterGuardsCoreGraphicsImport --disable-automatic-resolution` failed before the guard because the source still contained `#if MCPServer` followed by `import CoreGraphics`.
+  - Green: `swift test --build-path .build-codex/f047-red --filter waxMCPMultimodalAdapterGuardsCoreGraphicsImport --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f047-mcp-build --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: blocked by the known contextual `Package.resolved` edge because the local lockfile does not contain the MCP SDK dependency.
+  - `swift build --build-path .build-codex/f047-mcp-build --product wax-mcp --traits default,MCPServer`: passed.
+  - `git diff --check -- Sources/WaxMCPServer/MultimodalAdapter.swift Tests/WaxTests/PackageTraitManifestTests.swift`: passed.
+- Review:
+  - Code-review subagent hit the account usage limit before returning results.
+  - Local review checked that macOS behavior remains compiled, Linux excludes the CoreGraphics-dependent adapter, and no package lockfile changes were staged after the fallback build.
+- Source/test commit: `38207fcdc`.
+- Progress snapshot after F047: 182 completed and committed, 18 remaining.
+
+### Active Plan - F048 MCP Server Portable Exit
+
+- [x] Add a red static portability regression proving the MCP server entrypoint does not call `Darwin.exit` from trait-enabled code.
+- [x] Replace Darwin-qualified process exits with a platform-neutral helper backed by the conditionally imported C runtime.
+- [x] Verify the focused regression, the trait-enabled `wax-mcp` product build, and the narrow diff.
+- [x] Commit source/test and ledger updates separately.
+
+### F048 Review
+
+- Fixed the MCP server entrypoint so async startup/shutdown completion paths call `exitProcess(...)` instead of `Darwin.exit(...)`.
+- The helper uses the unqualified `exit(...)` supplied by the existing conditional Darwin/Glibc/Musl imports, so the trait-enabled source no longer hard-codes a Darwin symbol in the Linux path.
+- Added a static regression that fails if `Sources/WaxMCPServer/main.swift` reintroduces `Darwin.exit`.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f048-red --filter waxMCPEntrypointUsesPlatformNeutralExit --disable-automatic-resolution` failed before the fix because `main.swift` contained three `Darwin.exit` calls.
+  - Green: `swift test --build-path .build-codex/f048-red --filter waxMCPEntrypointUsesPlatformNeutralExit --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f048-mcp-build --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxMCPServer/main.swift Tests/WaxTests/PackageTraitManifestTests.swift`: passed.
+- Review:
+  - Local review checked that the only runtime change is the exit symbol dispatch and that the surrounding success/failure statuses remain unchanged.
+- Source/test commit: `c82cd3e76`.
+- Progress snapshot after F048: 183 completed and committed, 17 remaining.
+
+### Active Plan - F049 Darwin Benchmark Linux Excludes
+
+- [x] Add a red manifest regression proving Darwin-only integration benchmark files are listed in the Linux test excludes.
+- [x] Add the missing Darwin-importing benchmark sources to `waxIntegrationLinuxExcludes`.
+- [x] Verify the focused regression, SwiftPM manifest parsing, and the narrow diff.
+- [x] Commit source/test and ledger updates separately.
+
+### F049 Review
+
+- Fixed the Linux integration-test manifest excludes by adding the six benchmark files that import `Darwin` behind only `#if canImport(XCTest)`.
+- Added coverage for `AccessStatsBootstrapBenchmarks.swift`, `HandoffLookupBenchmarks.swift`, `PayloadLivenessBenchmarks.swift`, `RememberDedupBenchmarks.swift`, `SessionRuntimeStatsBenchmarks.swift`, and `SurrogateSourceBenchmarks.swift`.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f049-red --filter waxIntegrationLinuxExcludesDarwinOnlyBenchmarks --disable-automatic-resolution` failed before the manifest update with six missing excludes.
+  - Green: `swift test --build-path .build-codex/f049-red --filter waxIntegrationLinuxExcludesDarwinOnlyBenchmarks --disable-automatic-resolution`: passed.
+  - `swift package --disable-automatic-resolution describe --type json`: passed.
+  - `git diff --check -- Package.swift Tests/WaxTests/PackageTraitManifestTests.swift`: passed.
+- Review:
+  - Local review confirmed the change is manifest-only plus a static regression and does not alter macOS test inclusion.
+- Source/test commit: `f15d39e31`.
+- Progress snapshot after F049: 184 completed and committed, 16 remaining.
+
+### Active Plan - F050 WaxRepo UI Dependency Leakage
+
+- [x] Add a red manifest regression proving WaxRepo UI package dependencies and the WaxRepo executable target are macOS-scoped.
+- [x] Move the SwiftTUI/Noora package dependencies and WaxRepo executable target into manifest-scoped conditional arrays that parse under SwiftPM.
+- [x] Verify the focused regression, SwiftPM manifest parsing, and the narrow diff.
+- [x] Run post-fix review, then commit source/test and ledger updates separately.
+
+### F050 Review
+
+- Fixed the package graph so SwiftTUI and Noora are added only through `waxRepoPackageDependencies` on macOS.
+- Moved the WaxRepo executable target into a macOS-only `waxRepoTargets` manifest array, leaving non-WaxRepo package targets free from the TUI package leak.
+- Added a static manifest regression that proves the UI package dependencies and WaxRepo target are behind `#if os(macOS)` and are appended separately to the base dependency/target lists.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f050-red --filter waxRepoUIDependenciesAreMacOSScoped --disable-automatic-resolution` failed before the fix because the package dependency lines and `WaxRepo` executable target were not macOS-scoped.
+  - First green attempt: failed with an invalid SwiftPM manifest after embedding `#if os(macOS)` directly inside dependency/target array literals.
+  - Green: `swift test --build-path .build-codex/f050-green --filter waxRepoUIDependenciesAreMacOSScoped --disable-automatic-resolution`: passed.
+  - `swift package --disable-automatic-resolution describe --type json`: passed.
+  - `git diff --check -- Package.swift Tests/WaxTests/PackageTraitManifestTests.swift`: passed.
+- Review:
+  - Code-review subagent was started for the scoped diff but did not return before the first wait timeout.
+  - Local review confirmed SwiftPM accepts the conditional-array manifest shape and that the runtime change is limited to the WaxRepo UI dependency/target registration.
+- Source/test commit: `153e6a5d6`.
+- Progress snapshot after F050: 185 completed and committed, 15 remaining.
+
+### Active Plan - F091 WaxRepo Truncated History Checkpoint
+
+- [x] Add a red WaxRepo executable regression where `--max-commits 1` indexes only the newest commit and a later unbounded index must still recover older history.
+- [x] Keep `last-indexed-hash` conservative by only writing a checkpoint when the fetched git-log batch is known not to be truncated.
+- [x] Verify the focused regression, the wider WaxRepo index test slice, and the WaxRepo product build.
+- [x] Run post-fix review, then commit source/test and ledger updates separately.
+
+### F091 Review
+
+- Fixed WaxRepo indexing so a bounded `--max-commits` run does not advance `.wax-repo/last-indexed-hash` when `git log -n` may have truncated the history batch.
+- Added `checkpointHash(for:maxCommits:)`; it returns the newest commit hash only for unlimited runs or bounded runs that return fewer commits than the limit.
+- Updated full-reindex finalization to support replacing the store without creating a checkpoint when the full run was intentionally bounded and may not represent all history.
+- Added an executable smoke regression proving an initial `index --text-only --max-commits 1` followed by unbounded `index --text-only` can still search the older commit.
+- Verification:
+  - Red: `swift test --traits default,WaxRepo --filter waxRepoLimitedIndexDoesNotCheckpointPastUnindexedOlderHistory --disable-automatic-resolution` failed before the fix because search returned only the newer commit.
+  - Green: `swift test --traits default,WaxRepo --filter waxRepoLimitedIndexDoesNotCheckpointPastUnindexedOlderHistory --disable-automatic-resolution`: passed.
+  - `swift test --traits default,WaxRepo --filter WaxRepoIndexCommandTests --disable-automatic-resolution`: passed; 4 tests.
+  - `swift build --product WaxRepo --traits default,WaxRepo --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxRepo/Commands/IndexCommand.swift Tests/WaxTests/WaxRepoIndexCommandTests.swift`: passed.
+- Review:
+  - Explorer subagent independently reproduced the baseline failure mode and confirmed the minimal fix shape.
+  - Code-review subagent was started for the scoped diff but did not return before the wait timeout.
+  - Local review confirmed the fix prevents permanent older-history skips; true bounded backfill pagination would require a separate oldest-commit cursor and is outside F091.
+- Source/test commit: `5de373cd9`.
+- Progress snapshot after F091: 186 completed and committed, 14 remaining.
+
+### Active Plan - F105 MCP Multimodal Advertisement
+
+- [x] Add a red static regression proving `wax-mcp` does not advertise unpublished multimodal RAG tools.
+- [x] Update the MCP command abstract to describe the actual published memory tool surface.
+- [x] Verify the focused regression, package manifest/static test slice, MCP trait build, and MCP tool-list test.
+- [x] Run post-fix review, then commit source/test and ledger updates separately.
+
+### F105 Review
+
+- Fixed the `wax-mcp` command abstract so it no longer claims the server exposes multimodal RAG tools that are not registered in `ToolSchemas` or broker command dispatch.
+- Added a static regression in `PackageTraitManifestTests` that fails if the unpublished `multimodal RAG tools` phrase returns to the MCP entrypoint.
+- Verification:
+  - Red: `swift test --filter waxMCPEntrypointDoesNotAdvertiseUnpublishedMultimodalTools --disable-automatic-resolution` failed before the wording fix because `main.swift` advertised `multimodal RAG tools`.
+  - Green: `swift test --filter waxMCPEntrypointDoesNotAdvertiseUnpublishedMultimodalTools --disable-automatic-resolution`: passed.
+  - `swift test --filter PackageTraitManifestTests --disable-automatic-resolution`: passed; 7 tests.
+  - `swift build --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `swift test --traits default,MCPServer --filter toolsListContainsExpectedTools --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxMCPServer/main.swift Tests/WaxTests/PackageTraitManifestTests.swift`: passed.
+- Review:
+  - Explorer subagent confirmed the advertised tool mismatch and verified the actual MCP/broker tool surfaces still have no multimodal/photo/video tool paths.
+  - Code-review subagent approved the scoped diff with no findings.
+- Source/test commit: `ad8a168f4`.
+- Progress snapshot after F105: 188 completed and committed, 12 remaining.
+
+### Active Plan - F037 Pending Duplicate Dedupe
+
+- [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.
+- [x] Teach the remember dedupe probe to inspect committed frames plus pending WAL frame metadata, respecting pending delete/supersede liveness.
+- [x] Verify the focused dedupe regression, the wider dedupe/memory-orchestrator slice, and the MCP product build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F037 Review
+
+- Fixed `Wax.rememberDedupProbe(...)` to consider pending WAL frame metadata before committed frames, so duplicate `MemoryOrchestrator.remember(...)` calls made before flush short-circuit against the pending document/chunk set.
+- Preserved the hot-path committed-frame streaming behavior after review rejected a first full-store materialize/sort approach; pending puts are scanned newest-first and committed frames remain streamed newest-first with pending delete/supersede overlays.
+- Added a regression proving two identical pre-flush remembers commit only one complete document/chunk set.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter rememberIdenticalContentTwiceBeforeFlushIsIdempotent --disable-automatic-resolution` failed before the fix with `frameCount == 4` instead of `2`.
+  - Green: `swift test --build-path .build-codex/f106-red --filter rememberIdenticalContentTwiceBeforeFlushIsIdempotent --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'DeduplicationTests|MemoryOrchestrator' --disable-automatic-resolution`: passed; 33 Swift Testing tests plus 3 skipped benchmark XCTests.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+- Review:
+  - Read-only explorer independently confirmed the committed-only dedupe probe root cause and the pending-aware scan strategy.
+  - First code review flagged a performance risk from full-store sort/materialization on the remember hot path.
+  - Re-review approved the optimized pending-first streaming scan and the capped `UInt64` to `Int` reserve-capacity conversion.
+- Progress snapshot after F037: 166 completed and committed, 34 remaining.
+
+### Active Plan - F025 Object-Side Structured Evidence
+
+- [x] Add a red unified-search regression where the query resolves to an entity used only as a structured fact object and must still return the fact evidence frame.
+- [x] Extend structured evidence frame lookup to match candidate entity keys on either fact subject or entity-valued fact object.
+- [x] Verify the focused regression, the wider structured/unified-search slice, and the MCP product build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F025 Review
+
+- Fixed structured evidence lookup so candidate entities match facts where the entity is either the subject or an entity-valued object.
+- Used a candidate-entity CTE plus `UNION` of subject/object fact IDs so the object-side path can use the structured-memory object index and remains constrained to `object_kind = 7`.
+- Added a unified-search regression where the query resolves only the object entity alias and the evidence text omits that alias, proving the result comes from structured memory rather than text search.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter structuredSearchFindsEvidenceWhenEntityCandidateIsFactObject --disable-automatic-resolution` failed before the fix with an empty result.
+  - Green: `swift test --build-path .build-codex/f106-red --filter structuredSearchFindsEvidenceWhenEntityCandidateIsFactObject --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'structuredSearchFindsEvidenceWhenEntityCandidateIsFactObject|structuredSearchTimeRangeBeforeDoesNotOverrideExplicitAsOf|StructuredMemoryCRUDTests|UnifiedSearchTests' --disable-automatic-resolution`: passed; 40 tests.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+- Review:
+  - Read-only explorer confirmed the subject-only `evidenceFrameIds` path, identified the first shared-token test shape as a false positive, and recommended the CTE/UNION fix.
+  - Code-review subagent reported no findings; it verified SQL placeholder ordering, object-kind filtering, and that the regression is not a text-search false positive.
+- Progress snapshot after F025: 167 completed and committed, 33 remaining.
+
+### Active Plan - F027 Unified Search As-Of Semantics
+
+- [x] Add a red unified-search regression proving `timeRange.before` filters frame timestamps but does not override explicit structured-memory `asOfMs`.
+- [x] Change the structured-memory lane to derive `StructuredMemoryAsOf` only from `SearchRequest.asOfMs`.
+- [x] Verify the focused regression, the wider unified-search slice, and the MCP product build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F161 Review
+
+- Added an explicit non-PDFKit fallback for `MemoryOrchestrator.remember(pdfAt:)`; on platforms without PDFKit the API remains available and throws `PDFIngestError.unsupportedPlatform` instead of disappearing at compile time.
+- Added a portability guard test plus a Linux-only behavioral test that calls the API under `#if !canImport(PDFKit)` and expects the unsupported-platform error.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter pdfIngestAPIHasNonPDFKitFallback --disable-automatic-resolution` failed before the fix because the orchestrator source had no `#else` fallback and the error enum lacked `unsupportedPlatform`.
+  - Green: `swift test --build-path .build-codex/f106-red --filter pdfIngestAPIHasNonPDFKitFallback --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'PDFPlatformFallbackTests|PDFIngestTests|pdfIngestError' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+- Review:
+  - Code-review subagent approved the implementation and flagged the static portability test as weak on its own; the follow-up added the non-PDFKit behavioral test while retaining the static guard for macOS coverage.
+
+### F162 Review
+
+- Added `maxPages` to PDF ingest while preserving existing `remember(pdfAt:metadata:)` call sites through a defaulted parameter.
+- `PDFTextExtractor` now returns extraction metadata for total pages, extracted page count, configured max page limit, and truncation state; PDF ingest persists those values into document and chunk metadata.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter pdfIngestTruncationMetadataRecordsExtractedPageCoverage --disable-automatic-resolution` failed before the fix because `remember(pdfAt:maxPages:metadata:)` did not exist.
+  - Green: same focused test passed after the extractor/orchestrator change.
+  - `swift test --build-path .build-codex/f106-red --filter 'PDFIngestTests|PDFPlatformFallbackTests|pdfIngestError' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+- Review:
+  - Code-review subagent approved the scoped F162 diff with no blockers.
+
+### F163 Review
+
+- Changed PDF extraction to retain page segments and ingest each non-empty page with `pdf_page_number`, while preserving file-level source and truncation metadata.
+- Added coverage proving page one and page two are stored with distinct page metadata and do not cross-contaminate payload text.
+- Added a regression for blank pages inside the extracted range so `pdf_extracted_page_count` continues to mean page coverage, not just non-empty stored pages.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter pdfIngestStoresPageProvenanceInFrameMetadata --disable-automatic-resolution` failed before the fix because no frames had `pdf_page_number`.
+  - Green: same focused provenance test passed after page-scoped ingest.
+  - Review regression: `swift test --build-path .build-codex/f106-red --filter pdfIngestCountsBlankPagesWithinExtractionCoverage --disable-automatic-resolution` failed with `pdf_extracted_page_count == "1"` before restoring coverage semantics; passed after the fix.
+  - `swift test --build-path .build-codex/f106-red --filter 'PDFIngestTests|PDFPlatformFallbackTests|pdfIngestError' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+- Review:
+  - First review caught the `pdf_extracted_page_count` coverage regression; re-review caught an AppKit portability risk in the test helper. Both were fixed, and the final reviewer approved the scoped F163 diff.
+
+### F164 Review
+
+- Added package-scoped `PhotoFile` plus `PhotoRAGOrchestrator.ingest(files:)` so the PhotoRAG implementation matches its internal docs claim that local images can be ingested.
+- Local file ingest now decodes local bytes, stamps `photo.source=file` and `photo.file_url`, writes searchable caption/OCR/tag frames, supports missing-file and invalid-image typed errors, and writes region embeddings when enabled.
+- Local recall pixel loading now degrades to missing thumbnail/crop data if the source file is deleted or invalid instead of failing the whole recall.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter photoRAGIngestsLocalImageFilesAndRecallsCaptionMetadata --disable-automatic-resolution` failed before the fix because `PhotoFile` and `ingest(files:)` did not exist.
+  - Red review regressions: `swift test --build-path .build-codex/f106-red --filter 'photoRAGLocalFileRecallSurvivesMissingPixelSource|photoRAGLocalFileIngestWritesRegionEmbeddingsWhenEnabled' --disable-automatic-resolution` failed before the follow-up because recall threw when the file disappeared and local ingest created no region frames.
+  - Green: the same focused local-file tests passed after the follow-up.
+  - `swift test --build-path .build-codex/f106-red --filter 'PhotoRAGFileIngestTests|PhotoRAGOrchestratorTests|PhotoRAGIngestDedupeTests|PhotoRAGDocsTests|RAGConfigClampingTests' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check` on the scoped PhotoRAG paths: passed.
+- Review:
+  - First review found missing degraded local pixel handling and missing region frames. Re-review approved the scoped F164 diff after both were fixed.
+
+### F165 Review
+
+- Changed full-library PhotoRAG sync to use the typed Photos image fetch overload, so `.fullLibrary` only enumerates image `PHAsset`s before passing local identifiers into ingest.
+- Added a regression that scopes its source check to the `.fullLibrary` branch and fails on the old untyped `PHAsset.fetchAssets(with: opts)` call.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter photoRAGFullLibrarySyncFetchesImagesOnly --disable-automatic-resolution` failed before the fix because the full-library branch used the untyped Photos fetch.
+  - Green: the same focused regression passed after switching to `PHAsset.fetchAssets(with: .image, options: opts)`.
+  - `swift test --build-path .build-codex/f106-red --filter PhotoRAGDocsTests --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check` on the scoped PhotoRAG files: passed.
+- Review:
+  - First review rejected the original loose source-text regression. The test was tightened to prove the `.fullLibrary` branch uses the typed image fetch overload, and re-review approved the scoped diff.
+
+### F166 Review
+
+- Replaced the empty `PhotoFilters` shell with concrete metadata-backed filters for asset IDs, source (`.photos`/`.file`), and local availability.
+- PhotoRAG recall now translates asset ID and location constraints into one intersected `FrameFilter` allowlist, and translates source/local availability into a shared `MetadataFilter` so filtering happens inside unified search instead of after candidate truncation.
+- Filter-only queries now participate in timeline fallback.
+- Follow-up: filters-only recall now scans eligible PhotoRAG root metadata directly before applying `resultLimit`, so older matching roots are not lost behind a bounded recent timeline window.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter photoRAGRecallAppliesLocalAvailabilityFilter --disable-automatic-resolution` failed before the fix because `PhotoFilters(isLocal:)` did not exist.
+  - Green: the same focused regression passed after adding filters and shared-search enforcement.
+  - Red review regression: `swift test --build-path .build-codex/f106-red --filter photoRAGFilterOnlyRecallScansPastFallbackWindow --disable-automatic-resolution` failed before the follow-up because filters-only recall missed an older matching root outside the fallback window.
+  - Green: the same review regression passed after switching filter-only queries to direct PhotoRAG root scanning.
+  - `swift test --build-path .build-codex/f106-red --filter PhotoRAGConstraintQueriesTests --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check` on the scoped PhotoRAG files: passed.
+- Review:
+  - Explorer review rejected the initial root post-filter approach because it could starve results and miss derived-frame hits. The implementation was reworked to use `FrameFilter`/`MetadataFilter`.
+  - Code review then found filters-only recall could still miss older matches through bounded timeline fallback; the direct root scan follow-up fixed that blocker.
+
+### F167 Review
+
+- PhotoRAG location queries now use coarse location bins only as a candidate prefilter and then apply an exact haversine distance check before adding a frame to the allowlist.
+- Longitude bin range generation now handles antimeridian wraparound and all-longitude polar/large-radius cases without searching one side only.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter photoRAGLocationRadiusAppliesExactDistanceAfterCoarseBin --disable-automatic-resolution` failed before the fix because a same-bin photo outside the 30 m radius was returned.
+  - Green: the same focused regression passed after adding exact distance checks.
+  - Added antimeridian coverage with `photoRAGLocationRadiusHandlesAntimeridianBins`.
+  - `swift test --build-path .build-codex/f106-red --filter PhotoRAGConstraintQueriesTests --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check` on the scoped PhotoRAG files: passed.
+- Review:
+  - Review highlighted antimeridian and polar bin risks. The final diff normalized longitude ranges and retained the existing zero-radius no-filter behavior; scoped review approved.
+
+### F168 Review
+
+- PhotoRAG degraded diagnostics now count non-local or missing-root results from `photo.availability.local` metadata instead of inferring degradation from absent OCR/caption derived frames.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter photoRAGDegradedDiagnosticsUseLocalAvailabilityMetadata --disable-automatic-resolution` failed before the fix with `degradedResultCount == 2` for one local/no-derived root and one non-local root.
+  - Green: the same focused regression passed after switching diagnostics to local-availability metadata.
+  - `swift test --build-path .build-codex/f106-red --filter PhotoRAGConstraintQueriesTests --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check` on the scoped PhotoRAG files: passed.
+- Review:
+  - Scoped code review approved the metadata-based degradation count; a local follow-up tightened the helper to count missing root mappings as degraded.
+
+### F169 Review
+
+- PhotoRAG Photos-backed region ingestion no longer returns before superseding a previous root when all proposed region crops fail.
+- Region crop result ordering now stores compact crop-array indices after a crop succeeds in both Photos-backed and local-file paths, avoiding an out-of-bounds trap when some earlier crops fail and later crops succeed.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter photoRAGPhotosRegionCropFailureDoesNotReturnBeforeSupersede --disable-automatic-resolution` failed before the fix because the Photos-backed ingest path still contained `guard !crops.isEmpty else { return }`.
+  - Review red: `swift test --build-path .build-codex/f106-red --filter photoRAGRegionCropResultsUseCompactCropIndices --disable-automatic-resolution` failed before the compact-index follow-up because both region embedding paths stored sparse proposed-region indices.
+  - Green: both focused regressions passed after the fix.
+  - `swift test --build-path .build-codex/f106-red --filter PhotoRAGDocsTests --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'PhotoRAGDocsTests|PhotoRAGFileIngestTests' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check` on the scoped PhotoRAG files: passed.
+- Review:
+  - First scoped review found the sparse crop-index trap could still abort before supersede when invalid and valid crops were mixed. The compact-index follow-up fixed both Photos-backed and local-file paths, and re-review approved the final diff.
+
+### F170 Review
+
+- PhotoRAG sync now writes a persisted `system.photos.sync_state` checkpoint after successful `syncLibrary`, including sync scope, asset count, completion timestamp, and pipeline version metadata.
+- The regression uses `.assetIDs([])` so it exercises `syncLibrary` without depending on real Photos library contents, then closes and reopens the store before asserting the checkpoint frame.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter photoRAGSyncLibraryWritesSyncStateCheckpoint --disable-automatic-resolution` failed before the fix with `syncState.count == 0`.
+  - Green: the same focused regression passed after adding the checkpoint writer.
+  - `swift test --build-path .build-codex/f106-red --filter PhotoRAGOrchestratorTests --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'PhotoRAGOrchestratorTests|PhotoRAGFileIngestTests|PhotoRAGDocsTests' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check` on the scoped PhotoRAG files: passed.
+- Review:
+  - Explorer confirmed F170 was a real baseline gap: the frame kind and docs existed, but `syncLibrary` returned after ingest with no checkpoint write.
+  - Code review approved the fix and flagged a low test gap around metadata assertions; the regression now checks pipeline version and a parseable completion timestamp.
+
+### F171 Review
+
+- PhotoRAG docs now describe `photo.tags` as metadata keywords, or caption-derived search terms only when no metadata keywords are present, instead of detected classifier tags or labels.
+- Added a docs regression tied to the implementation evidence: `buildPhotoTags` reads `metadata.exif.keywords` first and only falls back to caption tokens when tags are empty.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter photoRAGDocsDoNotAdvertiseClassifierTags --disable-automatic-resolution` failed before the wording fix on both DocC and website docs.
+  - Green: the same focused regression passed after narrowing the docs.
+  - `swift test --build-path .build-codex/f106-red --filter PhotoRAGDocsTests --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check` on the scoped docs/test files: passed.
+- Review:
+  - First review caught wording that still implied metadata and caption tags were combined. The final wording now states the caption-derived path is fallback-only, and re-review passed.
+
+### F172 Review
+
+- VideoRAG Photos-backed ingestion now persists `record.localFileURL` into root metadata, so recall thumbnail extraction can reopen local Photos video bytes instead of treating the item as thumbnail-unavailable.
+- Added a source-level regression proving the Photos ingest path passes `fileURL: record.localFileURL`, plus an integration regression that seeds a Photos-backed local root with a real MP4 URL and verifies recall attaches a thumbnail and does not count the video as degraded.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter videoRAGPhotosIngestPersistsLocalFileURLForThumbnails --disable-automatic-resolution` failed before the fix because the Photos ingest path passed `fileURL: nil`.
+  - Green: the same source guard passed after preserving the local file URL.
+  - `swift test --build-path .build-codex/f106-red --filter videoRAGPhotosBackedLocalFileURLEnablesThumbnails --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter VideoRAGDocsTests --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'VideoRAGFileIngestIntegrationTests|VideoRAGDocsTests' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `git diff --check` on the scoped VideoRAG files: passed.
+- Review:
+  - Scoped code review approved the diff and confirmed the existing non-local Photos degraded/no-thumbnail path remains covered.
+
+### F174 Review
+
+- Broker `session_start` now appends the `.started` lifecycle event before saving the active session manifest, preventing event-write failures from leaving a manifest that appears resumable without a start event.
+- Added a focused MCP-trait regression that scopes the source check to `sessionStart` and verifies `BrokerSessionPersistence.appendEvent` precedes `BrokerSessionPersistence.saveManifest(manifest, to: manifestURL)`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerSessionStartAppendsStartedEventBeforeSavingManifest --disable-automatic-resolution` failed before the fix because the manifest save occurred first.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerSessionStartAppendsStartedEventBeforeSavingManifest --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerSessionStartAppendsStartedEventBeforeSavingManifest|brokerRetrievalEventsPersistQueryHashWithoutRawQuery' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Scoped code-review subagent approved the F174 diff with no findings.
+
+### F175 Review
+
+- Broker `session_resume` now appends the `.resumed` lifecycle event before saving the refreshed lease manifest, so a failed event append cannot leave durable state claiming a new broker owns the lease without the resume audit event.
+- Added a focused MCP-trait regression that scopes the source check to `sessionResume` and verifies `BrokerSessionPersistence.appendEvent` precedes `BrokerSessionPersistence.saveManifest(refreshed, to: manifestURL)`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerSessionResumeAppendsResumedEventBeforeSavingLease --disable-automatic-resolution` failed before the fix because the refreshed manifest save occurred first.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerSessionResumeAppendsResumedEventBeforeSavingLease|brokerSessionStartAppendsStartedEventBeforeSavingManifest' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the failure mode and warned not to conflate lease-expiry policy with F175.
+  - Scoped code-review subagent approved the F175 diff with no findings.
+
+### F176 Review
+
+- `BrokerSessionPersistence.appendEvent` now uses a throwing first-write path for new event logs, so an uncreatable first event file cannot be silently reported as success.
+- Added a deterministic missing-parent regression proving first event append throws instead of dropping the event when the log file cannot be created.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerSessionAppendEventThrowsWhenFirstEventFileCannotBeCreated --disable-automatic-resolution` failed before the fix because no error was thrown.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerSessionAppendEventThrowsWhenFirstEventFileCannotBeCreated|brokerSessionStartAppendsStartedEventBeforeSavingManifest|brokerSessionResumeAppendsResumedEventBeforeSavingLease' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/BrokerSessionPersistence.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed missing parent directory deterministically covers the ignored `createFile` return.
+  - Scoped code-review subagent approved the F176 diff with no findings.
+
+### F177 Review
+
+- `BrokerSessionPersistence.loadEvents` now salvages valid event-log lines and skips malformed JSONL records, while preserving file read errors because only per-line decode failures are tolerated.
+- Added a regression that writes a valid event, injects one malformed line, appends another valid event through the production append path, and verifies load order remains `[.started, .resumed]`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerSessionLoadEventsSkipsMalformedJSONLLines --disable-automatic-resolution` failed before the fix with a JSON decoding error.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerSessionLoadEventsSkipsMalformedJSONLLines|brokerSessionAppendEventThrowsWhenFirstEventFileCannotBeCreated' --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerSessionLoadEventsSkipsMalformedJSONLLines|brokerRetrievalEventsPersistQueryHashWithoutRawQuery' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/BrokerSessionPersistence.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Scoped code-review subagent approved the F177 diff with no findings and additionally ran `swift test --traits default,MCPServer --filter brokerSession --disable-automatic-resolution`.
+
+### F178 Review
+
+- `BrokerSessionPersistence.listManifests` now ignores only non-UUID stray `.json` files in the session directory, while UUID-named session manifests still decode strictly and surface corruption.
+- Added direct persistence coverage for skipping malformed stray JSON and still throwing on malformed UUID-named session manifests, plus a selector-based `session_resume` regression proving a stray corrupt JSON file no longer blocks valid session discovery.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerSessionResumeSelectorSkipsCorruptStrayManifests --disable-automatic-resolution` failed before the fix because selector resume returned `ok == false`.
+  - Review red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerSessionListManifestsPropagatesMalformedSessionManifest --disable-automatic-resolution` failed against the first broad `try?` fix because UUID-named corrupt manifests were silently skipped.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerSessionListManifestsSkipsMalformedStrayJSON|brokerSessionListManifestsPropagatesMalformedSessionManifest|brokerSessionResumeSelectorSkipsCorruptStrayManifests|brokerSessionResumeSelectorSkipsEndedManifests' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/BrokerSessionPersistence.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Initial review rejected broad decode swallowing because it hid real UUID-named manifest corruption.
+  - Re-review approved the UUID-filtered correction with no findings.
+
+### F179 Review
+
+- `memory_promote` now validates an explicit `session_id` before proposal generation or durable writes, preventing stale-session approval requests from writing durable memory and then failing during promotion event recording.
+- Added a regression that ends a session, proves the explicit content is otherwise promotable, attempts approved promotion with the ended session ID, and verifies both unchanged durable frame count and durable-only search miss for the unique token.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMemoryPromoteRejectsStaleSessionBeforeDurableWrite --disable-automatic-resolution` failed before the fix because durable frame count increased and the token was searchable even though the command returned an inactive-session error.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMemoryPromoteRejectsStaleSessionBeforeDurableWrite|brokerImplicitMemoryPromotePreservesResolvedSessionProvenance|promotionMaxCandidatesAreBounded' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the stale explicit-session write-before-validation failure and false-positive traps.
+  - Scoped code-review subagent approved the F179 diff with no findings.
+
+### F180 Review
+
+- Broker and compatibility `memory_promote` now preserve durable provenance in `wax.promoted_from_session` while stripping raw working-memory `session_id` from promoted metadata before rendering or writing durable memory.
+- Added broker and compatibility regressions that promote session-sourced memory and assert `wax.promoted_from_session` is present while raw `session_id` is absent.
+- Verification:
+  - Broker red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerImplicitMemoryPromotePreservesResolvedSessionProvenance --disable-automatic-resolution` failed before the broker fix because promoted metadata still contained raw `session_id`.
+  - Compatibility red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter sessionSynthesizeAndPromoteFlowWorks --disable-automatic-resolution` failed before the compatibility fix for the same raw `session_id` leak.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'sessionSynthesizeAndPromoteFlowWorks|brokerImplicitMemoryPromotePreservesResolvedSessionProvenance|brokerMemoryPromoteRejectsStaleSessionBeforeDurableWrite|promotionMaxCandidatesAreBounded' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Sources/WaxMCPServer/WaxMCPTools.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer identified the same source-metadata leak in both broker and compatibility paths.
+  - Final scoped code-review subagent approved the combined F180 diff with no findings.
+
+### F182 Review
+
+- `markdown_sync` now requires managed markers to match the current sync surface, frame ID, prior document hash, optional memory ID, and compatible stored source metadata before binding a Markdown line to an existing memory frame.
+- `syncMemoryMarkdown` no longer pulls marker-referenced frames into the deletion/update set unless the marker is trusted, preventing a forged or stale frame ID from replacing or deleting unrelated durable memory.
+- Added a focused regression that exports a real memory marker, tampers its hash while preserving the frame ID, syncs the projection, and proves the original memory ID remains retrievable unchanged with zero updates/deletions.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownSyncDoesNotTrustFrameIDWithMismatchedMarkerHash --disable-automatic-resolution` failed before the fix because the protected memory was no longer retrievable.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownSyncDoesNotTrustFrameIDWithMismatchedMarkerHash|brokerMarkdownSyncRejectsSecretLikeDurableMemoryImports|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService+Markdown.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the root cause and warned not to compare the marker hash to edited Markdown text.
+  - Scoped code-review subagent approved the F182 diff with no findings.
+
+### F183 Review
+
+- `markdown_sync` now preserves locked memories in the unmatched-existing reconciliation path; removing a locked line from `MEMORY.md` no longer calls `deleteDocumentTree`.
+- Added a regression that writes a locked memory, exports and syncs it so it is markdown-managed, removes the line, syncs again, and verifies the sync reports zero deletions and `memory_get` still returns the locked record.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownSyncDoesNotDeleteLockedMemoryWhenLineRemoved --disable-automatic-resolution` failed before the fix with one deletion and `memory_get` returning `ok == false`.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownSyncDoesNotDeleteLockedMemoryWhenLineRemoved|brokerMarkdownSyncDoesNotTrustFrameIDWithMismatchedMarkerHash|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService+Markdown.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the unmatched-delete root cause and recommended marker-derived memory IDs for a stable repro.
+  - Scoped code-review subagent approved the F183 diff with no findings.
+
+### F184 Review
+
+- `markdown_sync` dry-runs now build the same normalized managed-document metadata as real sync and run `validateDurableWriteContent` before reporting create/update counts.
+- Checked DREAMS approvals also validate approved promotion metadata before the dry-run branch, while still keeping actual writes and session events behind `!dryRun`.
+- Added regressions for dry-run `MEMORY.md` durable imports and dry-run checked DREAMS approvals that contain secret-like content.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownSyncDryRunRejectsSecretLikeDurableMemoryImports --disable-automatic-resolution` failed before the managed-import fix with `response.ok == true`.
+  - DREAMS red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownSyncDryRunRejectsSecretLikeDurableMemoryImports|brokerMarkdownSyncDryRunRejectsSecretLikeDreamApprovals' --disable-automatic-resolution` failed before the DREAMS fix with the DREAMS dry-run returning success.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownSyncDryRunRejectsSecretLikeDurableMemoryImports|brokerMarkdownSyncDryRunRejectsSecretLikeDreamApprovals|brokerMarkdownSyncRejectsSecretLikeDurableMemoryImports|brokerMarkdownSyncDoesNotDeleteLockedMemoryWhenLineRemoved|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService+Markdown.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer identified the same validation timing gap in checked DREAMS dry-runs.
+  - Scoped code-review subagent approved the F184 diff with no findings.
+
+### F185 Review
+
+- `BrokerMarkdownSync` now requires an explicit marker with `managed == true` before a parsed bullet is treated as a managed import candidate.
+- Updated secret-import regressions and the process-level daily-note import flow to use explicit managed markers when import is intentional.
+- Added regressions proving markerless `MEMORY.md` and daily-note bullets report zero creations and do not become searchable memory.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownSyncIgnoresMarkerlessMemoryBullets --disable-automatic-resolution` failed before the parser change because sync reported one creation.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownSyncIgnoresMarkerlessMemoryBullets|brokerMarkdownSyncIgnoresMarkerlessDailyNoteBullets|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams|brokerMarkdownSyncRejectsSecretLikeDurableMemoryImports|brokerMarkdownSyncDryRunRejectsSecretLikeDurableMemoryImports|brokerMarkdownSyncDryRunRejectsSecretLikeDreamApprovals|brokerMarkdownSyncDoesNotTrustFrameIDWithMismatchedMarkerHash|brokerMarkdownSyncDoesNotDeleteLockedMemoryWhenLineRemoved' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/BrokerMarkdownSync.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed daily notes share the same markerless-import root cause.
+  - Scoped code-review subagent approved the F185 diff with no findings.
+
+### F186 Review
+
+- `syncDreamsMarkdown` now tracks approved DREAMS fingerprints during a sync pass, seeded from existing durable documents, so duplicate checked lines in one file are rejected before proposal/write.
+- Added a regression with two checked DREAMS lines containing identical text but different `sourceFrameID` marker metadata; sync approves one, rejects one, and leaves one durable document.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownSyncDeduplicatesCheckedDreamApprovals --disable-automatic-resolution` failed before the fix because `approved_dreams` was `2`.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownSync --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService+Markdown.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the stale durable snapshot / batch-local duplicate root cause.
+  - Scoped code-review subagent approved the F186 diff with no findings.
+
+### F187 Review
+
+- `dreamProjectionLines` now includes ended session manifests as well as active manifests, so session-scoped and global Markdown exports can surface DREAMS proposals after `session_end`.
+- `markdown_export` validates explicit `session_id` values against persisted manifests before exporting; unknown UUIDs now fail with a stable broker validation error instead of silently producing only unscoped output.
+- Markdown export and DREAMS approval sync now skip session event logging when the source session has ended, while preserving the durable write path for checked DREAMS approvals.
+- Added regressions for exporting an ended session's DREAMS proposal, checking that exported line, syncing it into durable memory, and rejecting unknown explicit export session IDs.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownExportIncludesEndedSessionDreams --disable-automatic-resolution` first failed before the export fix because `markdown_export` returned `ok == false`; after the export fix, the extended approval-sync assertion failed before the sync logging guard.
+  - Red phase for review finding: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownExportRejectsUnknownExplicitSessionID --disable-automatic-resolution` failed before explicit-session validation because an unknown UUID exported successfully.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownExportIncludesEndedSessionDreams|brokerMarkdownExportRejectsUnknownExplicitSessionID|brokerMarkdownSyncDeduplicatesCheckedDreamApprovals|brokerMarkdownSyncDoesNotTrustFrameIDWithMismatchedMarkerHash|brokerBackedMarkdownExportProjectsCompatibilityFiles|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Sources/Wax/Broker/AgentBrokerService+Markdown.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed active-only DREAMS projection and active-only event logging were the coupled root cause.
+  - Initial code review caught a regression where unknown explicit export session IDs could be silently ignored; a red regression and validator fixed it.
+  - Follow-up code-review subagent approved the final F187 diff with no findings.
+
+### F188 Review
+
+- `dreamProjectionLines` now closes session stores it opens with structured `try await sessionMemory.close()` before moving on or returning, instead of launching an unawaited detached close task from `defer`.
+- The error path still attempts cleanup for opened non-active session stores and rethrows the primary projection error; active session stores remain owned by `activeSessions` and are not closed by projection.
+- Extended the ended-session Markdown export regression to immediately reopen the ended session store after export, proving the export returned only after releasing the store lock.
+- Added a static regression rejecting the exact detached `Task { try? await sessionMemory.close() }` pattern inside `dreamProjectionLines`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerDreamProjectionAwaitsOpenedSessionStoreClose --disable-automatic-resolution` failed before the fix because the projection body still contained the detached close task and no awaited close.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerDreamProjectionAwaitsOpenedSessionStoreClose|brokerMarkdownExportIncludesEndedSessionDreams|brokerMarkdownExportRejectsUnknownExplicitSessionID|brokerBackedMarkdownExportProjectsCompatibilityFiles|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService+Markdown.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the unstructured close could leave file locks live after export returned and recommended the immediate-reopen behavioral proof.
+  - Scoped code-review subagent approved the final F188 diff with no findings.
+
+### F189 Review
+
+- `dreamProjectionLines` now includes ended sessions and current-broker active sessions only; active manifests not present in this broker's `activeSessions` are skipped so export does not open stores owned by another broker process.
+- `markdown_export` now rejects an explicit `session_id` when the manifest is still active but not owned by this broker process, preventing a scoped export from silently producing only partial/unscoped Markdown.
+- Added a two-broker regression where broker A owns an active session and broker B shares the session root: unscoped export succeeds without leaking broker A's DREAMS proposal, scoped export of broker A's active session is rejected, and broker A remains able to search its active session afterward.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownExportSkipsActiveSessionsOwnedByOtherBrokers --disable-automatic-resolution` failed before the fix because broker B's export attempted to open broker A's locked active store and returned `ok == false`.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownExportSkipsActiveSessionsOwnedByOtherBrokers|brokerMarkdownExportIncludesEndedSessionDreams|brokerDreamProjectionAwaitsOpenedSessionStoreClose|brokerMarkdownExportRejectsUnknownExplicitSessionID|brokerBackedMarkdownExportProjectsCompatibilityFiles|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Sources/Wax/Broker/AgentBrokerService+Markdown.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the active-manifest scan ignored broker ownership and recommended explicit-session rejection as the stronger user-facing behavior.
+  - Scoped code-review subagent approved the final F189 diff with no findings.
+
+### F190 Review
+
+- `markdown_export` now removes stale generated `DREAMS.md`, `HANDOFFS.md`, and generated daily-note files when a later export to the same output directory no longer has those projections.
+- Deletion is marker/hash gated, preserves checked DREAMS approvals, preserves mixed user prose, and limits daily-note cleanup to generated `yyyy-MM-dd.md` names so arbitrary user Markdown files under `memory/` are not deleted.
+- Added regressions for stale generated-file removal, checked DREAMS preservation, user prose preservation, and a copied `project-notes.md` file that must survive cleanup.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownExportRemovesStaleGeneratedFiles --disable-automatic-resolution` failed before the fix because stale DREAMS, HANDOFFS, and daily-note files remained on disk.
+  - Review red phase: `brokerMarkdownExportPreservesStaleDreamsWithUserProse` failed before the raw-line guard because a stale DREAMS file with appended prose was deleted.
+  - Review finding follow-up: daily-note cleanup was narrowed to `yyyy-MM-dd.md` filenames and `brokerMarkdownExportRemovesStaleGeneratedFiles` now also proves `project-notes.md` survives even when it contains copied generated daily-note lines.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownExportRemovesStaleGeneratedFiles|brokerMarkdownExportPreservesCheckedStaleDreams|brokerMarkdownExportPreservesStaleDreamsWithUserProse' --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownExportRemovesStaleGeneratedFiles|brokerMarkdownExportPreservesCheckedStaleDreams|brokerMarkdownExportPreservesStaleDreamsWithUserProse|brokerMarkdownExportIncludesEndedSessionDreams|brokerMarkdownExportSkipsActiveSessionsOwnedByOtherBrokers|brokerBackedMarkdownExportProjectsCompatibilityFiles|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - First scoped code-review subagent blocked the diff because user-authored prose and arbitrary `.md` filenames could be removed by cleanup.
+  - Final scoped code-review subagent approved the corrected F190 diff with no findings.
+
+### F193 Review
+
+- `MEMORY.md` export now groups durable and locked memories by their stored `wax.memory_type` metadata instead of re-running text classification during rendering.
+- Added a regression where content beginning with `Decision:` is explicitly stored as durable `task_state`; export must place it under `## task_state` and not `## decision`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownExportUsesStoredMemoryTypeForSections --disable-automatic-resolution` failed before the fix because the entry was rendered under `## decision`.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerMarkdownExportUsesStoredMemoryTypeForSections --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerMarkdownExportUsesStoredMemoryTypeForSections|brokerMarkdownExportRemovesStaleGeneratedFiles|brokerBackedMarkdownExportProjectsCompatibilityFiles|brokerBackedMarkdownSyncReconcilesManagedFilesAndApprovesDreams' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the marker metadata was already correct and the only bug was section grouping through `MemorySemantics.classifyCandidate`.
+  - Scoped code-review subagent approved the F193 diff with no findings.
+
+### F194 Review
+
+- Verified the compact-context implementation already canonicalizes working, durable, and episodic hits back to document frame IDs before rendering `memory_id`; this was previously fixed by the F152 compact-context canonicalization commit.
+- Added an issue-specific regression that forces raw chunk search hits with a long session memory, confirms raw `search` returns chunk frames, then proves `compact_context` emits only non-chunk frame IDs and retrievable memory IDs.
+- Verification:
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerCompactContextEmitsCanonicalDocumentMemoryIDsForChunkHits --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerCompactContextEmitsCanonicalDocumentMemoryIDsForChunkHits|brokerBackedF152CompactContextScopesToRequestedSession|brokerRecordRetrievalHitsCanonicalizesChunkFrameIDs' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Scoped code-review subagent approved the F194 regression with no findings.
+
+### F195 Review
+
+- `compact_context` now budgets candidates against the full rendered compacted context instead of raw hit text, including query/header/bullet/why overhead.
+- Final `compacted_text` is clamped through `TokenCounter.truncate` when the base query render alone exceeds the requested budget, and `used_tokens` is recomputed from the exact returned text.
+- Added regressions for many short matching hits and for a long query-only render; both assert returned `compacted_text` token count is within budget and equals `used_tokens`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerCompactContextBudgetsRenderedOutputTokens --disable-automatic-resolution` failed before the fix with 178 rendered tokens for a 128-token budget while reporting 109 used tokens.
+  - Review red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerCompactContextBudgetsLongQueryOnlyRender --disable-automatic-resolution` failed before the clamp with 1542 rendered tokens for a 128-token budget.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerCompactContextBudgetsRenderedOutputTokens|brokerCompactContextBudgetsLongQueryOnlyRender' --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerCompactContextBudgetsRenderedOutputTokens|brokerCompactContextBudgetsLongQueryOnlyRender|brokerCompactContextEmitsCanonicalDocumentMemoryIDsForChunkHits|brokerBackedF152CompactContextScopesToRequestedSession|brokerRecordRetrievalHitsCanonicalizesChunkFrameIDs' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed the raw-hit budgeting root cause and recommended budgeting rendered output plus a final query-only clamp.
+  - Initial code review caught the long-query base-render edge; the final code-review subagent approved the corrected F195 diff with no findings.
+
+### F196 Review
+
+- `compact_context` no longer applies a recency-ordered `.prefix(4)` to ended session manifests before searching them; eligible ended sessions are searched first, then episodic hits are deduped and sorted by relevance score, timestamp, and reference before downstream selection.
+- Added a regression with one older relevant ended session hidden behind four newer irrelevant ended sessions, proving the older relevant session still appears in `medium_context`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerCompactContextSearchesOlderRelevantEndedSessionsBeforeRecencyCutoff --disable-automatic-resolution` failed before the fix because `medium_context` did not contain the older relevant anchor.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerCompactContextSearchesOlderRelevantEndedSessionsBeforeRecencyCutoff --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerCompactContextSearchesOlderRelevantEndedSessionsBeforeRecencyCutoff|brokerCompactContextBudgetsRenderedOutputTokens|brokerCompactContextBudgetsLongQueryOnlyRender|brokerCompactContextEmitsCanonicalDocumentMemoryIDsForChunkHits|brokerBackedF152CompactContextScopesToRequestedSession|brokerRecordRetrievalHitsCanonicalizesChunkFrameIDs' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - Explorer confirmed `BrokerSessionPersistence.listManifests` sorts by recency before the old cutoff, and recommended moving cutoff after relevance.
+  - Code-review subagent approved the implementation and requested deterministic timestamp separation in the test; the regression now sleeps after ending the older relevant session before creating newer sessions.
+
+### F038 Review
+
+- Added red regressions proving the published MCP `recall`/`search` filter schema, MCP parser, and broker parser did not expose lifecycle and explicit-frame controls already supported by core `UnifiedSearch`.
+- Extended broker and MCP search-filter parsing for `filters.include_deleted`, `filters.include_superseded`, and `filters.frame_ids`, including applied-filter echo fields so callers can verify what was honored.
+- Kept the fix scoped to the API surface; core `FrameFilter` and `UnifiedSearch` already applied deleted/superseded/frame-ID predicates.
+- Review:
+  - Initial review found a commit-blocking broker crash risk: `frame_ids` parsing used the permissive `AgentBrokerValue.intValue`, which could trap on oversized JSON doubles.
+  - Tightened broker `frame_ids` parsing to accept only explicit non-negative `.int` values and added a broker regression for oversized numeric input.
+- Verification:
+  - Red phase: focused tests failed before implementation because schema fields were absent and MCP rejected `filters.include_deleted`/`filters.include_superseded`/`filters.frame_ids`.
+  - `swift test --build-path .build-codex/f038-red --traits default,MCPServer --disable-automatic-resolution --filter 'brokerSearchRejectsInvalidFrameIDFilters|searchAndRecallSchemasExposeLifecycleAndFrameIDFilters|searchAcceptsLifecycleAndFrameIDFilters|brokerSearchAppliesLifecycleAndFrameIDFilters|searchRejectsInvalidLifecycleAndFrameIDFilters|recallAndSearchSupportMetadataExactFilters|searchRejectsUnknownFilterKeys'`: passed.
+  - `swift build --build-path .build-codex/f038-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f038-red --traits default,MCPServer --disable-automatic-resolution --filter WaxMCPServerTests`: all F038 and adjacent tests passed, but the full filtered suite still failed one unrelated real-CoreML process test: `waxMCPProcessRememberWithRealCoreMLEmbedder` reported `Tool payload is not a JSON object`.
+
+### F156 Review
+
+### F089 Review
+
+- Added a red process-level regression for `wax-repo search <query>`: create a temp git repo, index it in text-only mode, then run `WaxRepo search needle --repo-path <repo> --text-only` with a short timeout.
+- Verified the first execution-level gate failed when run without the required `WaxRepo` trait, then reran with `--traits WaxRepo` to exercise the real executable.
+- Split `SearchCommand` into a one-shot query path and an omitted-query interactive path. Query mode calls `RepoStore.search`, prints bounded text output, closes the store on success or failure, returns, and exits with success instead of entering `SwiftTUI.Application.start()`.
+- Review:
+  - Initial review rejected the source-inspection-only test as too weak.
+  - Follow-up review approved the process-level regression and scoped implementation.
+- Verification:
+  - `swift test --traits WaxRepo --disable-automatic-resolution --filter waxRepoSearch`: passed.
+  - `swift build --product WaxRepo --traits WaxRepo --disable-automatic-resolution`: passed.
+
+### F090 Review
+
+- Added a red process-level regression for `wax-repo index --full --max-commits 1`: create a two-commit temp git repo, index both commits, then full-reindex one commit and verify the store shrinks instead of retaining old frames.
+- Initial green pass deleted the old store before opening the replacement store, but review found two real edge cases:
+  - empty parsed commit lists skipped the reset and left old store contents behind;
+  - a failed full reindex could delete the store while leaving a stale `last-indexed-hash`.
+- Reworked full reindex into a transactional path: build into `store.reindex.<uuid>.wax`, close it, write a temporary marker, then swap both store and marker through backup paths. Existing store/marker stay intact until the replacement is ready. Empty full parses clear both outputs.
+- Review:
+  - First review blocked on the early empty-return and stale-marker failure modes.
+  - Follow-up review approved the temporary-store swap implementation.
+- Verification:
+  - `swift test --traits WaxRepo --disable-automatic-resolution --filter 'waxRepoFullReindex|waxRepoSearch'`: passed.
+  - `swift build --product WaxRepo --traits WaxRepo --disable-automatic-resolution`: passed.
+
+### F092 Review
+
+- Added a red process-level regression for `wax-repo search`: index a commit whose query term appears in content, then require the output to show the commit subject even when the preview snippet omits the synthetic `COMMIT:` header.
+- Switched `RepoStore.search` to build `CommitSearchResult` from `MemorySearchHit.metadata`, with the older preview header parser retained only as a fallback for legacy hits.
+- Review:
+  - Scoped review approved `RepoStore.swift` and `WaxRepoSearchCommandTests.swift`.
+- Verification:
+  - `swift test --traits WaxRepo --disable-automatic-resolution --filter 'waxRepoSearchUsesStoredMetadataWhenPreviewOmitsHeader|waxRepoSearch'`: passed.
+  - `swift build --product WaxRepo --traits WaxRepo --disable-automatic-resolution`: passed.
+
+### F088 Review
+
+- Added a red source-level parity test requiring `wax-cli` to expose missing broker/MCP command wrappers for memory/session/context/corpus/markdown surfaces.
+- Added broker-forwarding CLI wrappers for `memory-append`, `memory-search`, `memory-get`, `memory-promote`, `promote`, `memory-health`, `knowledge-capture`, `corpus-search`, `session-start`, `session-resume`, `session-end`, `session-synthesize`, `compact-context`, `markdown-export`, and `markdown-sync`.
+- Initial review found session commands lost active broker state because one-shot forwarding shut down auto-started brokers. Session-aware wrappers now keep the broker alive when needed; broker-only wrappers reject `--direct-store` instead of silently ignoring it.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter waxCLIExposesBrokerParityCommands`: passed.
+  - `swift build --product wax-cli --disable-automatic-resolution`: passed.
+  - `wax-cli memory-health --store-path <tmp>/memory.wax --no-embedder --format json`: passed.
+  - `session-start -> memory-append --arg session_id=... -> memory-search --arg session_id=... -> session-end`: passed.
+  - `wax-cli memory-health --direct-store`: rejected with `--direct-store is not supported for broker parity commands`.
+
+- Proved F156 is a duplicate of the completed F126 skip-detector fix.
+- `Resources/scripts/quality/production_readiness_gates_tests.sh` already includes Swift Testing suite and test skip fixtures: `Suite FeatureFlaggedTests skipped: ...` and `Test testRequiresFixture() skipped: ...`.
+- Verification:
+  - `bash Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+
+### F154 Review
+
+- Added a script-level regression proving `scripts/verify-waxmcp-http.sh` must send a real `tools/call`, not only initialize and list tools.
+- Verified the regression failed before the fix because the verifier had no `tools/call` request.
+- Extended the HTTP verifier to call the `stats` MCP tool over the established HTTP session and reject error or empty tool responses.
+- Verification:
+  - `bash scripts/verify-waxmcp-http-tests.sh`: failed before and passed after.
+  - `bash scripts/verify-waxmcp-http-tests.sh && bash -n scripts/verify-waxmcp-http.sh scripts/verify-waxmcp-http-tests.sh`: passed.
+  - `bash scripts/verify-waxmcp-http.sh`: passed.
+
+### F125 Review
+
+- Added a workflow regression requiring the website workflow to run on `pull_request` for website/docs changes and requiring the deploy job to skip PR events.
+- Verified the regression failed before the workflow change because `.github/workflows/deploy-website.yml` only had `push` and `workflow_dispatch` triggers.
+- Added a `pull_request` path gate for `Resources/website/**` and the workflow file, while preserving GitHub Pages deployment only for non-PR events.
+- Verification:
+  - `bash Resources/scripts/quality/website_workflow_tests.sh`: failed before and passed after.
+
+### F119 Review
+
+- Added a submodule contract regression proving every gitlink tracked by the root repo must have matching `.gitmodules` path and URL metadata.
+- Verified the regression failed before the fix because `Resources/npm/waxmcp/homebrew-wax` was a `160000` gitlink with no `.gitmodules` entry.
+- Added `.gitmodules` metadata pointing the Homebrew tap gitlink at `https://github.com/christopherkarani/homebrew-wax.git`.
+- Verification:
+  - `bash Resources/scripts/quality/submodule_contract_tests.sh`: failed before and passed after.
+
+### F118 Review
+
+- Added a Homebrew formula regression proving the formula tag version must match `Resources/npm/waxmcp/package.json`.
+- Verified the regression failed before the fix because the formula used `waxmcp-v0.1.15` while the package version is `0.1.21`.
+- Updated the Homebrew tap formula to `waxmcp-v0.1.21` and replaced the archive SHA-256 with the freshly computed hash for that tag.
+- Committed the nested Homebrew tap change as `3b1b150` and recorded the submodule pointer in the root repo.
+- Verification:
+  - `bash Resources/scripts/quality/homebrew_formula_tests.sh`: failed before and passed after.
+  - `curl -fsSL https://github.com/christopherkarani/Wax/archive/refs/tags/waxmcp-v0.1.21.tar.gz | shasum -a 256`: produced `450be06af9698ce8baab1d74fc4060b34dcc98eb6eb3b1a450329c71d68abb43`.
+
+### F120 Review
+
+- Extended the Homebrew formula regression to compare the formula Xcode dependency against the root `swift-tools-version`.
+- Verified the regression failed before the fix because the formula required Xcode `15.0` while the package declares Swift tools `6.1`.
+- Updated the Homebrew tap formula to require Xcode `16.3`.
+- Committed the nested Homebrew tap change as `347847d` and recorded the submodule pointer in the root repo.
+- Verification:
+  - `bash Resources/scripts/quality/homebrew_formula_tests.sh`: failed before and passed after.
+
+### F113 Review
+
+- Added a release workflow regression rejecting checksum verification from the repo root when checksum files contain basename paths.
+- Verified the regression failed before the fix because build and publish jobs called `shasum -c`/`sha256sum -c` on checksum files under `Resources/npm/waxmcp/dist/...` while still running from the repo root.
+- Updated build and publish checksum verification to `cd` into each artifact directory before checking `wax-cli.sha256` or `wax-mcp.sha256`.
+- Verification:
+  - `bash Resources/scripts/quality/release_workflow_tests.sh`: failed before and passed after.
+  - `bash -n Resources/scripts/build-waxmcp-binaries.sh scripts/release-waxmcp.sh Resources/scripts/release-waxmcp.sh`: passed.
+
+### F112 Review
+
+- Extended the release workflow regression to reject stale `let serverVersion = "..."` extraction and release-script rewrites.
+- Verified the regression failed before the fix because the workflow still grepped for the old literal `serverVersion` declaration.
+- Updated the workflow version consistency check and both release scripts to target `WaxMCPServerMetadata.version`.
+- Verification:
+  - `bash Resources/scripts/quality/release_workflow_tests.sh`: failed before and passed after.
+  - `bash -n scripts/release-waxmcp.sh Resources/scripts/release-waxmcp.sh`: passed.
+
+### F122 Review
+
+- Extended the release workflow regression to reject duplicated mutation logic in the root `scripts/release-waxmcp.sh` wrapper.
+- Verified the regression failed before the fix because the root script duplicated package/source version edits, build staging, bundle copy, and checksum generation separately from `Resources/scripts/release-waxmcp.sh`.
+- Replaced the root script with an executable wrapper that delegates to `Resources/scripts/release-waxmcp.sh`.
+- Verification:
+  - `bash Resources/scripts/quality/release_workflow_tests.sh`: failed before and passed after.
+  - `bash -n scripts/release-waxmcp.sh Resources/scripts/release-waxmcp.sh`: passed.
+
+### F114 Review
+
+- Extended the release workflow regression to require a `Set release version` step before `Build binaries`.
+- Verified the regression failed before the fix because release metadata was only changed in the publish job after artifacts were already built.
+- Added a shared `Resources/scripts/sync-waxmcp-version.sh` helper that updates both npm package metadata and `WaxMCPServerMetadata.version`.
+- Updated the build job to run the shared helper before compiling platform artifacts and updated the publish job/canonical release script to use the same helper.
+- Verification:
+  - `bash Resources/scripts/quality/release_workflow_tests.sh`: failed before and passed after.
+  - `bash -n Resources/scripts/sync-waxmcp-version.sh Resources/scripts/release-waxmcp.sh scripts/release-waxmcp.sh`: passed.
+  - `Resources/scripts/sync-waxmcp-version.sh 0.1.21`: passed and left `Resources/npm/waxmcp/package.json` and `Sources/WaxMCPServer/main.swift` unchanged.
+
+### F117 Review
+
+- Extended the release workflow regression to require the canonical release script to stage `darwin-x64` artifacts and to use the shared binary builder.
+- Verified the regression failed before the fix because `Resources/scripts/release-waxmcp.sh` only built and staged `darwin-arm64`.
+- Replaced the hand-staging path with a loop over `darwin-arm64 arm64-apple-macosx14.0` and `darwin-x64 x86_64-apple-macosx14.0`, delegating artifact copy, bundles, permissions, and checksums to `build-waxmcp-binaries.sh`.
+- Verification:
+  - `bash Resources/scripts/quality/release_workflow_tests.sh`: failed before and passed after.
+  - `bash -n Resources/scripts/release-waxmcp.sh scripts/release-waxmcp.sh Resources/scripts/build-waxmcp-binaries.sh`: passed.
+
+### F124 Review
+
+- Added a docs-generation regression proving `Resources/scripts/generate-docs.sh` must resolve the repository root and render into a temporary directory before replacing output.
+- Verified the regression failed before the fix because the script resolved `PROJECT_DIR` to `Resources`.
+- Updated docs generation to run SwiftPM from the repo root, render DocC output into `.build/docc-html.*`, and replace `docs/docc-html` only after generation succeeds.
+- Verification:
+  - `bash Resources/scripts/quality/docs_generation_tests.sh`: failed before and passed after.
+  - `bash -n Resources/scripts/generate-docs.sh`: passed.
+
+### F127/F155 Review
+
+- Added a Linux CI workflow regression proving the workflow must install Swift and build the public `Wax`, `wax-cli`, and `wax-mcp` products.
+- Verified the regression failed before the fix because `.github/workflows/waxcore-linux.yml` only built the `WaxCore` target.
+- Added Swift 6.2 setup plus explicit product builds for `Wax`, `wax-cli --traits default,MCPServer`, and `wax-mcp --traits default,MCPServer`.
+- Marked F155 as the same verified root cause as F127.
+- Verification:
+  - `bash Resources/scripts/quality/linux_ci_workflow_tests.sh`: failed before and passed after.
+
+### F158 Review
+
+- Converted the migration compatibility test from generating N-1/N-2 stores with current code to loading packaged compressed fixture bytes.
+- Verified the revised test failed before fixtures were present with `missing migration fixture migration-n-1.wax`.
+- Generated fixture bytes once, stored them as compressed `.wax.gz` test resources, and removed the temporary generator test before committing.
+- Added `WaxCoreTests` fixture resources in `Package.swift`; the test expands each gzip fixture into a temp `.wax` file before opening it.
+- Verification:
+  - `swift test --disable-automatic-resolution --filter migrationFixturesNMinus1AndNMinus2Load`: failed before fixtures and passed after.
+  - Fixture SHA-256:
+    - `migration-n-1.wax.gz`: `bb8f60e240316a83851b822172c4d4385b7e5ddd79fd998acaf9d36f0190b56a`
+    - `migration-n-2.wax.gz`: `8b383b9675461c31bbb96c02cbe20389c786c5b3fff15a1101e7b1434013fe6e`
+
+### F159 Review
+
+- Added a MiniLM gating regression proving inference tests must not silently `return` when `WAX_TEST_MINILM` is unset.
+- Verified the regression failed before the fix because MiniLM embedder and quality tests used `guard isMiniLMInferenceEnabled() else { return }`.
+- Replaced those guards with Swift Testing `.disabled(if:)` metadata so default runs report explicit skips; kept the non-inference MiniLM asset regression enabled.
+- Verification:
+  - `bash Resources/scripts/quality/minilm_test_gating_tests.sh`: failed before and passed after.
+  - `swift test --filter MiniLMEmbedderTests --disable-automatic-resolution`: passed with 4 explicit skips when `WAX_TEST_MINILM` was unset.
+  - `swift test --filter MiniLMEmbeddingQualityTests --disable-automatic-resolution`: passed with the asset test running and 2 explicit skips when MiniLM generation/inference env vars were unset.
+
+### F160 Review
+
+- Extended the MiniLM quality regression to reject resource-failure tests that catch any error and assert `true`.
+- Verified the regression failed before the fix because both missing-resource tests accepted all thrown errors.
+- Updated the tests to assert `MiniLMEmbeddings.InitError.missingModelResource` and `MiniLMEmbeddings.InitError.tokenizerLoadFailed("override requested failure")`.
+- Verification:
+  - `bash Resources/scripts/quality/minilm_test_gating_tests.sh`: failed before and passed after.
+  - `swift test --filter MiniLMResourceFailureTests --disable-automatic-resolution`: passed.
+  - `swift test --filter MiniLMInitTimeoutTests --disable-automatic-resolution`: passed.
+
+### F109 Review
+
+- Added a package artifact regression proving `Resources/npm/waxmcp` must verify Darwin `dist` artifacts before packing.
+- Verified the regression failed before the fix because `package.json` had no prepack artifact check.
+- Added `scripts/verify-dist.mjs` and wired it to npm `prepack`; it requires `wax-cli`, `wax-mcp`, and checksum files for both `darwin-arm64` and `darwin-x64`.
+- Verification:
+  - `bash Resources/scripts/quality/package_artifact_tests.sh`: failed before and passed after.
+  - `WAXMCP_PACKAGE_DIR=<fake complete dist> node Resources/npm/waxmcp/scripts/verify-dist.mjs`: passed.
+
+### F115 Review
+
+- Extended the package artifact regression to require the OpenClaw package to publish a built `dist/index.js` extension instead of `src/index.ts`.
+- Verified the regression failed before the fix because package metadata pointed OpenClaw at `./src/index.ts` and included `src` in published files.
+- Added `dist/index.js`, changed OpenClaw metadata to load it, and limited published files to `dist`, plugin metadata, and README while keeping `src/index.ts` for maintainers.
+- Verification:
+  - `bash Resources/scripts/quality/package_artifact_tests.sh`: failed before and passed after.
+  - `npm pack --dry-run` in `Resources/openclaw/wax-memory-plugin`: passed and included `dist/index.js` with no `src` files.
+
+### F116 Review
+
+- Extended the package artifact regression to require the OpenClaw runtime to default to the packaged `waxmcp` launcher and to depend on the matching `waxmcp` npm version.
+- Verified the regression failed before the fix because the package had no `waxmcp` dependency and the runtime/metadata still suggested `wax-mcp`.
+- Updated the source and built OpenClaw plugin entries to launch `waxmcp mcp serve ...`, added a matching `waxmcp` dependency, and updated plugin metadata/README examples.
+- Verification:
+  - `bash Resources/scripts/quality/package_artifact_tests.sh`: failed before and passed after.
+  - `npm pack --dry-run` in `Resources/openclaw/wax-memory-plugin`: passed.
+
+### Active Plan - F102 HTTP MCP Body Limit
+
+- [x] Add a red regression proving oversized HTTP bodies are rejected immediately when the request head advertises an over-limit `Content-Length`, before any body or end frame is read.
+- [x] Implement the smallest HTTP handler change that emits `413 Payload Too Large` at the first detected overflow and stops accepting the oversized request body.
+- [x] Run focused MCP HTTP tests and the `wax-mcp` trait build.
+- [x] Run a post-fix review subagent, address any findings, update the remediation ledger and checklist, then commit the code and docs separately.
+
+### F102 Review
+
+- Added embedded-channel regressions proving MCP HTTP now emits `413 Payload Too Large` immediately on an over-limit `Content-Length` request head and on the first streaming body chunk that exceeds the configured limit, without waiting for request end or creating an MCP server.
+- Changed `HTTPHandler` to reject both overflow paths directly from the NIO event-loop read path, clear request state, and write the existing JSON-RPC error response immediately.
+- Added `NIOEmbedded` and `NIOHTTP1` only to the MCP test target so the handler behavior is covered without starting a socket server.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f102-red --traits default,MCPServer --disable-automatic-resolution --filter httpHandlerRejectsOversizedContentLengthBeforeReadingBody` failed before implementation because no response was written after the oversized request head.
+  - `swift test --build-path .build-codex/f102-red --traits default,MCPServer --disable-automatic-resolution --filter 'httpHandlerRejectsOversizedContentLengthBeforeReadingBody|httpHandlerRejectsStreamingOverflowBeforeRequestEnd|httpRequestBodyLimitRejectsContentLengthAndStreamingOverflow|httpApplicationRejectsUnauthorizedOffLoopbackRequests'`: passed.
+  - `swift build --build-path .build-codex/f102-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Code-review subagent approved the scoped F102 diff.
+
+### Active Plan - F106 HTTP Cleanup Lifecycle
+
+- [x] Add a deterministic red regression proving the HTTP session cleanup loop can be started and stopped without leaving a live task behind.
+- [x] Store the cleanup task handle, cancel it from shutdown paths, and make the cleanup loop exit when cancellation interrupts sleep.
+- [x] Run focused MCP HTTP lifecycle tests and the `wax-mcp` trait build.
+- [x] Run a post-fix review subagent, address findings, update the remediation ledger and checklist, then commit code and docs separately.
+
+### F106 Review
+
+- Added a deterministic lifecycle regression that starts the production HTTP app on an ephemeral port, waits for the session cleanup task to become active, stops the app, awaits the serving task, and verifies the cleanup handle is gone.
+- Stored the cleanup task handle, cancel/await it from both normal `start()` shutdown and explicit `stop()`, and changed the loop to exit when cancellation interrupts `Task.sleep` instead of swallowing cancellation and looping forever.
+- Review:
+  - Initial review found a reentrancy bug where `cleanupTask` was cleared before awaiting task exit, and noted the first test only exercised helper methods.
+  - Fixed the handle ordering and changed the test to drive the production `start()`/`stop()` lifecycle.
+  - Re-review approved the corrected scoped diff.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --disable-automatic-resolution --filter httpSessionCleanupTaskStopsWithApplicationStop` failed before implementation because the configuration/test lifecycle hooks did not exist.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --disable-automatic-resolution --filter 'httpSessionCleanupTaskStopsWithApplicationStop|httpHandlerRejectsOversizedContentLengthBeforeReadingBody|httpHandlerRejectsStreamingOverflowBeforeRequestEnd|httpApplicationRejectsUnauthorizedOffLoopbackRequests'`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+
+### F107/F108 Verification
+
+- F107 maps to `brokerBackedKnowledgeCaptureDefaultsToDurable`. The current broker-backed MCP process test passes and the earlier Memory Semantics remediation already records the durable-default fix and targeted broker coverage.
+- F108 maps to `corpusSearchSkipsLockedBrokerManagedSessionStore` plus the lower-level `brokerCorpusSearchBuildSkipsLockedSessionStore`. The current process test passes and the existing corpus builder code uses a bounded lock wait, skips locked source stores, and indexes readable session stores.
+- Because both issues are already covered and fail to reproduce on the current branch, no source edit was made for either item.
+- Verification:
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --disable-automatic-resolution --filter brokerBackedKnowledgeCaptureDefaultsToDurable`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --disable-automatic-resolution --filter corpusSearchSkipsLockedBrokerManagedSessionStore`: passed.
+  - F107 and F108 explorer subagents independently confirmed the likely test mappings, timeout signatures, and current passing focused gates.
+
+### Active Plan - F153 Compatibility Alias Parity
+
+- [x] Add a red regression proving the direct-memory MCP compatibility path rejects legacy `wax_*` tool names with the same renamed-tool error as the production broker path.
+- [x] Make the compatibility handler use the same renamed-tool rejection before validation or execution.
+- [x] Run focused MCP alias tests and the `wax-mcp` trait build.
+- [x] Run post-fix review, update ledger/checklist, and commit code/docs separately.
+
+### F153 Review
+
+- Added a direct-memory compatibility regression for `wax_remember` proving the compatibility path must return the same `tool_renamed` error as the production broker-backed MCP path instead of silently executing the renamed command.
+- Changed the compatibility handler to reject `migratedName(for:)` aliases before validation/execution and then dispatch only canonical tool names.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --disable-automatic-resolution --filter compatibilityPathRejectsRenamedToolAliases` failed because `wax_remember` executed as `remember`.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --disable-automatic-resolution --filter 'compatibilityPathRejectsRenamedToolAliases|legacyWaxFlushIsRejectedBecauseFlushIsNotPublished'`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Code-review subagent approved the scoped F153 diff.
+  - A first cold-build red attempt under `.build-codex/f153-red` hit a local code-signing failure while linking `wax-cli`; it did not reach the test. The temporary generated build directory was deleted to recover disk space, and the focused red/green runs used the warm MCP build path.
+
+### Active Plan - F157 Readiness Stability Gate
+
+- [x] Add a shell regression proving soak/burn readiness gates run stability tests in hybrid mode by default.
+- [x] Update the gate script to pass the stability search mode explicitly while preserving operator overrides.
+- [x] Update `ProductionReadinessStabilityTests` so hybrid/vector modes create deterministic vector embeddings and assert vector-sourced recall coverage.
+- [x] Run focused script and stability XCTest gates, request review, commit the source/test change, then record verification.
+
+### F157 Review
+
+- Added shell-level gate regressions that load `production_readiness_gates.sh` without running the expensive suites, stub `run_and_capture`, and prove soak/burn stability commands default to `WAX_STABILITY_SEARCH_MODE=hybrid` while preserving an explicit `vector` override.
+- Updated the soak and burn smoke gates to pass `WAX_STABILITY_SEARCH_MODE="${WAX_STABILITY_SEARCH_MODE:-hybrid}"` into the production readiness stability XCTest.
+- Updated `ProductionReadinessStabilityTests` so `hybrid` and `vector` modes enable the CPU vector engine, write deterministic two-dimensional embeddings during ingest, query with deterministic embeddings during recall, and fail if no vector-sourced results are observed.
+- Verification:
+  - Red phase: `bash Resources/scripts/quality/production_readiness_gates_tests.sh` failed before the gate change because the soak stability command omitted `WAX_STABILITY_SEARCH_MODE=hybrid`.
+  - `bash Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+  - Current verification on 2026-05-18: `bash Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+  - Current verification on 2026-05-18: `WAX_REPLAY_ITERATIONS=120 WAX_STABILITY_SEARCH_MODE=hybrid WAX_STABILITY_MAX_RSS_GROWTH_MB=512 WAX_STABILITY_MAX_P50_DRIFT_PCT=500 WAX_STABILITY_MAX_P95_DRIFT_PCT=500 WAX_STABILITY_OUTPUT=/tmp/wax-f157-stability.json swift test --enable-xctest --disable-swift-testing --filter ProductionReadinessStabilityTests.testSoakSmokeStability --disable-automatic-resolution`: passed and reported `vector_hits=233`.
+  - `WAX_REPLAY_ITERATIONS=80 WAX_STABILITY_SEARCH_MODE=hybrid WAX_STABILITY_OUTPUT=/tmp/wax-f157-stability.json swift test --build-path .build-codex/f106-red --enable-xctest --disable-swift-testing --filter ProductionReadinessStabilityTests.testSoakSmokeStability --disable-automatic-resolution`: passed and reported `vector_hits=153`.
+  - `WAX_REPLAY_ITERATIONS=80 WAX_STABILITY_SEARCH_MODE=vector WAX_STABILITY_OUTPUT=/tmp/wax-f157-vector-stability.json swift test --build-path .build-codex/f106-red --enable-xctest --disable-swift-testing --filter ProductionReadinessStabilityTests.testSoakSmokeStability --disable-automatic-resolution`: passed and reported `vector_hits=153`.
+  - `git diff --cached --check`: passed before the source/test commit.
+  - Code-review subagent approved the focused F157 diff with no findings.
+
+### Active Plan - F152 Broker-Backed Coverage
+
+- [x] Add broker-backed regressions for `search` and `recall` metadata filters so compatibility-only filter coverage cannot drift from production broker behavior.
+- [x] Add broker-backed regression for `compact_context` session scoping and `memory_get` roundtrip so session A compaction cannot leak session B memory and returned IDs stay readable.
+- [x] Run focused MCPServer tests on the warm build path and update the ledger with the runtime fix discovered by the red test.
+- [x] Request code review, commit the test/runtime change, then record verification and update the remaining-count checklist.
+
+### F152 Review
+
+- Added direct broker regressions for `search` and `recall` metadata exact filters, proving the `AgentBrokerService` path honors the same filter shape as the compatibility handler.
+- Added a broker compact-context regression covering session A/session B isolation, durable long-context separation, unique compact memory IDs, and `memory_get` roundtrips for both working and durable IDs.
+- Verified the compact-context regression failed before the fix because returned `working:<session>:<frame>` IDs could point at chunk frames that `memory_get` cannot resolve as corpus source documents.
+- Canonicalized compact-context working, durable, and episodic memory references back to document frame IDs before emitting stable `memory_id` values, then deduped each horizon by reference so multiple chunks from one document do not waste compact-context slots.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerBackedF152 --disable-automatic-resolution` failed before the fix with `memory_get` returning `ok == false` for a compact-context working memory ID.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerBackedF152 --disable-automatic-resolution`: passed after canonicalization.
+  - Current verification on 2026-05-18: `swift test --traits default,MCPServer --filter brokerBackedF152 --disable-automatic-resolution`: passed; 2 tests.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerBackedF152|brokerRememberPreservesContentWhitespace|brokerSearchAppliesLifecycleAndFrameIDFilters' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+  - Code-review subagent initially requested post-canonicalization dedupe; after that change, re-review reported no findings.
+  - Note: a process-harness attempt using the warm build path first exposed the known subprocess fragility (`SIGPIPE`/trait-build mismatch), so the accepted F152 coverage uses direct `AgentBrokerService` tests to exercise production broker logic without compatibility-only shortcuts.
+
+### F064 Review
+
+- Removed the USearch package/product dependency, deleted the `USearchVectorEngine` and `USearchSendable` implementation, and eliminated the Objective-C private `nativeIndex` ivar serialization path.
+- Kept legacy vector encoding detection for explicit migration errors, but changed decode and `LoadedVectorSearchEngine.currentEncoding` to reject legacy USearch vector segments with the rebuild-required `invalidToc` reason.
+- Reworked the vector dependency/benchmark/doc tests to use the remaining flat-vector/Accelerate path instead of importing or instantiating USearch.
+- Review:
+  - Initial review blocked the staged diff because the staged index still had leftover USearch references and the engine-selection path could classify `.uSearch` before decode.
+  - Added the missing staged files and a red regression for `currentEncoding` rejecting legacy USearch bytes, then fixed the selection path.
+  - Re-review approved the staged remediation and verified a staged-index build plus focused staged tests.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --filter loadedVectorSearchEngineCurrentEncodingRejectsLegacyUSearchVectorIndexes --disable-automatic-resolution` failed before the `currentEncoding` fix because legacy USearch encoding was returned instead of rejected.
+  - `swift test --build-path .build-codex/f106-red --filter 'loadedVectorSearchEngineCurrentEncodingRejectsLegacyUSearchVectorIndexes|loadedVectorSearchEngineRejectsLegacyUSearchVectorIndexes|legacyUSearchVectorSegmentRequiresRebuild|packageManifestDoesNotDependOnRemovedVectorDependency|vectorEngineSerializeDeserializeRoundtripPreservesSearch|accelerateVectorEngineAddBatchDuplicateIdsDoNotOvercount' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - `rg -n "USearch|usearch|nativeIndex|class_getInstanceVariable|USearchVectorEngine|USearchIndex|\\.uSearch" Package.swift Sources Tests -g '*.swift'`: only legacy-format rejection constants/tests remain.
+  - Code-review subagent approved the staged F064 diff after the selection-path fix.
+
+### F067 Review
+
+- Added an Arctic batch-planning regression proving the default-sized planner must clamp to the model-supported CoreML batch cap rather than emitting a 256-sized prediction batch.
+- Initial implementation overclamped Arctic batches to `1`; review rejected that as a throughput regression because the Arctic asset supports batch shapes up to `64`.
+- Corrected the regression to expect `totalCount: 129, maxBatchSize: 256` to plan `[64, 64, 1]`, then capped Arctic effective CoreML prediction batches at `64`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --filter arcticEmbedderBatchPlanningUsesOnlySupportedCoreMLBatchShapes --disable-automatic-resolution` failed before the final cap fix with the planner returning one-item chunks instead of `[64, 64, 1]`.
+  - `swift test --build-path .build-codex/f106-red --filter arcticEmbedderBatchPlanningUsesOnlySupportedCoreMLBatchShapes --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'MiniLMEmbedderBatchPlanningTests|arcticEmbedderBatchPlanningUsesOnlySupportedCoreMLBatchShapes' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+  - Code-review subagent approved the corrected scoped F067 diff.
+
+### F065/F066 Verification
+
+- F065 and F066 are already resolved by the current MiniLM batch planner, so no source edit was needed in this pass.
+- `MiniLMEmbedder` can accept/default to `batchSize = 256`, but `planBatchSizes` clamps effective CoreML prediction batches with `maximumCoreMLPredictionBatchSize = 1`.
+- Because `embed(batch:)` sends planned size `1` through the single-prediction path and only calls `embedBatchCoreML` for sizes greater than `1`, MiniLM cannot issue unsupported CoreML batch predictions for configured sizes `2`, `4`, or `256`.
+- Verification:
+  - `swift test --build-path .build-codex/f106-red --filter MiniLMEmbedderBatchPlanningTests --disable-automatic-resolution`: passed.
+  - Independent explorer review confirmed F065/F066 do not require source changes and mapped the proof to `MiniLMEmbedder.swift` batch planning plus `MiniLMEmbedderBatchPlanningTests`.
+
+### F053/F054 Verification
+
+- F053 and F054 were USearch-engine implementation defects. The current branch removed the USearch engine in F064, so the non-atomic `add` and unchecked concurrent mutable-index reads no longer have a live implementation path.
+- Verification:
+  - `git grep -n "USearchVectorEngine\\|USearchIndex\\|@preconcurrency import USearch\\|toUSearchMetric\\|case usearch\\|\\.usearch" HEAD -- 'Package.swift' 'Sources/**/*.swift' 'Tests/**/*.swift'`: no active source hits; only stale comments remain.
+  - `swift test --build-path .build-codex/f106-red --filter 'packageManifestDoesNotDependOnRemovedVectorDependency|loadedVectorSearchEngineRejectsLegacyUSearchVectorIndexes|loadedVectorSearchEngineCurrentEncodingRejectsLegacyUSearchVectorIndexes' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+
+### F077 Review
+
+- Added an integration regression proving a persisted text index no longer returns FTS hits for frames deleted or superseded after indexing.
+- Moved inactive-frame reconciliation to the `FTS5SearchEngine.stageForCommit(into:)` boundary so every lex-index staging caller, including structured-memory staging, gets the same cleanup.
+- Batched inactive-frame deletes in one SQLite write transaction and only adjusted `docCount`/`dirty` when mappings were actually removed, avoiding repeated no-op serialization churn.
+- Review:
+  - Initial review rejected the session-wrapper-only cleanup because `WaxStructuredMemorySession` could bypass it and because no-op removals dirtied the engine.
+  - Re-review approved the staged fix after the cleanup moved into `FTS5SearchEngine.stageForCommit(into:)`.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --filter textSearchSessionCommitRemovesDeletedAndSupersededFramesFromFTSIndex --disable-automatic-resolution` failed before the fix with stale deleted and superseded FTS hits.
+  - `swift test --build-path .build-codex/f106-red --filter textSearchSessionCommitRemovesDeletedAndSupersededFramesFromFTSIndex --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'TextSearchEngineTests|StructuredMemoryCRUDTests' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --disable-automatic-resolution`: passed.
+
+### F197 Review
+
+- Added regressions for both corpus builders proving corrupt `corpus.wax.manifest.json` no longer aborts a rebuild.
+- Changed `CorpusBuildManifestStore.load(for:)` so manifest decode corruption is treated as a cache miss, while missing manifests still return `nil` and real file read errors still propagate.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerCorpusSearchRebuildsWhenCorpusManifestIsCorrupt --disable-automatic-resolution` threw `DecodingError.dataCorrupted` before the fix.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerCorpusSearchRebuildsWhenCorpusManifestIsCorrupt|corpusSearchBuilderRebuildsWhenCorpusManifestIsCorrupt' --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerCorpusSearchRebuildsWhenCorpusManifestIsCorrupt|corpusSearchBuilderRebuildsWhenCorpusManifestIsCorrupt|corpusSearchBuildReusesExistingCorpusWhenSourcesUnchanged|brokerCorpusSearchRebuildsWhenSourceFingerprintChanges|corpusSearchBuildsAcrossSessionStoresAndReturnsProvenance|brokerCorpusSearchBuildSkipsLockedSessionStore' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Code-review subagent approved the scoped F197 diff with no findings.
+
+### F198 Review
+
+- Added a regression proving `enableAsyncEnrichment` persists computed keyword results after close/reopen instead of only updating enrichment stats.
+- Changed `EnrichmentPipeline.start` to pass handler output to an optional async result sink, and wired `MemoryOrchestrator` to persist non-empty enrichment results as system sidecar frames linked to the source chunk.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --filter memoryOrchestratorPersistsEnrichmentResults --disable-automatic-resolution` failed because no `kind == "enrichment"` system frame existed.
+  - `swift test --build-path .build-codex/f106-red --filter memoryOrchestratorPersistsEnrichmentResults --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'EnrichmentPipelineTests|KeywordExtractorTests' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Code-review subagent approved the scoped F198 diff with no findings.
+
+### F199 Review
+
+- Added a regression proving async enrichment persists entity mention records for both technical identifiers and title-cased names.
+- Added a deterministic offline `EntityExtractor` that emits mention-only entities with `mentioned_in/source_text`, then wired `MemoryOrchestrator` to include those entities in enrichment results.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --filter memoryOrchestratorPersistsEnrichmentEntities --disable-automatic-resolution` failed because `wax.enrichment.entities` was absent.
+  - `swift test --build-path .build-codex/f106-red --filter memoryOrchestratorPersistsEnrichmentEntities --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'EnrichmentPipelineTests|KeywordExtractorTests' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Code-review subagent approved the scoped F199 diff with no findings.
+
+### F200 Review
+
+- Added keyword regressions proving technical identifiers keep original spelling across hyphen, underscore, version, lowercase tool, and mixed/acronym-case forms.
+- Tightened `KeywordExtractor` tokenization so technical identifiers are preserved but ordinary hyphenated prose, including sentence-case `State-of-the-art`, still splits into normal lowercase prose terms.
+- Verification:
+  - Red phase: `swift test --build-path .build-codex/f106-red --filter preservesTechnicalIdentifiers --disable-automatic-resolution` failed with fragments like `atlas`, `qwen2`, `minilm`, `wax`, and `mcp`.
+  - Review red phase: `swift test --build-path .build-codex/f106-red --filter doesNotPreserveOrdinaryHyphenatedProse --disable-automatic-resolution` failed before the final follow-up because `State-of-the-art` was preserved.
+  - `swift test --build-path .build-codex/f106-red --filter 'KeywordExtractorTests|EnrichmentPipelineTests' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - Code-review subagent approved the final scoped F200 diff with no findings.
+
+### F027 Review
+
+- Fixed unified search so `SearchRequest.timeRange.before` remains a frame timestamp filter and no longer overrides the structured-memory `SearchRequest.asOfMs` snapshot.
+- Added a regression where a structured fact asserted at system time `5_000` points to an evidence frame timestamped `100`; `timeRange.before: 200, asOfMs: .max` returns the evidence, `timeRange.before: 50` filters it out by frame time, and explicit `asOfMs: 200` hides the fact.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter structuredSearchTimeRangeBeforeDoesNotOverrideExplicitAsOf --disable-automatic-resolution` failed before the fix with an empty latest result.
+  - Green: `swift test --build-path .build-codex/f106-red --filter structuredSearchTimeRangeBeforeDoesNotOverrideExplicitAsOf --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter UnifiedSearchTests --disable-automatic-resolution`: passed; 27 tests.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+- Review:
+  - First review noted an unrelated dirty text-query fallback change in `UnifiedSearch.swift`; it was kept out of the F027 source commit.
+  - First review also requested a frame-time assertion; the test now proves out-of-range structured evidence remains filtered.
+  - Final code-review subagent approved the scoped F027 diff with no findings.
+- Progress snapshot after F027: 162 completed and committed, 38 remaining.
+
+### Active Plan - F030 Metadata Filter Candidate Starvation
+
+- [x] Add a red unified-search regression where high-scoring unfiltered text hits occupy the small candidate window and a lower-scoring metadata-matching hit is omitted.
+- [x] Expand the internal candidate window only when caller-provided post-filters require overfetching, preserving the existing small window for unfiltered searches.
+- [x] Verify the focused regression, the wider unified-search slice, and the MCP product build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F030 Review
+
+- Added text and vector regressions proving metadata filters overfetch past the initial `topK * 3` lane window instead of starving on high-scoring non-matching candidates.
+- Added a large-`topK` regression after review found the first overfetch cap could shrink filtered candidate windows below the caller's requested result count.
+- Fixed unified search to use the existing small candidate window for unfiltered searches, while widening only caller post-filter cases (`frameIds` or non-empty metadata filters) to `max(baseLimit, min(1000, max(topK * 5, topK + 200)))`.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter metadataFilterOverfetchesPastInitialTextCandidateWindow --disable-automatic-resolution` failed before the fix with an empty result.
+  - `swift test --build-path .build-codex/f106-red --filter 'metadataFilterOverfetchesPastInitialTextCandidateWindow|metadataFilterOverfetchesPastInitialVectorCandidateWindow|metadataFilterCandidateLimitNeverDropsBelowRequestedTopK' --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter UnifiedSearchTests --disable-automatic-resolution`: passed; 30 tests.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+- Review:
+  - First review found a high-severity large-`topK` cap regression; the final fix preserves `baseLimit` even when the overfetch budget is capped.
+  - Final code-review subagent reported no source/test findings; it only requested this task/ledger update.
+- Progress snapshot after F030: 163 completed and committed, 37 remaining.
+
+### Active Plan - F031 Pending Preview Consistency
+
+- [x] Add a red unified-search regression where a pending frame matches via pending metadata and must render its pending payload preview.
+- [x] Teach batch preview loading to include pending frame payloads, matching `frameMetaIncludingPending` semantics.
+- [x] Verify the focused regression, the unified-search/performance preview slices, and the MCP product build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F031 Review
+
+- Fixed `Wax.framePreviews(frameIds:maxBytes:)` to build preview plans from `frameMetasIncludingPendingUnlocked`, so pending frames that already have WAL payload offsets are previewable before commit.
+- Added a low-level pending preview regression and a unified-search regression proving a pending vector result can match pending metadata and still render its payload preview.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter pendingMetadataFilteredResultUsesPendingPayloadPreview --disable-automatic-resolution` failed before the fix with `previewText == nil`.
+  - `swift test --build-path .build-codex/f106-red --filter 'pendingMetadataFilteredResultUsesPendingPayloadPreview|framePreviewsIncludesPendingFrames' --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter 'UnifiedSearchTests|PerformanceImprovementsTests' --disable-automatic-resolution`: passed; 39 tests.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+- Review:
+  - Read-only explorer independently confirmed the committed-only preview path as the root cause and the pending-aware preview plan as the minimal fix.
+  - Code-review subagent reported no source/test findings; it only requested this task/ledger update.
+- Progress snapshot after F031: 164 completed and committed, 36 remaining.
+
+### Active Plan - F032 Corpus Export Liveness
+
+- [x] Add a red corpus-source regression proving active documents with `supersededBy != nil` are excluded from corpus export while the replacement document remains exported.
+- [x] Filter `MemoryOrchestrator.corpusSourceDocuments()` on live document liveness, not only active document status.
+- [x] Verify the focused regression, a relevant memory-orchestrator slice, and the MCP product build.
+- [x] Run post-fix code review, update the remediation ledger/checklist, and commit source/test plus docs separately.
+
+### F032 Review
+
+- Fixed `MemoryOrchestrator.corpusSourceDocuments()` to require `supersededBy == nil` in addition to active document status before exporting source documents for corpus indexing.
+- Added a regression proving a superseded active document is omitted while the replacement document remains exported.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f106-red --filter corpusSourceDocumentsExcludesSupersededActiveDocuments --disable-automatic-resolution` failed before the fix with the old superseded frame still exported by ID and text.
+  - Green: `swift test --build-path .build-codex/f106-red --filter corpusSourceDocumentsExcludesSupersededActiveDocuments --disable-automatic-resolution`: passed.
+  - `swift test --build-path .build-codex/f106-red --filter MemoryOrchestrator --disable-automatic-resolution`: passed; 26 Swift Testing tests plus 3 skipped benchmark XCTests.
+  - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'corpusSearchBuildsAcrossSessionStoresAndReturnsProvenance|brokerCorpusSearchRebuildsWhenSourceFingerprintChanges|corpusSearchBuildReusesExistingCorpusWhenSourcesUnchanged' --disable-automatic-resolution`: passed.
+  - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+- Review:
+  - Read-only explorer independently confirmed the missing `supersededBy == nil` filter in corpus export and the downstream broker/MCP corpus-builder impact.
+  - Code-review subagent reported no source correctness findings; it only warned to stage the new regression test explicitly, which was done in the source/test commit.
+- Progress snapshot after F032: 165 completed and committed, 35 remaining.
+
+### Active Plan - F103 Corpus Rebuild Atomicity
+
+- [x] Add a red regression proving the broker corpus builder must not delete the existing target store before replacement.
+- [x] Replace the delete-then-move sequence with a backup/swap/rollback helper.
+- [x] Verify the focused regression, broker corpus rebuild tests, MCP product build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F103 Review
+
+- Fixed `BrokerCorpusStoreBuilder` so corpus rebuild replacement first moves the existing target store aside, moves the rebuilt store into place, and restores the previous store if replacement fails before the new store is installed.
+- Added a static regression that fails if the previous `removeItem(at: standardizedTarget)` followed by `moveItem(at: buildURL, to: standardizedTarget)` sequence returns.
+- Verification:
+  - Red phase: `swift test --filter brokerCorpusStoreBuildDoesNotDeleteExistingCorpusBeforeReplacement --disable-automatic-resolution` failed before the fix because the broker corpus builder still deleted the target before moving the rebuilt store into place.
+  - Green: `swift test --filter brokerCorpusStoreBuildDoesNotDeleteExistingCorpusBeforeReplacement --disable-automatic-resolution`: passed.
+  - `swift test --traits default,MCPServer --filter 'brokerCorpusSearchRebuildsWhenSourceFingerprintChanges|corpusSearchBuildReusesExistingCorpusWhenSourcesUnchanged|brokerCorpusSearchRebuildsWhenCorpusManifestIsCorrupt' --disable-automatic-resolution`: passed; 3 tests.
+  - `swift build --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/BrokerCorpusStore.swift Tests/WaxTests/PackageTraitManifestTests.swift`: passed.
+- Review:
+  - Subagent review was blocked by the session agent-thread limit, so the focused review was performed locally.
+  - Isolated fresh build-path attempts for the MCP trait hit the known contextual `Package.resolved` / `--disable-automatic-resolution` resolver edge; the same gates passed on the repo's normal resolved workspace and were not counted as product failures.
+- Source/test commit: `479685ebf fix: preserve corpus store during rebuild swap`.
+- Progress snapshot after F103: 190 completed and committed, 10 remaining.
+
+### Active Plan - F097 Session-End Persistence Ordering
+
+- [x] Add a red session-end ordering regression proving active sessions stay registered until fallible persistence succeeds.
+- [x] Move `activeSessions.removeValue(forKey:)` after ended manifest save, ended event append, flush, and close.
+- [x] Verify the focused regression, surrounding lifecycle tests, MCP product build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F097 Review
+
+- Fixed `AgentBrokerService.sessionEnd` so it looks up the target session without removing it first, persists the ended manifest and event, flushes and closes memory, then removes the session from `activeSessions` only after those fallible operations succeed.
+- Added a source-order regression covering the bug: `saveManifest`, `appendEvent`, `flush`, and `close` must all appear before `activeSessions.removeValue(forKey: target)` in the session-end implementation.
+- Verification:
+  - Red phase: `swift test --traits default,MCPServer --filter brokerSessionEndKeepsActiveSessionUntilPersistenceSucceeds --disable-automatic-resolution` failed before the fix because removal preceded manifest save, event append, flush, and close.
+  - Green: `swift test --traits default,MCPServer --filter brokerSessionEndKeepsActiveSessionUntilPersistenceSucceeds --disable-automatic-resolution`: passed.
+  - `swift test --traits default,MCPServer --filter 'brokerSessionStartAppendsStartedEventBeforeSavingManifest|brokerSessionResumeAppendsResumedEventBeforeSavingLease|brokerSessionEndKeepsActiveSessionUntilPersistenceSucceeds|sessionEndReportsRemainingActiveSessions|endedSessionIDIsRejectedOnLaterScopedCalls' --disable-automatic-resolution`: passed; 5 tests.
+  - `swift build --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - The fix is intentionally minimal: it does not change validation, response shape, or ended-session metadata, only the point at which the active session dictionary is mutated.
+- Source/test commit: `4903b136f fix: keep broker session active until end persists`.
+- Progress snapshot after F097: 191 completed and committed, 9 remaining.
+
+### Active Plan - F098 Broker Commit/Event Ordering
+
+- [x] Add red source-order regressions for session `remember`, `handoff`, and handoff manifest updates.
+- [x] Reorder broker writes so session events are recorded before the flush that makes memory frames durable.
+- [x] Verify focused ordering tests, behavioral broker/MCP remember and handoff tests, MCP product build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F098 Review
+
+- Fixed session-scoped `remember` so the remembered event is appended before `memory.flush()` commits the write.
+- Fixed `handoff` so `rememberHandoff` stages the handoff frame with `commit: false`, records the session handoff event, then flushes long-term memory to commit the frame.
+- Fixed `recordHandoff` so the handoff event is appended before the session manifest is saved with latest-handoff metadata.
+- Verification:
+  - Red phase: `swift test --traits default,MCPServer --filter 'brokerRememberAppendsSessionEventBeforeFlushingMemory|brokerHandoffRecordsEventBeforeCommittingHandoffFrame|brokerHandoffAppendsEventBeforeSavingHandoffManifest' --disable-automatic-resolution` failed before the fix because `remember` flushed first, `handoff` used `commit: true`, and `recordHandoff` saved the manifest before appending the event.
+  - Green: the same focused filter passed; 3 tests.
+  - `swift test --traits default,MCPServer --filter 'handoffRoundTripAndStatsSessionBlockWork|brokerRememberPreservesContentWhitespace|brokerRetrievalEventsPersistQueryHashWithoutRawQuery|brokerRememberAppendsSessionEventBeforeFlushingMemory|brokerHandoffRecordsEventBeforeCommittingHandoffFrame|brokerHandoffAppendsEventBeforeSavingHandoffManifest' --disable-automatic-resolution`: passed; 6 tests.
+  - `swift build --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - This is an ordering fix within the existing APIs, not a new transactional event/memory store. It prevents event-append failure from occurring after the broker has already explicitly flushed the memory commit.
+- Source/test commit: `8bc0e6a96 fix: record broker events before commit flushes`.
+- Progress snapshot after F098: 192 completed and committed, 8 remaining.
+
+### Active Plan - F099 Knowledge-Capture Ordering
+
+- [x] Add a red ordering regression proving `knowledge_capture` stages the durable memory before graph writes and avoids immediate graph commits.
+- [x] Reorder knowledge capture to parse graph inputs, stage the memory frame, stage entity/fact graph writes with `commit: false`, then commit all staged work with the final flush.
+- [x] Verify the focused regression, existing knowledge-capture behavior test, MCP product build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F099 Review
+
+- Fixed `AgentBrokerService.knowledgeCapture` so the content memory is staged before entity/fact graph writes.
+- Changed graph writes in `knowledge_capture` from `commit: true` to `commit: false`, so the final `longTermMemory.flush()` is the only explicit commit point for the staged memory and graph work.
+- Parsed the optional fact object before staging memory, preserving validation behavior for malformed fact objects.
+- Verification:
+  - Harness correction: the first red attempt failed because the test bounded the source slice with the wrong following function name; after fixing the boundary, it failed for the intended ordering and `commit: true` assertions.
+  - Red phase: `swift test --traits default,MCPServer --filter brokerKnowledgeCaptureStagesMemoryBeforeGraphWrites --disable-automatic-resolution` failed before the fix because `upsertEntity` and `assertFact` came before `remember`, and both used `commit: true`.
+  - Green: the same focused filter passed.
+  - `swift test --traits default,MCPServer --filter 'brokerKnowledgeCaptureStagesMemoryBeforeGraphWrites|knowledgeCaptureAndMemoryHealthWork' --disable-automatic-resolution`: passed; 2 tests.
+  - `swift build --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - This keeps the existing response shape and graph semantics. It does not add a cross-subsystem transaction manager; it removes the previously explicit graph commit before the base memory write.
+- Source/test commit: `bb498a7cc fix: stage knowledge memory before graph writes`.
+- Progress snapshot after F099: 193 completed and committed, 7 remaining.
+
+### Active Plan - F006 File-Format Offset Overflow
+
+- [x] Add red regressions for overflowing footer-end and WAL-end offset arithmetic.
+- [x] Replace unchecked `UInt64` additions in footer lookup and header validation with overflow-safe guards.
+- [x] Verify the focused regressions, full header/footer scanner slice, default build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F006 Review
+
+- Fixed `FooterScanner.findFooter(at:in:)` so a corrupt or caller-provided footer offset near `UInt64.max` returns `nil` instead of trapping on `footerOffset + footerSize`.
+- Fixed file footer scanning to use the same subtraction-based bounds check when validating candidate footer ends.
+- Fixed `WaxHeaderPage.decodeWithChecksumValidation` so `walOffset + walSize` overflow is reported as `invalidHeader("wal_offset + wal_size overflows")` instead of trapping while validating footer offsets.
+- Verification:
+  - Red phase: `swift test --filter 'footerScannerFindFooterAtOffsetRejectsOverflowingFooterEnd|headerRejectsOverflowingWalEndOffset' --disable-automatic-resolution` crashed the selected test process with signal 5 before the fix, proving the overflow trap.
+  - Green: the same focused filter passed; 2 tests.
+  - `swift test --filter 'HeaderFooterTests|FooterScannerEdgeCaseTests' --disable-automatic-resolution`: passed; 35 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/FileFormat/FooterScanner.swift Sources/WaxCore/FileFormat/WaxHeaderPage.swift Tests/WaxCoreTests/FooterScannerEdgeCaseTests.swift Tests/WaxCoreTests/HeaderFooterTests.swift`: passed.
+- Review:
+  - The fix uses subtraction bounds checks where file size is already known, and `addingReportingOverflow` where a reusable WAL-region end is needed.
+- Source/test commit: `adb603223 fix: guard file format offset overflow`.
+- Progress snapshot after F006: 192 checklist items complete and committed, 8 unchecked findings remain.
+
+### Active Plan - F007 Verify/Open Footer Selection
+
+- [x] Add a red regression where a stale-but-valid header footer points at an older TOC while a newer footer remains discoverable by scan.
+- [x] Make `verify(deep:)` choose the newest valid footer from header, replay snapshot, and scan candidates, matching open's recovery behavior.
+- [x] Verify the focused regression, verification/recovery slices, default build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F007 Review
+
+- Fixed `Wax.verify(deep:)` so it no longer accepts the header-pointed footer as authoritative when a newer valid footer exists elsewhere in the scan window.
+- Added a regression that commits two frames, rewrites the selected header to point at the older footer, corrupts the newer frame payload, opens the store successfully, and then requires deep verification to fail on the newer payload checksum.
+- Verification:
+  - Red phase: `swift test --filter verifyUsesSameNewestFooterSelectionAsOpen --disable-automatic-resolution` failed before the fix because `verify(deep:)` passed after validating only the stale older footer.
+  - Green: the same focused filter passed.
+  - `swift test --filter 'VerificationTests|CrashRecoveryTests|ProductionReadinessRecoveryTests' --disable-automatic-resolution`: passed; 18 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/Wax.swift Tests/WaxCoreTests/VerificationTests.swift`: passed.
+- Review:
+  - Verification now pays the scan cost deliberately; this is appropriate for an explicit integrity check and keeps it aligned with open's newest-footer recovery semantics.
+- Source/test commit: `568bb5351 fix: align verify footer selection with open`.
+- Progress snapshot after F007: 193 checklist items complete and committed, 7 unchecked findings remain.
+
+### Active Plan - F008 Repair Truncate Durability
+
+- [x] Add a red source-order regression proving open repair fsyncs after truncating trailing bytes.
+- [x] Add the missing file fsync after repair truncation.
+- [x] Verify focused repair tests, full verification slice, default build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F008 Review
+
+- Fixed the `Wax.open(repair:)` trailing-byte repair path so `file.truncate(to: requiredEnd)` is followed by `file.fsync()` before open proceeds.
+- Added a source-order regression for the repair block because the real failure mode is power-loss durability after truncation, which cannot be deterministically simulated in-process.
+- Verification:
+  - Red phase: `swift test --filter openRepairFsyncsAfterTruncatingTrailingBytes --disable-automatic-resolution` failed before the fix because the repair block had no `try file.fsync()`.
+  - Green: `swift test --filter 'openRepairFsyncsAfterTruncatingTrailingBytes|openWithRepairTruncatesTrailingBytes' --disable-automatic-resolution`: passed; 2 tests.
+  - `swift test --filter VerificationTests --disable-automatic-resolution`: passed; 4 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/Wax.swift Tests/WaxCoreTests/VerificationTests.swift`: passed.
+- Review:
+  - The fix intentionally syncs the file descriptor after the size change; no directory fsync is needed because repair changes file length, not directory entries.
+- Source/test commit: `adf0b7f2c fix: fsync after repair truncation`.
+- Progress snapshot after F008: 194 checklist items complete and committed, 6 unchecked findings remain.
+
+### Active Plan - F009 WAL Validation Ordering
+
+- [x] Add red regressions proving invalid delete/supersede calls are rejected before they can leave invalid pending WAL mutations behind.
+- [x] Validate delete and supersede frame IDs, including self-supersede, before WAL append.
+- [x] Verify focused invalid-mutation tests, full delete/supersede and WAL replay slices, default build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F009 Review
+
+- Fixed `Wax.delete(frameId:)` to validate that the target frame is known across committed frames plus pending put-frame mutations before encoding/appending a delete WAL entry.
+- Fixed `Wax.supersede(supersededId:supersedingId:)` to reject self-supersede and unknown frame IDs before encoding/appending a supersede WAL entry.
+- Added a shared locked validation helper that checks the committed-plus-pending frame ID range with overflow protection.
+- Verification:
+  - Red phase: `swift test --filter 'deleteRejectsUnknownFrameBeforeAppendingWal|supersedeRejectsSelfReferenceBeforeAppendingWal' --disable-automatic-resolution` failed before the fix because the invalid calls did not throw and `close()` later surfaced the bad pending WAL mutation.
+  - Green: `swift test --filter 'deleteRejectsUnknownFrameBeforeAppendingWal|supersedeRejectsSelfReferenceBeforeAppendingWal|supersedeSelfReferenceThrows|supersedeRejectsUnknownIds' --disable-automatic-resolution`: passed; 4 tests.
+  - `swift test --filter 'DeleteSupersedeTests|WALReplayTests' --disable-automatic-resolution`: passed; 23 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/Wax.swift Tests/WaxCoreTests/DeleteSupersedeTests.swift`: passed.
+- Review:
+  - Existing valid pending-frame same-commit delete/supersede paths remain covered because the validation includes pending put-frame count, not only committed TOC count.
+- Source/test commit: `c8704360f fix: validate delete supersede before wal append`.
+- Progress snapshot after F009: 195 checklist items complete and committed, 5 unchecked findings remain.
+
+### Active Plan - F001 Create Lock Ordering
+
+- [x] Add a red regression proving `Wax.create` does not truncate an existing store when another writer holds the file lock.
+- [x] Acquire the exclusive create lock without truncating, then open and truncate only after lock ownership is proven.
+- [x] Verify the focused regression, lifecycle/lock slices, default build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F001 Review
+
+- Fixed `Wax.create` so it acquires an exclusive lock through a non-truncating create/open path before opening the store and calling `truncate(to: 0)`.
+- Added cleanup for failed create writes so the opened file and acquired lock are released if initialization fails after lock ownership is established.
+- Added a behavioral regression that creates a valid store, holds the exclusive lock, attempts `Wax.create` with a short timeout, then verifies file size and payload are preserved after the lock failure.
+- Verification:
+  - Red phase: `swift test --filter createDoesNotTruncateExistingStoreWhenLockUnavailable --disable-automatic-resolution` failed before the fix because the store size became `0` and reopen hit a short read.
+  - Green: the same focused filter passed.
+  - `swift test --filter 'createDoesNotTruncateExistingStoreWhenLockUnavailable|LifecycleTests|FileLockTests' --disable-automatic-resolution`: passed; 17 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/Wax.swift Sources/WaxCore/IO/FileLock.swift Tests/WaxCoreTests/LifecycleTests.swift`: passed.
+- Review:
+  - Subagent review could not be launched because the existing agent-thread limit was reached; local review checked lock acquisition ordering, descriptor/lock cleanup on throws, and that the helper only exposes an exclusive create-lock path.
+- Source/test commit: `c6f67a75f fix: lock before truncating created store`.
+- Progress snapshot after F001: 196 checklist items complete and committed, 4 unchecked findings remain.
+
+### Active Plan - F002 Pending WAL Payload Checksums
+
+- [x] Add a red crash-replay regression proving a pending `putFrame` WAL entry with corrupt stored payload bytes is rejected on open.
+- [x] Validate pending put-frame stored payload bytes against the WAL-recorded `storedChecksum` before pending mutations enter reopened actor state.
+- [x] Verify the focused regression, WAL/recovery/delete replay slices, default build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F002 Review
+
+- Fixed `Wax.open` so pending put-frame payloads are read and hashed after range validation and before repair/truncation or actor construction.
+- Added `validatePendingPayloadChecksums` to reject pending `putFrame` entries whose referenced stored bytes no longer match the WAL-recorded checksum.
+- Added a crash-replay regression that manually appends a pending `putFrame` WAL entry with a checksum for `pending-ok`, writes different bytes at the referenced payload offset, and requires open to fail before replay can commit it.
+- Verification:
+  - Red phase: `swift test --filter openRejectsPendingPutFrameWithCorruptStoredPayload --disable-automatic-resolution` failed before the fix because open accepted the corrupt pending payload.
+  - Green: the same focused filter passed.
+  - `swift test --filter 'WALReplayTests|CrashRecoveryTests|DeleteSupersedeTests' --disable-automatic-resolution`: passed; 33 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/Wax.swift Tests/WaxCoreTests/WALReplayTests.swift`: passed.
+- Review:
+  - The validation runs only for pending `putFrame` mutations after the existing offset/size checks prove the bytes are inside the file. Delete, supersede, and embedding WAL records are unaffected.
+- Source/test commit: `eb419f395 fix: validate pending wal payload checksums`.
+- Progress snapshot after F002: 197 checklist items complete and committed, 3 unchecked findings remain.
+
+### Active Plan - F003 WAL Decode Failure Scan Continuity
+
+- [x] Change the existing red regression so a corrupt-but-checksum-valid pending WAL entry is skipped without dropping later valid pending records.
+- [x] Update the scan-with-state replay path to continue decoding later records after a single pending decode failure.
+- [x] Verify the focused regression, larger WAL/recovery/search/vector/concurrency slice, default build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F003 Review
+
+- Fixed `WALRingReader.scanPendingMutationsWithState` so a decode failure skips only the corrupt pending entry while still advancing cursor/pending-byte state.
+- Updated the regression around a valid WAL envelope with an invalid opcode followed by a valid delete mutation; the scanner now preserves the later valid mutation and still reports the correct final scan state.
+- Verification:
+  - Red phase: `swift test --filter walPendingScanWithStateSkipsDecodeFailureButKeepsLaterPendingMutations --disable-automatic-resolution` failed before the fix because no later pending mutation was returned.
+  - Green: the same focused filter passed.
+  - `swift test --filter 'WALReplayTests|CrashRecoveryTests|DeleteSupersedeTests|UnifiedSearchTests|VectorSerializerTests|ConcurrencyStressTests' --disable-automatic-resolution`: passed; 78 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/WAL/WALRingReader.swift Tests/WaxCoreTests/WALReplayTests.swift`: passed.
+- Review:
+  - This keeps non-fatal state tracking behavior but prevents one malformed pending entry from suppressing independent later WAL records.
+- Source/test commit: `9c804281a fix: keep scanning valid wal entries after decode failure`.
+- Progress snapshot after F003: 198 checklist items complete and committed, 2 unchecked findings remain.
+
+### Active Plan - F004 Commit Failure Rollback
+
+- [x] Add a red durability regression proving `commitLocked` captures actor state before applying pending mutations and restores it on failed commit.
+- [x] Add commit rollback state covering live header, TOC, staged indexes, pending mutations, cached frame payloads, generation, dirty flag, and data end.
+- [x] Verify the focused regression, durability/WAL/delete slices, default build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F004 Review
+
+- Fixed `commitLocked` by capturing a `CommitRollbackState` before `applyPendingMutationsIntoTOC()`.
+- Added a failure-only `defer` that restores in-memory actor state unless the commit reaches the successful final state.
+- Added a static regression that enforces rollback capture before pending mutation application, restore in the failure path, and success marking only after the commit sequence.
+- Verification:
+  - Red phase: `swift test --filter commitLockedRestoresActorStateWhenDurableCommitFails --disable-automatic-resolution` failed before the fix because no rollback capture/restore existed.
+  - Green: the same focused filter passed.
+  - `swift test --filter 'DurabilityRegressionTests|WALReplayTests|DeleteSupersedeTests' --disable-automatic-resolution`: passed; 28 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/Wax.swift Tests/WaxCoreTests/DurabilityRegressionTests.swift`: passed.
+- Review:
+  - The rollback is intentionally in-memory only. It preserves actor consistency after a thrown commit; disk crash recovery remains governed by footer/header/WAL recovery.
+- Source/test commit: `512174c1c fix: roll back actor state on failed commit`.
+- Progress snapshot after F004: 199 checklist items complete and committed, 1 unchecked finding remains.
+
+### Active Plan - F005 Delete/Supersede Rollback Coverage
+
+- [x] Add a dedicated regression for a valid supersede followed by an invalid trailing mutation causing commit to throw.
+- [x] Prove the F004 rollback keeps committed frame metadata unmodified after the failed delete/supersede commit.
+- [x] Verify focused delete/supersede and recovery slices, default build, and whitespace checks.
+- [x] Commit test coverage and update the remediation ledger.
+
+### F005 Review
+
+- Added a regression that manually appends pending WAL records for `supersede(old, new)` followed by `delete(99)`, forcing `commit()` to throw on the invalid trailing mutation after it has processed committed-frame relationship updates.
+- Verified that committed-only `frameMeta(frameId:)` remains unchanged after the failed commit: the old frame has no `supersededBy`, and the new frame has no `supersedes`.
+- The source fix is the F004 rollback guard; this F005 commit adds the specific delete/supersede proof for the previously in-place mutation path.
+- Verification:
+  - Focused: `swift test --filter failedCommitDoesNotLeaveCommittedSupersedeStateMutated --disable-automatic-resolution`: passed.
+  - `swift test --filter 'DeleteSupersedeTests|DurabilityRegressionTests|WALReplayTests|CrashRecoveryTests' --disable-automatic-resolution`: passed; 38 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Tests/WaxCoreTests/DeleteSupersedeTests.swift`: passed.
+- Review:
+  - This is intentionally a test-only issue commit because the shared rollback implementation landed in F004 and directly covers the F005 root path.
+- Source/test commit: `85b37e42b test: cover rollback of failed supersede commit`.
+- Progress snapshot after F005: 200 checklist items complete and committed, 0 unchecked findings remain.
