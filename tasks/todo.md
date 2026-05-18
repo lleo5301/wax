@@ -4714,3 +4714,25 @@ Checklist:
   - The rollback is intentionally in-memory only. It preserves actor consistency after a thrown commit; disk crash recovery remains governed by footer/header/WAL recovery.
 - Source/test commit: `512174c1c fix: roll back actor state on failed commit`.
 - Progress snapshot after F004: 199 checklist items complete and committed, 1 unchecked finding remains.
+
+### Active Plan - F005 Delete/Supersede Rollback Coverage
+
+- [x] Add a dedicated regression for a valid supersede followed by an invalid trailing mutation causing commit to throw.
+- [x] Prove the F004 rollback keeps committed frame metadata unmodified after the failed delete/supersede commit.
+- [x] Verify focused delete/supersede and recovery slices, default build, and whitespace checks.
+- [x] Commit test coverage and update the remediation ledger.
+
+### F005 Review
+
+- Added a regression that manually appends pending WAL records for `supersede(old, new)` followed by `delete(99)`, forcing `commit()` to throw on the invalid trailing mutation after it has processed committed-frame relationship updates.
+- Verified that committed-only `frameMeta(frameId:)` remains unchanged after the failed commit: the old frame has no `supersededBy`, and the new frame has no `supersedes`.
+- The source fix is the F004 rollback guard; this F005 commit adds the specific delete/supersede proof for the previously in-place mutation path.
+- Verification:
+  - Focused: `swift test --filter failedCommitDoesNotLeaveCommittedSupersedeStateMutated --disable-automatic-resolution`: passed.
+  - `swift test --filter 'DeleteSupersedeTests|DurabilityRegressionTests|WALReplayTests|CrashRecoveryTests' --disable-automatic-resolution`: passed; 38 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Tests/WaxCoreTests/DeleteSupersedeTests.swift`: passed.
+- Review:
+  - This is intentionally a test-only issue commit because the shared rollback implementation landed in F004 and directly covers the F005 root path.
+- Source/test commit: `85b37e42b test: cover rollback of failed supersede commit`.
+- Progress snapshot after F005: 200 checklist items complete and committed, 0 unchecked findings remain.

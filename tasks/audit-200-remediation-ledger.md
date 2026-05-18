@@ -20,13 +20,13 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 199
+- Fully completed and committed: 200
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 1
+- Remaining not fully completed: 0
 
 Current resume point:
-- F001 through F004, F006 through F009, F047 through F050, F091, F097 through F099, F103, F105, F152, and F157 are now fixed; remaining active work is the deeper WaxCore durability finding F005.
-- The active request is to fix all remaining findings.
+- F001 through F200 are now fixed, resolved as duplicates, or covered by committed remediation notes in this ledger.
+- The active request to fix all remaining findings is complete pending final verification sweeps.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
 - `.build-codex/`
@@ -47,6 +47,7 @@ Known existing verification blockers from earlier runs:
 | F002 | `eb419f395` | Validate stored payload checksums for pending put-frame WAL replay. |
 | F003 | `9c804281a` | Keep collecting later valid WAL mutations after a pending decode failure. |
 | F004 | `512174c1c` | Snapshot and restore actor state when commit fails after applying pending mutations. |
+| F005 | `85b37e42b` | Cover failed supersede/delete commit rollback for committed metadata. |
 | F012 | `fd399c92` | Return stored structured fact evidence from facts queries. |
 | F029 | `5fe1386b` | Accept and return fact evidence through MCP and broker APIs. |
 | F033 | `acc41d3e` | Overfetch MCP compatibility memory search before horizon filtering. |
@@ -233,7 +234,7 @@ Support commit not counted as a finding fix:
 - [x] F002 WAL: pending payload replay lacks checksum validation.
 - [x] F003 WAL scan: forgiving WAL scan can drop later valid pending records after corrupt state.
 - [x] F004 Commit atomicity: `commitLocked` mutates live TOC before durable writes with no rollback.
-- [ ] F005 Delete/supersede: committed state mutates in place without rollback.
+- [x] F005 Delete/supersede: committed state mutates in place without rollback.
 - [x] F006 File format: offset arithmetic can trap on `UInt64` overflow.
 - [x] F007 Verify/open: footer selection differs between verification and open.
 - [x] F008 Repair: truncate repair lacks durable fsync.
