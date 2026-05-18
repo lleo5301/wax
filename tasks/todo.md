@@ -3335,6 +3335,30 @@ Checklist:
 - Source/test commit: `f15d39e31`.
 - Progress snapshot after F049: 184 completed and committed, 16 remaining.
 
+### Active Plan - F050 WaxRepo UI Dependency Leakage
+
+- [x] Add a red manifest regression proving WaxRepo UI package dependencies and the WaxRepo executable target are macOS-scoped.
+- [x] Move the SwiftTUI/Noora package dependencies and WaxRepo executable target into manifest-scoped conditional arrays that parse under SwiftPM.
+- [x] Verify the focused regression, SwiftPM manifest parsing, and the narrow diff.
+- [x] Run post-fix review, then commit source/test and ledger updates separately.
+
+### F050 Review
+
+- Fixed the package graph so SwiftTUI and Noora are added only through `waxRepoPackageDependencies` on macOS.
+- Moved the WaxRepo executable target into a macOS-only `waxRepoTargets` manifest array, leaving non-WaxRepo package targets free from the TUI package leak.
+- Added a static manifest regression that proves the UI package dependencies and WaxRepo target are behind `#if os(macOS)` and are appended separately to the base dependency/target lists.
+- Verification:
+  - Red: `swift test --build-path .build-codex/f050-red --filter waxRepoUIDependenciesAreMacOSScoped --disable-automatic-resolution` failed before the fix because the package dependency lines and `WaxRepo` executable target were not macOS-scoped.
+  - First green attempt: failed with an invalid SwiftPM manifest after embedding `#if os(macOS)` directly inside dependency/target array literals.
+  - Green: `swift test --build-path .build-codex/f050-green --filter waxRepoUIDependenciesAreMacOSScoped --disable-automatic-resolution`: passed.
+  - `swift package --disable-automatic-resolution describe --type json`: passed.
+  - `git diff --check -- Package.swift Tests/WaxTests/PackageTraitManifestTests.swift`: passed.
+- Review:
+  - Code-review subagent was started for the scoped diff but did not return before the first wait timeout.
+  - Local review confirmed SwiftPM accepts the conditional-array manifest shape and that the runtime change is limited to the WaxRepo UI dependency/target registration.
+- Source/test commit: `153e6a5d6`.
+- Progress snapshot after F050: 185 completed and committed, 15 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.

@@ -20,12 +20,12 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 184
+- Fully completed and committed: 185
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 16
+- Remaining not fully completed: 15
 
 Current resume point:
-- F047 through F049 are now fixed; remaining active work is the still-unchecked dependency, WaxRepo, broker/session, corpus, multimodal MCP, test-gate, and deeper durability/structured-memory findings.
+- F047 through F050 are now fixed; remaining active work is the still-unchecked WaxRepo, broker/session, corpus, multimodal MCP, test-gate, and deeper durability/structured-memory findings.
 - The active request is to fix all remaining findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
@@ -57,6 +57,7 @@ Known existing verification blockers from earlier runs:
 | F047 | `38207fcdc` | Guard MCP multimodal CoreGraphics/ImageIO imports for Linux builds. |
 | F048 | `c82cd3e76` | Replace Darwin-qualified MCP server exits with a portable helper. |
 | F049 | `f15d39e31` | Exclude Darwin-only integration benchmarks from Linux test builds. |
+| F050 | `153e6a5d6` | Scope WaxRepo UI dependencies and target to macOS. |
 | F051 | `b057acdf` | Reject malformed staged vector index bytes. |
 | F052 | `aed403bc` | Reject non-finite vector inputs. |
 | F053 | `resolved-by-F064` | USearch `add` atomicity gap eliminated with USearch engine removal. |
@@ -261,7 +262,7 @@ Support commit not counted as a finding fix:
 - [x] F047 Linux: MCP Linux path imports Darwin/CoreGraphics-only APIs.
 - [x] F048 Linux: `Darwin.exit` used unconditionally.
 - [x] F049 Linux tests: excludes miss Darwin benchmark files.
-- [ ] F050 Dependencies: top-level dependency leakage pulls SwiftTUI into non-CLI builds.
+- [x] F050 Dependencies: top-level dependency leakage pulls SwiftTUI into non-CLI builds.
 - [x] F051 Vector WAL: malformed vector staged/verify accepted.
 - [x] F052 Embeddings: NaN/Inf embeddings accepted.
 - [x] F053 USearch: `add` is not atomic.
