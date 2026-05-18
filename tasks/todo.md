@@ -4556,3 +4556,25 @@ Checklist:
   - The fix uses subtraction bounds checks where file size is already known, and `addingReportingOverflow` where a reusable WAL-region end is needed.
 - Source/test commit: `adb603223 fix: guard file format offset overflow`.
 - Progress snapshot after F006: 192 checklist items complete and committed, 8 unchecked findings remain.
+
+### Active Plan - F007 Verify/Open Footer Selection
+
+- [x] Add a red regression where a stale-but-valid header footer points at an older TOC while a newer footer remains discoverable by scan.
+- [x] Make `verify(deep:)` choose the newest valid footer from header, replay snapshot, and scan candidates, matching open's recovery behavior.
+- [x] Verify the focused regression, verification/recovery slices, default build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F007 Review
+
+- Fixed `Wax.verify(deep:)` so it no longer accepts the header-pointed footer as authoritative when a newer valid footer exists elsewhere in the scan window.
+- Added a regression that commits two frames, rewrites the selected header to point at the older footer, corrupts the newer frame payload, opens the store successfully, and then requires deep verification to fail on the newer payload checksum.
+- Verification:
+  - Red phase: `swift test --filter verifyUsesSameNewestFooterSelectionAsOpen --disable-automatic-resolution` failed before the fix because `verify(deep:)` passed after validating only the stale older footer.
+  - Green: the same focused filter passed.
+  - `swift test --filter 'VerificationTests|CrashRecoveryTests|ProductionReadinessRecoveryTests' --disable-automatic-resolution`: passed; 18 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/Wax.swift Tests/WaxCoreTests/VerificationTests.swift`: passed.
+- Review:
+  - Verification now pays the scan cost deliberately; this is appropriate for an explicit integrity check and keeps it aligned with open's newest-footer recovery semantics.
+- Source/test commit: `568bb5351 fix: align verify footer selection with open`.
+- Progress snapshot after F007: 193 checklist items complete and committed, 7 unchecked findings remain.
