@@ -4252,6 +4252,7 @@ Checklist:
 - Verification:
   - Red phase: `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerBackedF152 --disable-automatic-resolution` failed before the fix with `memory_get` returning `ok == false` for a compact-context working memory ID.
   - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter brokerBackedF152 --disable-automatic-resolution`: passed after canonicalization.
+  - Current verification on 2026-05-18: `swift test --traits default,MCPServer --filter brokerBackedF152 --disable-automatic-resolution`: passed; 2 tests.
   - `swift test --build-path .build-codex/f106-red --traits default,MCPServer --filter 'brokerBackedF152|brokerRememberPreservesContentWhitespace|brokerSearchAppliesLifecycleAndFrameIDFilters' --disable-automatic-resolution`: passed.
   - `swift build --build-path .build-codex/f106-red --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
   - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.

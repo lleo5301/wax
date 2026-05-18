@@ -20,12 +20,12 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 188
+- Fully completed and committed: 189
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 12
+- Remaining not fully completed: 11
 
 Current resume point:
-- F047 through F050, F091, F105, and F157 are now fixed; remaining active work is the still-unchecked broker/session, corpus, and deeper durability/structured-memory findings.
+- F047 through F050, F091, F105, F152, and F157 are now fixed; remaining active work is the still-unchecked broker/session, corpus, and deeper durability/structured-memory findings.
 - The active request is to fix all remaining findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
@@ -209,6 +209,7 @@ Known existing verification blockers from earlier runs:
 | F149 | `58f0e63d` | Fix PhotoRAG sync scope docs. |
 | F150 | `281c5b5f` | Clarify VideoRAG docs access level. |
 | F151 | `0cf62175` | Enforce MCP trait test inventory. |
+| F152 | `e0add6e73` | Add broker-backed MCP coverage and canonical compact-context memory IDs. |
 | F157 | `06801d43e` | Exercise hybrid/vector search in readiness stability gates. |
 
 Support commit not counted as a finding fix:
@@ -367,7 +368,7 @@ Support commit not counted as a finding fix:
 - [x] F149 Photo docs: sample uses nonexistent `.all` scope.
 - [x] F150 Video API: `VideoRAGOrchestrator` documented public but package-only.
 - [x] F151 Test coverage: default tests miss MCP trait suite.
-- [ ] F152 MCP tests: many tests use direct-memory compatibility path, not production broker path.
+- [x] F152 MCP tests: many tests use direct-memory compatibility path, not production broker path.
 - [x] F153 MCP tests: compatibility aliases differ from production renamed-tool behavior.
 - [x] F154 HTTP smoke: HTTP verifier never calls a tool.
 - [x] F155 CI: Linux CI omits Wax/CLI/MCP product builds. Duplicate of F127; the Linux workflow now builds Wax, wax-cli, and wax-mcp products.
