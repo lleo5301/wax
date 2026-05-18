@@ -4486,3 +4486,26 @@ Checklist:
   - The fix is intentionally minimal: it does not change validation, response shape, or ended-session metadata, only the point at which the active session dictionary is mutated.
 - Source/test commit: `4903b136f fix: keep broker session active until end persists`.
 - Progress snapshot after F097: 191 completed and committed, 9 remaining.
+
+### Active Plan - F098 Broker Commit/Event Ordering
+
+- [x] Add red source-order regressions for session `remember`, `handoff`, and handoff manifest updates.
+- [x] Reorder broker writes so session events are recorded before the flush that makes memory frames durable.
+- [x] Verify focused ordering tests, behavioral broker/MCP remember and handoff tests, MCP product build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F098 Review
+
+- Fixed session-scoped `remember` so the remembered event is appended before `memory.flush()` commits the write.
+- Fixed `handoff` so `rememberHandoff` stages the handoff frame with `commit: false`, records the session handoff event, then flushes long-term memory to commit the frame.
+- Fixed `recordHandoff` so the handoff event is appended before the session manifest is saved with latest-handoff metadata.
+- Verification:
+  - Red phase: `swift test --traits default,MCPServer --filter 'brokerRememberAppendsSessionEventBeforeFlushingMemory|brokerHandoffRecordsEventBeforeCommittingHandoffFrame|brokerHandoffAppendsEventBeforeSavingHandoffManifest' --disable-automatic-resolution` failed before the fix because `remember` flushed first, `handoff` used `commit: true`, and `recordHandoff` saved the manifest before appending the event.
+  - Green: the same focused filter passed; 3 tests.
+  - `swift test --traits default,MCPServer --filter 'handoffRoundTripAndStatsSessionBlockWork|brokerRememberPreservesContentWhitespace|brokerRetrievalEventsPersistQueryHashWithoutRawQuery|brokerRememberAppendsSessionEventBeforeFlushingMemory|brokerHandoffRecordsEventBeforeCommittingHandoffFrame|brokerHandoffAppendsEventBeforeSavingHandoffManifest' --disable-automatic-resolution`: passed; 6 tests.
+  - `swift build --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - This is an ordering fix within the existing APIs, not a new transactional event/memory store. It prevents event-append failure from occurring after the broker has already explicitly flushed the memory commit.
+- Source/test commit: `8bc0e6a96 fix: record broker events before commit flushes`.
+- Progress snapshot after F098: 192 completed and committed, 8 remaining.
