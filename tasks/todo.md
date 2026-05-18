@@ -4205,6 +4205,8 @@ Checklist:
 - Verification:
   - Red phase: `bash Resources/scripts/quality/production_readiness_gates_tests.sh` failed before the gate change because the soak stability command omitted `WAX_STABILITY_SEARCH_MODE=hybrid`.
   - `bash Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+  - Current verification on 2026-05-18: `bash Resources/scripts/quality/production_readiness_gates_tests.sh`: passed.
+  - Current verification on 2026-05-18: `WAX_REPLAY_ITERATIONS=120 WAX_STABILITY_SEARCH_MODE=hybrid WAX_STABILITY_MAX_RSS_GROWTH_MB=512 WAX_STABILITY_MAX_P50_DRIFT_PCT=500 WAX_STABILITY_MAX_P95_DRIFT_PCT=500 WAX_STABILITY_OUTPUT=/tmp/wax-f157-stability.json swift test --enable-xctest --disable-swift-testing --filter ProductionReadinessStabilityTests.testSoakSmokeStability --disable-automatic-resolution`: passed and reported `vector_hits=233`.
   - `WAX_REPLAY_ITERATIONS=80 WAX_STABILITY_SEARCH_MODE=hybrid WAX_STABILITY_OUTPUT=/tmp/wax-f157-stability.json swift test --build-path .build-codex/f106-red --enable-xctest --disable-swift-testing --filter ProductionReadinessStabilityTests.testSoakSmokeStability --disable-automatic-resolution`: passed and reported `vector_hits=153`.
   - `WAX_REPLAY_ITERATIONS=80 WAX_STABILITY_SEARCH_MODE=vector WAX_STABILITY_OUTPUT=/tmp/wax-f157-vector-stability.json swift test --build-path .build-codex/f106-red --enable-xctest --disable-swift-testing --filter ProductionReadinessStabilityTests.testSoakSmokeStability --disable-automatic-resolution`: passed and reported `vector_hits=153`.
   - `git diff --cached --check`: passed before the source/test commit.
