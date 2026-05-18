@@ -20,12 +20,12 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 193
+- Fully completed and committed: 191
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 7
+- Remaining not fully completed: 9
 
 Current resume point:
-- F047 through F050, F091, F097 through F099, F103, F105, F152, and F157 are now fixed; remaining active work is the deeper durability/structured-memory findings.
+- F047 through F050, F091, F097 through F099, F103, F105, F152, and F157 are now fixed; remaining active work is the deeper WaxCore durability and file-format findings F001 through F009.
 - The active request is to fix all remaining findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
