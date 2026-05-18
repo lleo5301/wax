@@ -4691,3 +4691,26 @@ Checklist:
   - This keeps non-fatal state tracking behavior but prevents one malformed pending entry from suppressing independent later WAL records.
 - Source/test commit: `9c804281a fix: keep scanning valid wal entries after decode failure`.
 - Progress snapshot after F003: 198 checklist items complete and committed, 2 unchecked findings remain.
+
+### Active Plan - F004 Commit Failure Rollback
+
+- [x] Add a red durability regression proving `commitLocked` captures actor state before applying pending mutations and restores it on failed commit.
+- [x] Add commit rollback state covering live header, TOC, staged indexes, pending mutations, cached frame payloads, generation, dirty flag, and data end.
+- [x] Verify the focused regression, durability/WAL/delete slices, default build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F004 Review
+
+- Fixed `commitLocked` by capturing a `CommitRollbackState` before `applyPendingMutationsIntoTOC()`.
+- Added a failure-only `defer` that restores in-memory actor state unless the commit reaches the successful final state.
+- Added a static regression that enforces rollback capture before pending mutation application, restore in the failure path, and success marking only after the commit sequence.
+- Verification:
+  - Red phase: `swift test --filter commitLockedRestoresActorStateWhenDurableCommitFails --disable-automatic-resolution` failed before the fix because no rollback capture/restore existed.
+  - Green: the same focused filter passed.
+  - `swift test --filter 'DurabilityRegressionTests|WALReplayTests|DeleteSupersedeTests' --disable-automatic-resolution`: passed; 28 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/Wax.swift Tests/WaxCoreTests/DurabilityRegressionTests.swift`: passed.
+- Review:
+  - The rollback is intentionally in-memory only. It preserves actor consistency after a thrown commit; disk crash recovery remains governed by footer/header/WAL recovery.
+- Source/test commit: `512174c1c fix: roll back actor state on failed commit`.
+- Progress snapshot after F004: 199 checklist items complete and committed, 1 unchecked finding remains.
