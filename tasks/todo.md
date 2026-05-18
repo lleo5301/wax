@@ -4669,3 +4669,25 @@ Checklist:
   - The validation runs only for pending `putFrame` mutations after the existing offset/size checks prove the bytes are inside the file. Delete, supersede, and embedding WAL records are unaffected.
 - Source/test commit: `eb419f395 fix: validate pending wal payload checksums`.
 - Progress snapshot after F002: 197 checklist items complete and committed, 3 unchecked findings remain.
+
+### Active Plan - F003 WAL Decode Failure Scan Continuity
+
+- [x] Change the existing red regression so a corrupt-but-checksum-valid pending WAL entry is skipped without dropping later valid pending records.
+- [x] Update the scan-with-state replay path to continue decoding later records after a single pending decode failure.
+- [x] Verify the focused regression, larger WAL/recovery/search/vector/concurrency slice, default build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F003 Review
+
+- Fixed `WALRingReader.scanPendingMutationsWithState` so a decode failure skips only the corrupt pending entry while still advancing cursor/pending-byte state.
+- Updated the regression around a valid WAL envelope with an invalid opcode followed by a valid delete mutation; the scanner now preserves the later valid mutation and still reports the correct final scan state.
+- Verification:
+  - Red phase: `swift test --filter walPendingScanWithStateSkipsDecodeFailureButKeepsLaterPendingMutations --disable-automatic-resolution` failed before the fix because no later pending mutation was returned.
+  - Green: the same focused filter passed.
+  - `swift test --filter 'WALReplayTests|CrashRecoveryTests|DeleteSupersedeTests|UnifiedSearchTests|VectorSerializerTests|ConcurrencyStressTests' --disable-automatic-resolution`: passed; 78 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/WAL/WALRingReader.swift Tests/WaxCoreTests/WALReplayTests.swift`: passed.
+- Review:
+  - This keeps non-fatal state tracking behavior but prevents one malformed pending entry from suppressing independent later WAL records.
+- Source/test commit: `9c804281a fix: keep scanning valid wal entries after decode failure`.
+- Progress snapshot after F003: 198 checklist items complete and committed, 2 unchecked findings remain.
