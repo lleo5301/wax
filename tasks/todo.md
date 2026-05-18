@@ -4600,3 +4600,26 @@ Checklist:
   - The fix intentionally syncs the file descriptor after the size change; no directory fsync is needed because repair changes file length, not directory entries.
 - Source/test commit: `adf0b7f2c fix: fsync after repair truncation`.
 - Progress snapshot after F008: 194 checklist items complete and committed, 6 unchecked findings remain.
+
+### Active Plan - F009 WAL Validation Ordering
+
+- [x] Add red regressions proving invalid delete/supersede calls are rejected before they can leave invalid pending WAL mutations behind.
+- [x] Validate delete and supersede frame IDs, including self-supersede, before WAL append.
+- [x] Verify focused invalid-mutation tests, full delete/supersede and WAL replay slices, default build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F009 Review
+
+- Fixed `Wax.delete(frameId:)` to validate that the target frame is known across committed frames plus pending put-frame mutations before encoding/appending a delete WAL entry.
+- Fixed `Wax.supersede(supersededId:supersedingId:)` to reject self-supersede and unknown frame IDs before encoding/appending a supersede WAL entry.
+- Added a shared locked validation helper that checks the committed-plus-pending frame ID range with overflow protection.
+- Verification:
+  - Red phase: `swift test --filter 'deleteRejectsUnknownFrameBeforeAppendingWal|supersedeRejectsSelfReferenceBeforeAppendingWal' --disable-automatic-resolution` failed before the fix because the invalid calls did not throw and `close()` later surfaced the bad pending WAL mutation.
+  - Green: `swift test --filter 'deleteRejectsUnknownFrameBeforeAppendingWal|supersedeRejectsSelfReferenceBeforeAppendingWal|supersedeSelfReferenceThrows|supersedeRejectsUnknownIds' --disable-automatic-resolution`: passed; 4 tests.
+  - `swift test --filter 'DeleteSupersedeTests|WALReplayTests' --disable-automatic-resolution`: passed; 23 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/Wax.swift Tests/WaxCoreTests/DeleteSupersedeTests.swift`: passed.
+- Review:
+  - Existing valid pending-frame same-commit delete/supersede paths remain covered because the validation includes pending put-frame count, not only committed TOC count.
+- Source/test commit: `c8704360f fix: validate delete supersede before wal append`.
+- Progress snapshot after F009: 195 checklist items complete and committed, 5 unchecked findings remain.

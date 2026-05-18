@@ -20,12 +20,12 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 194
+- Fully completed and committed: 195
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 6
+- Remaining not fully completed: 5
 
 Current resume point:
-- F006 through F008, F047 through F050, F091, F097 through F099, F103, F105, F152, and F157 are now fixed; remaining active work is the deeper WaxCore durability findings F001 through F005 and F009.
+- F006 through F009, F047 through F050, F091, F097 through F099, F103, F105, F152, and F157 are now fixed; remaining active work is the deeper WaxCore durability findings F001 through F005.
 - The active request is to fix all remaining findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
@@ -168,6 +168,7 @@ Known existing verification blockers from earlier runs:
 | F006 | `adb603223` | Guard footer/header file-format offset arithmetic from UInt64 overflow traps. |
 | F007 | `568bb5351` | Make deep verification select the same newest valid footer as open. |
 | F008 | `adf0b7f2c` | Fsync after repair truncates trailing bytes. |
+| F009 | `c8704360f` | Validate delete and supersede mutations before appending WAL entries. |
 | F025 | `0666ea1f7` | Include entity-valued fact objects in structured evidence search. |
 | F026 | `774ca2919` | Expose separate system and valid timestamps for facts queries. |
 | F027 | `7487b754d` | Keep unified-search frame time filters separate from structured-memory as-of queries. |
@@ -232,7 +233,7 @@ Support commit not counted as a finding fix:
 - [x] F006 File format: offset arithmetic can trap on `UInt64` overflow.
 - [x] F007 Verify/open: footer selection differs between verification and open.
 - [x] F008 Repair: truncate repair lacks durable fsync.
-- [ ] F009 WAL ordering: invalid delete/supersede WAL can be appended before validation.
+- [x] F009 WAL ordering: invalid delete/supersede WAL can be appended before validation.
 - [x] F010 Structured facts: fact hash normalizes entity/predicate case.
 - [x] F011 Structured facts: string value hash lowercases object values.
 - [x] F012 Evidence: `facts` query drops stored evidence.
