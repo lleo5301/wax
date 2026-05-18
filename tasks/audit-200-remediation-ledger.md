@@ -20,12 +20,12 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 196
+- Fully completed and committed: 197
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 4
+- Remaining not fully completed: 3
 
 Current resume point:
-- F001, F006 through F009, F047 through F050, F091, F097 through F099, F103, F105, F152, and F157 are now fixed; remaining active work is the deeper WaxCore durability findings F002 through F005.
+- F001, F002, F006 through F009, F047 through F050, F091, F097 through F099, F103, F105, F152, and F157 are now fixed; remaining active work is the deeper WaxCore durability findings F003 through F005.
 - The active request is to fix all remaining findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
@@ -44,6 +44,7 @@ Known existing verification blockers from earlier runs:
 | ID | Commit | Summary |
 |---|---:|---|
 | F001 | `c6f67a75f` | Acquire the create lock before truncating or rewriting an existing store. |
+| F002 | `eb419f395` | Validate stored payload checksums for pending put-frame WAL replay. |
 | F012 | `fd399c92` | Return stored structured fact evidence from facts queries. |
 | F029 | `5fe1386b` | Accept and return fact evidence through MCP and broker APIs. |
 | F033 | `acc41d3e` | Overfetch MCP compatibility memory search before horizon filtering. |
@@ -227,7 +228,7 @@ Support commit not counted as a finding fix:
 ## Findings
 
 - [x] F001 Durability: `Wax.create` truncates/open-writes before lock ownership is proven.
-- [ ] F002 WAL: pending payload replay lacks checksum validation.
+- [x] F002 WAL: pending payload replay lacks checksum validation.
 - [ ] F003 WAL scan: forgiving WAL scan can drop later valid pending records after corrupt state.
 - [ ] F004 Commit atomicity: `commitLocked` mutates live TOC before durable writes with no rollback.
 - [ ] F005 Delete/supersede: committed state mutates in place without rollback.

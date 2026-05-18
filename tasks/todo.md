@@ -4646,3 +4646,26 @@ Checklist:
   - Subagent review could not be launched because the existing agent-thread limit was reached; local review checked lock acquisition ordering, descriptor/lock cleanup on throws, and that the helper only exposes an exclusive create-lock path.
 - Source/test commit: `c6f67a75f fix: lock before truncating created store`.
 - Progress snapshot after F001: 196 checklist items complete and committed, 4 unchecked findings remain.
+
+### Active Plan - F002 Pending WAL Payload Checksums
+
+- [x] Add a red crash-replay regression proving a pending `putFrame` WAL entry with corrupt stored payload bytes is rejected on open.
+- [x] Validate pending put-frame stored payload bytes against the WAL-recorded `storedChecksum` before pending mutations enter reopened actor state.
+- [x] Verify the focused regression, WAL/recovery/delete replay slices, default build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F002 Review
+
+- Fixed `Wax.open` so pending put-frame payloads are read and hashed after range validation and before repair/truncation or actor construction.
+- Added `validatePendingPayloadChecksums` to reject pending `putFrame` entries whose referenced stored bytes no longer match the WAL-recorded checksum.
+- Added a crash-replay regression that manually appends a pending `putFrame` WAL entry with a checksum for `pending-ok`, writes different bytes at the referenced payload offset, and requires open to fail before replay can commit it.
+- Verification:
+  - Red phase: `swift test --filter openRejectsPendingPutFrameWithCorruptStoredPayload --disable-automatic-resolution` failed before the fix because open accepted the corrupt pending payload.
+  - Green: the same focused filter passed.
+  - `swift test --filter 'WALReplayTests|CrashRecoveryTests|DeleteSupersedeTests' --disable-automatic-resolution`: passed; 33 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/Wax.swift Tests/WaxCoreTests/WALReplayTests.swift`: passed.
+- Review:
+  - The validation runs only for pending `putFrame` mutations after the existing offset/size checks prove the bytes are inside the file. Delete, supersede, and embedding WAL records are unaffected.
+- Source/test commit: `eb419f395 fix: validate pending wal payload checksums`.
+- Progress snapshot after F002: 197 checklist items complete and committed, 3 unchecked findings remain.
