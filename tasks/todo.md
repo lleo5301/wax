@@ -4441,3 +4441,26 @@ Checklist:
   - Read-only explorer independently confirmed the missing `supersededBy == nil` filter in corpus export and the downstream broker/MCP corpus-builder impact.
   - Code-review subagent reported no source correctness findings; it only warned to stage the new regression test explicitly, which was done in the source/test commit.
 - Progress snapshot after F032: 165 completed and committed, 35 remaining.
+
+### Active Plan - F103 Corpus Rebuild Atomicity
+
+- [x] Add a red regression proving the broker corpus builder must not delete the existing target store before replacement.
+- [x] Replace the delete-then-move sequence with a backup/swap/rollback helper.
+- [x] Verify the focused regression, broker corpus rebuild tests, MCP product build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F103 Review
+
+- Fixed `BrokerCorpusStoreBuilder` so corpus rebuild replacement first moves the existing target store aside, moves the rebuilt store into place, and restores the previous store if replacement fails before the new store is installed.
+- Added a static regression that fails if the previous `removeItem(at: standardizedTarget)` followed by `moveItem(at: buildURL, to: standardizedTarget)` sequence returns.
+- Verification:
+  - Red phase: `swift test --filter brokerCorpusStoreBuildDoesNotDeleteExistingCorpusBeforeReplacement --disable-automatic-resolution` failed before the fix because the broker corpus builder still deleted the target before moving the rebuilt store into place.
+  - Green: `swift test --filter brokerCorpusStoreBuildDoesNotDeleteExistingCorpusBeforeReplacement --disable-automatic-resolution`: passed.
+  - `swift test --traits default,MCPServer --filter 'brokerCorpusSearchRebuildsWhenSourceFingerprintChanges|corpusSearchBuildReusesExistingCorpusWhenSourcesUnchanged|brokerCorpusSearchRebuildsWhenCorpusManifestIsCorrupt' --disable-automatic-resolution`: passed; 3 tests.
+  - `swift build --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/BrokerCorpusStore.swift Tests/WaxTests/PackageTraitManifestTests.swift`: passed.
+- Review:
+  - Subagent review was blocked by the session agent-thread limit, so the focused review was performed locally.
+  - Isolated fresh build-path attempts for the MCP trait hit the known contextual `Package.resolved` / `--disable-automatic-resolution` resolver edge; the same gates passed on the repo's normal resolved workspace and were not counted as product failures.
+- Source/test commit: `479685ebf fix: preserve corpus store during rebuild swap`.
+- Progress snapshot after F103: 190 completed and committed, 10 remaining.

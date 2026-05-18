@@ -20,12 +20,12 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 189
+- Fully completed and committed: 190
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 11
+- Remaining not fully completed: 10
 
 Current resume point:
-- F047 through F050, F091, F105, F152, and F157 are now fixed; remaining active work is the still-unchecked broker/session, corpus, and deeper durability/structured-memory findings.
+- F047 through F050, F091, F103, F105, F152, and F157 are now fixed; remaining active work is the still-unchecked broker/session and deeper durability/structured-memory findings.
 - The active request is to fix all remaining findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
@@ -104,6 +104,7 @@ Known existing verification blockers from earlier runs:
 | F096 | `2acac690` | Require bearer auth for non-loopback HTTP MCP binds. |
 | F100 | `63ce6e52` | Preserve broker memory content whitespace. |
 | F101 | `ffa14be3` | Skip ended session manifests on resume. |
+| F103 | `479685ebf` | Preserve existing broker corpus store while swapping in rebuilt corpus. |
 | F105 | `ad8a168f4` | Stop advertising unpublished multimodal MCP tools. |
 | F109 | `f305c477` | Add waxmcp prepack validation for required dist artifacts. |
 | F112 | `b8c8fe18` | Update waxmcp release version extraction to `WaxMCPServerMetadata.version`. |
@@ -319,7 +320,7 @@ Support commit not counted as a finding fix:
 - [x] F100 MCP content: content strings are trimmed.
 - [x] F101 Session resume: `session_resume` can pick ended manifest.
 - [x] F102 HTTP MCP: body limit is enforced after full read.
-- [ ] F103 Corpus: corpus rebuild is non-atomic.
+- [x] F103 Corpus: corpus rebuild is non-atomic.
 - [x] F104 MCP config: invalid embedder choice falls back to MiniLM.
 - [x] F105 Multimodal MCP: multimodal is advertised but not wired.
 - [x] F106 HTTP lifecycle: cleanup loop has no cancellation.
