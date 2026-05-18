@@ -20,12 +20,12 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 190
+- Fully completed and committed: 191
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 10
+- Remaining not fully completed: 9
 
 Current resume point:
-- F047 through F050, F091, F103, F105, F152, and F157 are now fixed; remaining active work is the still-unchecked broker/session and deeper durability/structured-memory findings.
+- F047 through F050, F091, F097, F103, F105, F152, and F157 are now fixed; remaining active work is the still-unchecked broker/session and deeper durability/structured-memory findings.
 - The active request is to fix all remaining findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
@@ -102,6 +102,7 @@ Known existing verification blockers from earlier runs:
 | F094 | `29f997c8` | Gate `knowledge_capture` by structured-memory flag. |
 | F095 | `f5c8d24b` | Honor broker access-stats feature flag. |
 | F096 | `2acac690` | Require bearer auth for non-loopback HTTP MCP binds. |
+| F097 | `4903b136f` | Keep active broker sessions registered until session-end persistence succeeds. |
 | F100 | `63ce6e52` | Preserve broker memory content whitespace. |
 | F101 | `ffa14be3` | Skip ended session manifests on resume. |
 | F103 | `479685ebf` | Preserve existing broker corpus store while swapping in rebuilt corpus. |
@@ -314,7 +315,7 @@ Support commit not counted as a finding fix:
 - [x] F094 MCP structured: `knowledge_capture` bypasses structured-memory flag.
 - [x] F095 Broker config: access-stats env is parsed/logged but ignored.
 - [x] F096 HTTP MCP: HTTP transport has no auth off-loopback.
-- [ ] F097 Session end: active session removed before fallible persistence.
+- [x] F097 Session end: active session removed before fallible persistence.
 - [ ] F098 Broker commit: `remember/handoff` commit before event failure.
 - [ ] F099 Knowledge capture: graph write before memory write can half-commit.
 - [x] F100 MCP content: content strings are trimmed.

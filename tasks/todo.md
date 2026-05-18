@@ -4464,3 +4464,25 @@ Checklist:
   - Isolated fresh build-path attempts for the MCP trait hit the known contextual `Package.resolved` / `--disable-automatic-resolution` resolver edge; the same gates passed on the repo's normal resolved workspace and were not counted as product failures.
 - Source/test commit: `479685ebf fix: preserve corpus store during rebuild swap`.
 - Progress snapshot after F103: 190 completed and committed, 10 remaining.
+
+### Active Plan - F097 Session-End Persistence Ordering
+
+- [x] Add a red session-end ordering regression proving active sessions stay registered until fallible persistence succeeds.
+- [x] Move `activeSessions.removeValue(forKey:)` after ended manifest save, ended event append, flush, and close.
+- [x] Verify the focused regression, surrounding lifecycle tests, MCP product build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F097 Review
+
+- Fixed `AgentBrokerService.sessionEnd` so it looks up the target session without removing it first, persists the ended manifest and event, flushes and closes memory, then removes the session from `activeSessions` only after those fallible operations succeed.
+- Added a source-order regression covering the bug: `saveManifest`, `appendEvent`, `flush`, and `close` must all appear before `activeSessions.removeValue(forKey: target)` in the session-end implementation.
+- Verification:
+  - Red phase: `swift test --traits default,MCPServer --filter brokerSessionEndKeepsActiveSessionUntilPersistenceSucceeds --disable-automatic-resolution` failed before the fix because removal preceded manifest save, event append, flush, and close.
+  - Green: `swift test --traits default,MCPServer --filter brokerSessionEndKeepsActiveSessionUntilPersistenceSucceeds --disable-automatic-resolution`: passed.
+  - `swift test --traits default,MCPServer --filter 'brokerSessionStartAppendsStartedEventBeforeSavingManifest|brokerSessionResumeAppendsResumedEventBeforeSavingLease|brokerSessionEndKeepsActiveSessionUntilPersistenceSucceeds|sessionEndReportsRemainingActiveSessions|endedSessionIDIsRejectedOnLaterScopedCalls' --disable-automatic-resolution`: passed; 5 tests.
+  - `swift build --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - The fix is intentionally minimal: it does not change validation, response shape, or ended-session metadata, only the point at which the active session dictionary is mutated.
+- Source/test commit: `4903b136f fix: keep broker session active until end persists`.
+- Progress snapshot after F097: 191 completed and committed, 9 remaining.
