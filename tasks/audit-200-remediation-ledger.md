@@ -20,12 +20,12 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 187
+- Fully completed and committed: 188
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 13
+- Remaining not fully completed: 12
 
 Current resume point:
-- F047 through F050, F091, and F157 are now fixed; remaining active work is the still-unchecked broker/session, corpus, multimodal MCP, and deeper durability/structured-memory findings.
+- F047 through F050, F091, F105, and F157 are now fixed; remaining active work is the still-unchecked broker/session, corpus, and deeper durability/structured-memory findings.
 - The active request is to fix all remaining findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
@@ -104,6 +104,7 @@ Known existing verification blockers from earlier runs:
 | F096 | `2acac690` | Require bearer auth for non-loopback HTTP MCP binds. |
 | F100 | `63ce6e52` | Preserve broker memory content whitespace. |
 | F101 | `ffa14be3` | Skip ended session manifests on resume. |
+| F105 | `ad8a168f4` | Stop advertising unpublished multimodal MCP tools. |
 | F109 | `f305c477` | Add waxmcp prepack validation for required dist artifacts. |
 | F112 | `b8c8fe18` | Update waxmcp release version extraction to `WaxMCPServerMetadata.version`. |
 | F113 | `30c8bdef` | Verify basename-only release checksums from artifact directories. |
@@ -319,7 +320,7 @@ Support commit not counted as a finding fix:
 - [x] F102 HTTP MCP: body limit is enforced after full read.
 - [ ] F103 Corpus: corpus rebuild is non-atomic.
 - [x] F104 MCP config: invalid embedder choice falls back to MiniLM.
-- [ ] F105 Multimodal MCP: multimodal is advertised but not wired.
+- [x] F105 Multimodal MCP: multimodal is advertised but not wired.
 - [x] F106 HTTP lifecycle: cleanup loop has no cancellation.
 - [x] F107 MCP tests: broker-backed durable capture test times out.
 - [x] F108 MCP tests: locked-session corpus search test times out.

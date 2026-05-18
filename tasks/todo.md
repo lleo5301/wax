@@ -3385,6 +3385,30 @@ Checklist:
 - Source/test commit: `5de373cd9`.
 - Progress snapshot after F091: 186 completed and committed, 14 remaining.
 
+### Active Plan - F105 MCP Multimodal Advertisement
+
+- [x] Add a red static regression proving `wax-mcp` does not advertise unpublished multimodal RAG tools.
+- [x] Update the MCP command abstract to describe the actual published memory tool surface.
+- [x] Verify the focused regression, package manifest/static test slice, MCP trait build, and MCP tool-list test.
+- [x] Run post-fix review, then commit source/test and ledger updates separately.
+
+### F105 Review
+
+- Fixed the `wax-mcp` command abstract so it no longer claims the server exposes multimodal RAG tools that are not registered in `ToolSchemas` or broker command dispatch.
+- Added a static regression in `PackageTraitManifestTests` that fails if the unpublished `multimodal RAG tools` phrase returns to the MCP entrypoint.
+- Verification:
+  - Red: `swift test --filter waxMCPEntrypointDoesNotAdvertiseUnpublishedMultimodalTools --disable-automatic-resolution` failed before the wording fix because `main.swift` advertised `multimodal RAG tools`.
+  - Green: `swift test --filter waxMCPEntrypointDoesNotAdvertiseUnpublishedMultimodalTools --disable-automatic-resolution`: passed.
+  - `swift test --filter PackageTraitManifestTests --disable-automatic-resolution`: passed; 7 tests.
+  - `swift build --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `swift test --traits default,MCPServer --filter toolsListContainsExpectedTools --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxMCPServer/main.swift Tests/WaxTests/PackageTraitManifestTests.swift`: passed.
+- Review:
+  - Explorer subagent confirmed the advertised tool mismatch and verified the actual MCP/broker tool surfaces still have no multimodal/photo/video tool paths.
+  - Code-review subagent approved the scoped diff with no findings.
+- Source/test commit: `ad8a168f4`.
+- Progress snapshot after F105: 188 completed and committed, 12 remaining.
+
 ### Active Plan - F037 Pending Duplicate Dedupe
 
 - [x] Add a red dedupe regression where identical `remember` calls happen before any flush and must commit only one complete document/chunk set.
