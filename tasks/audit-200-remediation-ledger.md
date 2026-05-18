@@ -20,12 +20,12 @@ Checklist legend:
 
 Current count:
 - Target findings: 200
-- Fully completed and committed: 191
+- Fully completed and committed: 192
 - Work in progress, not counted complete: 0
-- Remaining not fully completed: 9
+- Remaining not fully completed: 8
 
 Current resume point:
-- F047 through F050, F091, F097 through F099, F103, F105, F152, and F157 are now fixed; remaining active work is the deeper WaxCore durability and file-format findings F001 through F009.
+- F006, F047 through F050, F091, F097 through F099, F103, F105, F152, and F157 are now fixed; remaining active work is the deeper WaxCore durability findings F001 through F005 and F007 through F009.
 - The active request is to fix all remaining findings.
 
 Current untracked/generated artifacts to preserve and not stage/delete:
@@ -165,6 +165,7 @@ Known existing verification blockers from earlier runs:
 | F198 | `5f30dc68b` | Persist async enrichment results instead of discarding handler output. |
 | F199 | `f23780084` | Extract deterministic async enrichment entity mentions. |
 | F200 | `e33afc13b` | Preserve technical keyword identifiers without over-preserving prose compounds. |
+| F006 | `adb603223` | Guard footer/header file-format offset arithmetic from UInt64 overflow traps. |
 | F025 | `0666ea1f7` | Include entity-valued fact objects in structured evidence search. |
 | F026 | `774ca2919` | Expose separate system and valid timestamps for facts queries. |
 | F027 | `7487b754d` | Keep unified-search frame time filters separate from structured-memory as-of queries. |
@@ -226,7 +227,7 @@ Support commit not counted as a finding fix:
 - [ ] F003 WAL scan: forgiving WAL scan can drop later valid pending records after corrupt state.
 - [ ] F004 Commit atomicity: `commitLocked` mutates live TOC before durable writes with no rollback.
 - [ ] F005 Delete/supersede: committed state mutates in place without rollback.
-- [ ] F006 File format: offset arithmetic can trap on `UInt64` overflow.
+- [x] F006 File format: offset arithmetic can trap on `UInt64` overflow.
 - [ ] F007 Verify/open: footer selection differs between verification and open.
 - [ ] F008 Repair: truncate repair lacks durable fsync.
 - [ ] F009 WAL ordering: invalid delete/supersede WAL can be appended before validation.

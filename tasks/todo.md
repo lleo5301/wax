@@ -4533,3 +4533,26 @@ Checklist:
   - This keeps the existing response shape and graph semantics. It does not add a cross-subsystem transaction manager; it removes the previously explicit graph commit before the base memory write.
 - Source/test commit: `bb498a7cc fix: stage knowledge memory before graph writes`.
 - Progress snapshot after F099: 193 completed and committed, 7 remaining.
+
+### Active Plan - F006 File-Format Offset Overflow
+
+- [x] Add red regressions for overflowing footer-end and WAL-end offset arithmetic.
+- [x] Replace unchecked `UInt64` additions in footer lookup and header validation with overflow-safe guards.
+- [x] Verify the focused regressions, full header/footer scanner slice, default build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F006 Review
+
+- Fixed `FooterScanner.findFooter(at:in:)` so a corrupt or caller-provided footer offset near `UInt64.max` returns `nil` instead of trapping on `footerOffset + footerSize`.
+- Fixed file footer scanning to use the same subtraction-based bounds check when validating candidate footer ends.
+- Fixed `WaxHeaderPage.decodeWithChecksumValidation` so `walOffset + walSize` overflow is reported as `invalidHeader("wal_offset + wal_size overflows")` instead of trapping while validating footer offsets.
+- Verification:
+  - Red phase: `swift test --filter 'footerScannerFindFooterAtOffsetRejectsOverflowingFooterEnd|headerRejectsOverflowingWalEndOffset' --disable-automatic-resolution` crashed the selected test process with signal 5 before the fix, proving the overflow trap.
+  - Green: the same focused filter passed; 2 tests.
+  - `swift test --filter 'HeaderFooterTests|FooterScannerEdgeCaseTests' --disable-automatic-resolution`: passed; 35 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/FileFormat/FooterScanner.swift Sources/WaxCore/FileFormat/WaxHeaderPage.swift Tests/WaxCoreTests/FooterScannerEdgeCaseTests.swift Tests/WaxCoreTests/HeaderFooterTests.swift`: passed.
+- Review:
+  - The fix uses subtraction bounds checks where file size is already known, and `addingReportingOverflow` where a reusable WAL-region end is needed.
+- Source/test commit: `adb603223 fix: guard file format offset overflow`.
+- Progress snapshot after F006: 192 checklist items complete and committed, 8 unchecked findings remain.
