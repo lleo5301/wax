@@ -4509,3 +4509,27 @@ Checklist:
   - This is an ordering fix within the existing APIs, not a new transactional event/memory store. It prevents event-append failure from occurring after the broker has already explicitly flushed the memory commit.
 - Source/test commit: `8bc0e6a96 fix: record broker events before commit flushes`.
 - Progress snapshot after F098: 192 completed and committed, 8 remaining.
+
+### Active Plan - F099 Knowledge-Capture Ordering
+
+- [x] Add a red ordering regression proving `knowledge_capture` stages the durable memory before graph writes and avoids immediate graph commits.
+- [x] Reorder knowledge capture to parse graph inputs, stage the memory frame, stage entity/fact graph writes with `commit: false`, then commit all staged work with the final flush.
+- [x] Verify the focused regression, existing knowledge-capture behavior test, MCP product build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F099 Review
+
+- Fixed `AgentBrokerService.knowledgeCapture` so the content memory is staged before entity/fact graph writes.
+- Changed graph writes in `knowledge_capture` from `commit: true` to `commit: false`, so the final `longTermMemory.flush()` is the only explicit commit point for the staged memory and graph work.
+- Parsed the optional fact object before staging memory, preserving validation behavior for malformed fact objects.
+- Verification:
+  - Harness correction: the first red attempt failed because the test bounded the source slice with the wrong following function name; after fixing the boundary, it failed for the intended ordering and `commit: true` assertions.
+  - Red phase: `swift test --traits default,MCPServer --filter brokerKnowledgeCaptureStagesMemoryBeforeGraphWrites --disable-automatic-resolution` failed before the fix because `upsertEntity` and `assertFact` came before `remember`, and both used `commit: true`.
+  - Green: the same focused filter passed.
+  - `swift test --traits default,MCPServer --filter 'brokerKnowledgeCaptureStagesMemoryBeforeGraphWrites|knowledgeCaptureAndMemoryHealthWork' --disable-automatic-resolution`: passed; 2 tests.
+  - `swift build --product wax-mcp --traits default,MCPServer --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/Wax/Broker/AgentBrokerService.swift Tests/WaxMCPServerTests/WaxMCPServerTests.swift`: passed.
+- Review:
+  - This keeps the existing response shape and graph semantics. It does not add a cross-subsystem transaction manager; it removes the previously explicit graph commit before the base memory write.
+- Source/test commit: `bb498a7cc fix: stage knowledge memory before graph writes`.
+- Progress snapshot after F099: 193 completed and committed, 7 remaining.
