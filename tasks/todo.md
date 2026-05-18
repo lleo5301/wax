@@ -4578,3 +4578,25 @@ Checklist:
   - Verification now pays the scan cost deliberately; this is appropriate for an explicit integrity check and keeps it aligned with open's newest-footer recovery semantics.
 - Source/test commit: `568bb5351 fix: align verify footer selection with open`.
 - Progress snapshot after F007: 193 checklist items complete and committed, 7 unchecked findings remain.
+
+### Active Plan - F008 Repair Truncate Durability
+
+- [x] Add a red source-order regression proving open repair fsyncs after truncating trailing bytes.
+- [x] Add the missing file fsync after repair truncation.
+- [x] Verify focused repair tests, full verification slice, default build, and whitespace checks.
+- [x] Commit source/test and update the remediation ledger.
+
+### F008 Review
+
+- Fixed the `Wax.open(repair:)` trailing-byte repair path so `file.truncate(to: requiredEnd)` is followed by `file.fsync()` before open proceeds.
+- Added a source-order regression for the repair block because the real failure mode is power-loss durability after truncation, which cannot be deterministically simulated in-process.
+- Verification:
+  - Red phase: `swift test --filter openRepairFsyncsAfterTruncatingTrailingBytes --disable-automatic-resolution` failed before the fix because the repair block had no `try file.fsync()`.
+  - Green: `swift test --filter 'openRepairFsyncsAfterTruncatingTrailingBytes|openWithRepairTruncatesTrailingBytes' --disable-automatic-resolution`: passed; 2 tests.
+  - `swift test --filter VerificationTests --disable-automatic-resolution`: passed; 4 tests.
+  - `swift build --disable-automatic-resolution`: passed.
+  - `git diff --check -- Sources/WaxCore/Wax.swift Tests/WaxCoreTests/VerificationTests.swift`: passed.
+- Review:
+  - The fix intentionally syncs the file descriptor after the size change; no directory fsync is needed because repair changes file length, not directory entries.
+- Source/test commit: `adf0b7f2c fix: fsync after repair truncation`.
+- Progress snapshot after F008: 194 checklist items complete and committed, 6 unchecked findings remain.
